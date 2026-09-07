@@ -1,0 +1,637 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import api from '../../api';
+import { useAuth } from '../../auth';
+import ModifierDemande from './ModifierDemande';
+
+const STATUT_CONFIG = {
+    BROUILLON: { label: 'Brouillon', color: 'text-slate-500', bg: 'bg-slate-100', dot: 'bg-slate-400', step: 0 },
+    SOUMISE: { label: 'Soumise', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-400', step: 1 },
+    EN_ETUDE: { label: 'En étude', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500', step: 2 },
+    PIECES_MANQUANTES: { label: 'Pièces manquantes', color: 'text-orange-700', bg: 'bg-orange-50', dot: 'bg-orange-400', step: 3 },
+    DEVIS_EMIS: { label: 'Devis émis', color: 'text-purple-700', bg: 'bg-purple-50', dot: 'bg-purple-500', step: 4 },
+    ACCEPTEE: { label: 'Acceptée', color: 'text-emerald-700', bg: 'bg-emerald-50', dot: 'bg-emerald-500', step: 5 },
+    EN_SOUSCRIPTION: { label: 'En souscription', color: 'text-teal-700', bg: 'bg-teal-50', dot: 'bg-teal-500', step: 6 },
+    TRANSFORMEE: { label: 'Transformée', color: 'text-green-700', bg: 'bg-green-50', dot: 'bg-green-600', step: 7 },
+    NON_ELIGIBLE: { label: 'Non éligible', color: 'text-red-700', bg: 'bg-red-50', dot: 'bg-red-500', step: -1 },
+    SANS_SUITE: { label: 'Sans suite', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-400', step: -1 },
+    EXPIREE: { label: 'Expirée', color: 'text-gray-500', bg: 'bg-gray-100', dot: 'bg-gray-300', step: -1 },
+};
+
+const MAIN_STEPS = [
+    { key: 'BROUILLON', label: 'Brouillon', icon: '1' },
+    { key: 'SOUMISE', label: 'Soumise', icon: '2' },
+    { key: 'EN_ETUDE', label: 'En étude', icon: '3' },
+    { key: 'DEVIS_EMIS', label: 'Devis émis', icon: '4' },
+    { key: 'ACCEPTEE', label: 'Acceptée', icon: '5' },
+    { key: 'EN_SOUSCRIPTION', label: 'Souscription', icon: '6' },
+    { key: 'TRANSFORMEE', label: 'Transformée', icon: '✓' },
+];
+
+const fmt = (cts) => ((cts ?? 0) / 100).toFixed(2) + ' €';
+
+export default function DemandeDetail() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const estCabinet = user && ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER', 'COMPTABLE'].includes(user.role);
+
+    const [demande, setDemande] = useState(null);
+    const [devis, setDevis] = useState([]);
+    const [activeTab, setActiveTab] = useState('devis');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
+
+    // Documents
+    const [typesDocs, setTypesDocs] = useState([]);
+    const [docTypeId, setDocTypeId] = useState('');
+    const [docFile, setDocFile] = useState(null);
+    const [docUploading, setDocUploading] = useState(false);
+
+    // Modal transition
+    const [modal, setModal] = useState(null); // {action, cible, motif_requis}
+    const [motif, setMotif] = useState('');
+
+    // Modal modification (brouillon uniquement)
+    const [modifierOpen, setModifierOpen] = useState(false);
+
+    // Édition inline de l'onglet Informations (brouillon uniquement)
+    const [editMode, setEditMode] = useState(false);
+    const [modeEdit, setModeEdit] = useState('');
+    const [editSaving, setEditSaving] = useState(false);
+
+    const load = async () => {
+        try {
+            const [dRes, devisRes] = await Promise.all([
+                api.get(`/demandes/${id}`),
+                api.get(`/demandes/${id}/devis`),
+            ]);
+            setDemande(dRes.data.data);
+            setDevis(devisRes.data.data);
+        } catch (err) {
+            setError(err.response?.status === 404 ? 'Demande introuvable.' : 'Erreur de chargement.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(); }, [id]);
+
+    useEffect(() => {
+        api.get('/referentiels/actifs')
+            .then((res) => setTypesDocs(res.data.types_documents || []))
+            .catch(() => {});
+    }, []);
+
+    const telechargerDocument = async (docId) => {
+        try {
+            const res = await api.get(`/documents/${docId}/url`);
+            window.open(res.data.url, '_blank');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de téléchargement.');
+        }
+    };
+
+    const uploaderDocument = async (e) => {
+        e.preventDefault();
+        if (!docFile || !docTypeId) {
+            setError('Sélectionnez un type de document et un fichier.');
+            return;
+        }
+        setDocUploading(true);
+        setError('');
+        const fd = new FormData();
+        fd.append('type_document_id', docTypeId);
+        fd.append('objet_type', 'demande');
+        fd.append('objet_id', id);
+        fd.append('file', docFile);
+        try {
+            await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setDocFile(null);
+            setDocTypeId('');
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || "Erreur d'upload du document.");
+        } finally {
+            setDocUploading(false);
+        }
+    };
+
+    const executeTransition = async () => {
+        if (!modal) return;
+        setBusy(true);
+        try {
+            const body = { action: modal.action };
+            if (motif.trim()) body.motif = motif.trim();
+            await api.post(`/demandes/${id}/transitions`, body);
+            setModal(null);
+            setMotif('');
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de transition.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const accepterDevis = async (devisId) => {
+        setBusy(true);
+        try {
+            await api.post(`/devis/${devisId}/transitions`, { action: 'accepter' });
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const refuserDevis = async (devisId) => {
+        setBusy(true);
+        try {
+            await api.post(`/devis/${devisId}/transitions`, { action: 'refuser', motif: 'Refusé par le cabinet' });
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur.');
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const lancerEdition = () => {
+        setModeEdit(demande.donnees_risque?.mode_intervention || '');
+        setError('');
+        setEditMode(true);
+    };
+
+    const enregistrerEdition = async () => {
+        if (!modeEdit) {
+            setError('Sélectionnez un type / mode d\'intervention.');
+            return;
+        }
+        setEditSaving(true);
+        setError('');
+        try {
+            await api.patch(`/demandes/${id}`, { mode_intervention: modeEdit });
+            setEditMode(false);
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur lors de la modification.');
+        } finally {
+            setEditSaving(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+    );
+
+    if (error && !demande) return <div className="bg-red-50 text-red-700 p-4 rounded-lg">{error}</div>;
+    if (!demande) return null;
+
+    const sc = STATUT_CONFIG[demande.statut] || STATUT_CONFIG.BROUILLON;
+    const currentStep = MAIN_STEPS.findIndex((s) => s.key === demande.statut);
+    const isTerminal = ['NON_ELIGIBLE', 'SANS_SUITE', 'EXPIREE', 'TRANSFORMEE'].includes(demande.statut);
+
+    const tabs = [
+        { key: 'devis', label: 'Devis', count: devis.length },
+        { key: 'infos', label: 'Informations' },
+        { key: 'vehicules', label: 'Véhicules' },
+        { key: 'documents', label: 'Documents' },
+    ];
+
+    return (
+        <div>
+            {/* Back + header */}
+            <button onClick={() => navigate('/demandes')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                Retour aux demandes
+            </button>
+
+            <div className="flex items-start justify-between mb-6">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-2xl font-bold text-slate-900">{demande.reference}</h1>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.color}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                            {sc.label}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                        <span>{demande.branche || '—'}</span>
+                        <span>·</span>
+                        <span>{demande.client || '—'}</span>
+                        {demande.age_jours > 0 && <><span>·</span><span>{demande.age_jours}j</span></>}
+                    </div>
+                </div>
+                {estCabinet && demande.statut === 'BROUILLON' && (
+                    <button onClick={() => { setError(''); setModifierOpen(true); }}
+                        className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.6 2.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8l-8 8a1 1 0 0 1-.4.24l-3.5 1a1 1 0 0 1-1.24-1.24l1-3.5a1 1 0 0 1 .24-.4l8-8Z" /></svg>
+                        Modifier
+                    </button>
+                )}
+                {estCabinet && (
+                    <button onClick={() => navigate(`/demandes/${id}/devis`)}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                        Saisir un devis
+                    </button>
+                )}
+            </div>
+
+            {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
+                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" /></svg>
+                {error}
+            </div>}
+
+            {/* Stepper */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                    {MAIN_STEPS.map((step, i) => {
+                        const isCompleted = i < currentStep;
+                        const isCurrent = step.key === demande.statut;
+                        const isPast = i <= currentStep && !isTerminal;
+                        return (
+                            <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                                <div className="flex flex-col items-center">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                                        isCurrent ? 'border-blue-600 bg-blue-600 text-white scale-110 shadow-md shadow-blue-200' :
+                                        isCompleted ? 'border-emerald-500 bg-emerald-500 text-white' :
+                                        isPast ? 'border-emerald-400 bg-emerald-50 text-emerald-700' :
+                                        'border-slate-200 bg-slate-50 text-slate-400'
+                                    }`}>
+                                        {isCompleted ? (
+                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                                        ) : step.icon}
+                                    </div>
+                                    <span className={`text-[10px] mt-1.5 font-medium text-center whitespace-nowrap ${
+                                        isCurrent ? 'text-blue-700' : isCompleted ? 'text-emerald-600' : 'text-slate-400'
+                                    }`}>{step.label}</span>
+                                </div>
+                                {i < MAIN_STEPS.length - 1 && (
+                                    <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors ${
+                                        i < currentStep ? 'bg-emerald-400' : i === currentStep ? 'bg-blue-200' : 'bg-slate-200'
+                                    }`}></div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                {/* Terminaux (hors fil principal) */}
+                {isTerminal && demande.statut !== 'TRANSFORMEE' && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.color}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                            Statut final : {sc.label}
+                        </span>
+                        {demande.motif && <span className="text-xs text-slate-500">Motif : {demande.motif}</span>}
+                    </div>
+                )}
+            </div>
+
+            {/* Actions transition */}
+            {estCabinet && demande.transitions?.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Actions disponibles</div>
+                    <div className="flex flex-wrap gap-2">
+                        {demande.transitions.map((t) => (
+                            <button key={t.action} onClick={() => setModal(t)}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow ${
+                                    t.cible === 'NON_ELIGIBLE' ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' :
+                                    t.cible === 'SANS_SUITE' ? 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200' :
+                                    t.cible === 'PIECES_MANQUANTES' ? 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200' :
+                                    'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                                }`}>
+                                {t.cible === 'EN_ETUDE' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 3A2.25 2.25 0 0 0 3 5.25v9.5A2.25 2.25 0 0 0 5.25 17h9.5A2.25 2.25 0 0 0 17 14.75v-9.5A2.25 2.25 0 0 0 14.75 3h-9.5ZM3.75 5.25a.75.75 0 0 1 .75-.75h9.5a.75.75 0 0 1 .75.75v9.5a.75.75 0 0 1-.75.75h-9.5a.75.75 0 0 1-.75-.75v-9.5Z" /></svg>}
+                                {t.cible === 'PIECES_MANQUANTES' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'NON_ELIGIBLE' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'SANS_SUITE' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'EN_SOUSCRIPTION' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 1c3.866 0 7 1.79 7 4s-3.134 4-7 4-7-1.79-7-4 3.134-4 7-4Zm5.694 8.13c.464-.264.91-.583 1.306-.952V10c0 2.21-3.134 4-7 4s-7-1.79-7-4V8.178c.396.37.842.688 1.306.953C5.838 10.006 7.854 10 10 10s4.162.006 5.694.13ZM3 13.179V15c0 2.21 3.134 4 7 4s7-1.79 7-4v-1.822c-.396.37-.842.688-1.306.953-1.532.125-3.548.13-5.694.13s-4.162-.006-5.694-.13C3.842 13.867 3.396 13.548 3 13.179Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'TRANSFORMEE' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'EXPIREE' && <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clipRule="evenodd" /></svg>}
+                                {t.cible === 'SOUMISE' && 'Soumettre'}
+                                {t.cible === 'EN_ETUDE' && 'Prendre en charge'}
+                                {t.cible === 'PIECES_MANQUANTES' && 'Demander pièces'}
+                                {t.cible === 'NON_ELIGIBLE' && 'Non éligible'}
+                                {t.cible === 'SANS_SUITE' && 'Sans suite'}
+                                {t.cible === 'EXPIREE' && 'Expirer'}
+                                {t.cible === 'EN_SOUSCRIPTION' && 'Souscrire'}
+                                {t.cible === 'TRANSFORMEE' && 'Transformer'}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Tabs */}
+            <div className="flex gap-1 border-b border-slate-200 mb-6">
+                {tabs.map((t) => (
+                    <button key={t.key} onClick={() => setActiveTab(t.key)}
+                        className={`px-4 py-2.5 text-sm font-medium rounded-t-lg -mb-px transition-colors ${
+                            activeTab === t.key ? 'bg-white border border-slate-200 text-blue-700' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                        }`}>
+                        {t.label}
+                        {t.count !== undefined && (
+                            <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                activeTab === t.key ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                            }`}>{t.count}</span>
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab: Devis */}
+            {activeTab === 'devis' && (
+                <div className="space-y-4">
+                    {devis.length === 0 ? (
+                        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+                            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                            </svg>
+                            <p className="text-slate-500 text-sm">Aucun devis pour cette demande.</p>
+                            {estCabinet && (
+                                <button onClick={() => navigate(`/demandes/${id}/devis`)}
+                                    className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Créer un devis</button>
+                            )}
+                        </div>
+                    ) : devis.map((d) => (
+                        <div key={d.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="font-semibold text-slate-900">Devis {d.version ? `v${d.version}` : ''}</h3>
+                                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                                        d.statut === 'ACCEPTE' ? 'bg-emerald-50 text-emerald-700' :
+                                        d.statut === 'ENVOYE' ? 'bg-blue-50 text-blue-700' :
+                                        d.statut === 'EXPIRE' ? 'bg-red-50 text-red-700' :
+                                        'bg-slate-100 text-slate-600'
+                                    }`}>{d.statut}</span>
+                                </div>
+                                {d.statut === 'ENVOYE' && !d.est_expire && estCabinet && (
+                                    <div className="flex gap-2">
+                                        <button onClick={() => refuserDevis(d.id)} disabled={busy}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50 transition-colors">Refuser</button>
+                                        <button onClick={() => accepterDevis(d.id)} disabled={busy}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50 transition-colors">Accepter</button>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Prime HT</div>
+                                    <div className="text-lg font-bold text-slate-900">{fmt(d.prime_ht_cts)}</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Prime TTC</div>
+                                    <div className="text-lg font-bold text-slate-900">{fmt(d.prime_ttc_cts)}</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Fractionnement</div>
+                                    <div className="text-sm font-semibold text-slate-900 mt-0.5">{d.fractionnement || '—'}</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Valide jusqu'au</div>
+                                    <div className="text-sm font-semibold text-slate-900 mt-0.5">{d.date_validite || '—'}</div>
+                                </div>
+                            </div>
+                            {d.garanties && d.garanties.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-slate-100">
+                                    <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">Garanties</div>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {d.garanties.map((g, i) => (
+                                            <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                                                {g.intitule}
+                                                <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                    {g.optionnelle ? 'opt.' : 'incl.'}
+                                                </span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Tab: Informations */}
+            {activeTab === 'infos' && (
+                <div>
+                    {estCabinet && demande.statut === 'BROUILLON' && !editMode && (
+                        <div className="flex justify-end mb-3">
+                            <button onClick={lancerEdition}
+                                className="inline-flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.6 2.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8l-8 8a1 1 0 0 1-.4.24l-3.5 1a1 1 0 0 1-1.24-1.24l1-3.5a1 1 0 0 1 .24-.4l8-8Z" /></svg>
+                                Modifier
+                            </button>
+                        </div>
+                    )}
+
+                    {estCabinet && demande.statut === 'BROUILLON' && editMode && (
+                        <div className="flex justify-end gap-2 mb-3">
+                            <button onClick={() => { setEditMode(false); setError(''); }}
+                                className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
+                            <button onClick={enregistrerEdition} disabled={editSaving}
+                                className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50">
+                                {editSaving ? 'Enregistrement...' : 'Enregistrer'}
+                            </button>
+                        </div>
+                    )}
+
+                    {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <table className="w-full text-sm">
+                            <tbody>
+                                <tr className={editMode ? 'bg-blue-50/40' : 'bg-slate-50'}>
+                                    <td className="px-5 py-3 text-slate-500 font-medium w-1/3">Type / mode d'intervention</td>
+                                    <td className="px-5 py-3 text-slate-900">
+                                        {editMode ? (
+                                            <select value={modeEdit} onChange={(e) => { setModeEdit(e.target.value); setError(''); }} autoFocus
+                                                className="w-full max-w-xs border-2 border-blue-400 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                                <option value="">— Sélectionner —</option>
+                                                <option value="DISTRIBUTEUR_COURTIER">Distributeur / Courtier</option>
+                                                <option value="APPORTEUR">Apporteur d'affaires</option>
+                                            </select>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-2">
+                                                {demande.donnees_risque?.mode_intervention === 'APPORTEUR' ? "Apporteur d'affaires" : 'Distributeur / Courtier'}
+                                                {demande.statut === 'BROUILLON' && estCabinet && (
+                                                    <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">cliquable</span>
+                                                )}
+                                            </span>
+                                        )}
+                                    </td>
+                                </tr>
+                                {[
+                                    ['Référence', demande.reference],
+                                    ['Statut', sc.label],
+                                    ['Branche', demande.branche],
+                                    ['Client', demande.client],
+                                    ['Partenaire', demande.partenaire],
+                                    ['Gestionnaire', demande.gestionnaire],
+                                    ['Origine', demande.origine],
+                                    ['Date de soumission', demande.date_soumission ? String(demande.date_soumission).slice(0, 10) : '—'],
+                                    ['Date de prise en charge', demande.date_prise_en_charge ? String(demande.date_prise_en_charge).slice(0, 10) : '—'],
+                                    ['Date du statut', demande.date_statut ? String(demande.date_statut).slice(0, 10) : '—'],
+                                    ['Motif', demande.motif || '—'],
+                                ].map(([k, v], i) => (
+                                    <tr key={k} className={i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}>
+                                        <td className="px-5 py-3 text-slate-500 font-medium w-1/3">{k}</td>
+                                        <td className="px-5 py-3 text-slate-900">{v || '—'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* Tab: Véhicules */}
+            {activeTab === 'vehicules' && (
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                    <p className="text-sm text-slate-500">Données de véhicules à venir.</p>
+                </div>
+            )}
+
+            {/* Tab: Documents */}
+            {activeTab === 'documents' && (
+                <div className="space-y-4">
+                    {/* Formulaire d'ajout */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                        <h3 className="font-semibold text-slate-900 mb-3">Attacher un fichier</h3>
+                        <form onSubmit={uploaderDocument} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Type de document <span className="text-red-500">*</span></label>
+                                <select value={docTypeId} onChange={(e) => setDocTypeId(e.target.value)}
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">— Choisir un type —</option>
+                                    {typesDocs.map((t) => (
+                                        <option key={t.id} value={t.id}>{t.libelle}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Fichier <span className="text-red-500">*</span></label>
+                                <input type="file" onChange={(e) => setDocFile(e.target.files[0])}
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" />
+                            </div>
+                            <div>
+                                <button type="submit" disabled={docUploading}
+                                    className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm disabled:opacity-50 transition-colors">
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                    {docUploading ? 'Envoi...' : 'Ajouter'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* Liste des documents */}
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
+                            <h3 className="font-semibold text-slate-900">Documents rattachés</h3>
+                            <span className="text-xs text-slate-500">{demande.documents?.length || 0} document(s)</span>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                            {(!demande.documents || demande.documents.length === 0) ? (
+                                <p className="px-5 py-8 text-sm text-slate-400 text-center">Aucun document pour le moment.</p>
+                            ) : (
+                                demande.documents.map((doc) => (
+                                    <div key={doc.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors">
+                                        <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                            <svg className="w-4.5 h-4.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-sm font-medium text-slate-900 truncate">{doc.nom_origine}</div>
+                                            <div className="text-xs text-slate-500">
+                                                {doc.type_document || 'Document'}
+                                                {doc.creation ? ` · ${new Date(doc.creation).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
+                                                {doc.taille ? ` · ${(doc.taille / 1024).toFixed(0)} Ko` : ''}
+                                            </div>
+                                        </div>
+                                        {doc.statut_validation && (
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${doc.statut_validation === 'VALIDE' ? 'bg-emerald-50 text-emerald-700' : doc.statut_validation === 'REFUSE' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                {doc.statut_validation}
+                                            </span>
+                                        )}
+                                        <button onClick={() => telechargerDocument(doc.id)}
+                                            className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:text-blue-900 hover:underline px-2 py-1 flex-shrink-0">
+                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
+                                            Télécharger
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal transition */}
+            {modal && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
+                    <div className="bg-white rounded-2xl p-5 w-full max-w-xl shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                modal.cible === 'NON_ELIGIBLE' || modal.cible === 'SANS_SUITE' ? 'bg-red-100' :
+                                modal.cible === 'PIECES_MANQUANTES' ? 'bg-orange-100' : 'bg-blue-100'
+                            }`}>
+                                <svg className={`w-5 h-5 ${
+                                    modal.cible === 'NON_ELIGIBLE' || modal.cible === 'SANS_SUITE' ? 'text-red-600' :
+                                    modal.cible === 'PIECES_MANQUANTES' ? 'text-orange-600' : 'text-blue-600'
+                                }`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">
+                                    {modal.cible === 'EN_ETUDE' && 'Prendre en charge'}
+                                    {modal.cible === 'PIECES_MANQUANTES' && 'Demander des pièces'}
+                                    {modal.cible === 'NON_ELIGIBLE' && 'Marquer non éligible'}
+                                    {modal.cible === 'SANS_SUITE' && 'Marquer sans suite'}
+                                    {modal.cible === 'EXPIREE' && 'Marquer expirée'}
+                                    {modal.cible === 'EN_SOUSCRIPTION' && 'Lancer la souscription'}
+                                    {modal.cible === 'TRANSFORMEE' && 'Transformer la demande'}
+                                </h2>
+                                <p className="text-sm text-slate-500">Confirmer le passage au statut « {STATUT_CONFIG[modal.cible]?.label || modal.cible} »</p>
+                            </div>
+                        </div>
+                        {modal.motif_requis && (
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Motif <span className="text-red-500">*</span></label>
+                                <textarea className="w-full border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows={3}
+                                    value={motif} onChange={(e) => setMotif(e.target.value)}
+                                    placeholder="Motif obligatoire..." autoFocus />
+                            </div>
+                        )}
+                        <div className="flex justify-end gap-2 mt-5">
+                            <button onClick={() => { setModal(null); setMotif(''); }}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
+                            <button onClick={executeTransition} disabled={busy || (modal.motif_requis && !motif.trim())}
+                                className={`px-4 py-2.5 rounded-lg text-sm font-medium text-white shadow-sm disabled:opacity-50 transition-colors ${
+                                    modal.cible === 'NON_ELIGIBLE' || modal.cible === 'SANS_SUITE' ? 'bg-red-600 hover:bg-red-700' :
+                                    modal.cible === 'PIECES_MANQUANTES' ? 'bg-orange-600 hover:bg-orange-700' :
+                                    'bg-blue-600 hover:bg-blue-700'
+                                }`}>Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal modification (brouillon uniquement) */}
+            {modifierOpen && (
+                <ModifierDemande
+                    demande={demande}
+                    onClose={() => setModifierOpen(false)}
+                    onSaved={async () => {
+                        setModifierOpen(false);
+                        await load();
+                    }}
+                />
+            )}
+        </div>
+    );
+}
