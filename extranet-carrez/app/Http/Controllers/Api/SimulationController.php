@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Simulation;
 use App\Services\SimulateurService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SimulationController extends Controller
 {
@@ -52,6 +54,14 @@ class SimulationController extends Controller
             $query->where('client_id', $request->query('client_id'));
         }
 
+        if ($request->filled('date_de')) {
+            $query->whereDate('created_at', '>=', $request->query('date_de'));
+        }
+
+        if ($request->filled('date_a')) {
+            $query->whereDate('created_at', '<=', $request->query('date_a'));
+        }
+
         $items = $query->get();
 
         return response()->json([
@@ -65,30 +75,67 @@ class SimulationController extends Controller
      */
     public function store(Request $request)
     {
+        $multipart = $request->hasFile('document');
+
         $data = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'produit' => 'required|string|max:50',
-            'criteres' => 'nullable|array',
-            'estimation' => 'nullable|array',
-            'client_data' => 'required|array',
+            'criteres' => $multipart ? 'nullable|string' : 'nullable|array',
+            'estimation' => $multipart ? 'nullable|string' : 'nullable|array',
+            'client_data' => $multipart ? 'required|string' : 'required|array',
+            'document' => 'nullable|file',
         ]);
+
+        $json = fn ($v) => is_string($v) ? (json_decode($v, true) ?? []) : ($v ?? []);
+
+        $documentPath = null;
+        $documentNom = null;
+
+        if ($request->hasFile('document')) {
+            $file = $request->file('document');
+
+            $extensions = ['pdf', 'jpeg', 'jpg', 'png', 'docx', 'xlsx', 'csv'];
+            if (!in_array(strtolower($file->getClientOriginalExtension()), $extensions, true) ||
+                $file->getSize() > config('extranet.upload_max_mo', 25) * 1024 * 1024) {
+                abort(422, 'Format non accepté ou fichier trop volumineux.');
+            }
+
+            $cle = Str::uuid().'.'.$file->getClientOriginalExtension();
+            $documentPath = Storage::disk('local')->putFileAs('documents/simulations', $file, $cle);
+            $documentNom = $file->getClientOriginalName();
+        }
 
         $simulation = Simulation::create([
             'user_id' => $request->user()->id,
             'client_id' => $data['client_id'],
             'produit' => $data['produit'],
-            'criteres' => $data['criteres'] ?? [],
-            'estimation' => $data['estimation'] ?? [],
-            'client_data' => $data['client_data'] ?? [],
+            'criteres' => $json($data['criteres'] ?? []),
+            'estimation' => $json($data['estimation'] ?? []),
+            'client_data' => $json($data['client_data'] ?? []),
+            'document_path' => $documentPath,
+            'document_nom' => $documentNom,
         ]);
 
         return response()->json(['data' => $this->present($simulation)], 201);
+    }
+
+    /**
+     * Téléchargement du document joint via URL signée.
+     */
+    public function document(Simulation $simulation)
+    {
+        if (!$simulation->document_path || !Storage::disk('local')->exists($simulation->document_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($simulation->document_path, $simulation->document_nom);
     }
 
     private function present(Simulation $s): array
     {
         return [
             'id' => $s->id,
+            'reference' => 'SIM-'.str_pad((string) $s->id, 4, '0', STR_PAD_LEFT),
             'produit' => $s->produit,
             'client_id' => $s->client_id,
             'client_nom' => $s->client?->getNomCompletAttribute(),
@@ -96,6 +143,14 @@ class SimulationController extends Controller
             'criteres' => $s->criteres ?? [],
             'estimation' => $s->estimation ?? [],
             'client_data' => $s->client_data ?? [],
+            'document' => $s->document_path ? [
+                'nom' => $s->document_nom,
+                'url' => url()->temporarySignedRoute(
+                    'simulations.document',
+                    now()->addMinutes(config('extranet.url_signee_duree_minutes', 15)),
+                    ['simulation' => $s->id]
+                ),
+            ] : null,
             'created_at' => $s->created_at?->toDateTimeString(),
         ];
     }

@@ -206,7 +206,7 @@ export default function DemandeDetail() {
     return (
         <div>
             {/* Back + header */}
-            <button onClick={() => navigate('/demandes')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
+            <button onClick={() => navigate(estCabinet ? '/demandes' : '/espace-partenaire/demandes')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
                 Retour aux demandes
             </button>

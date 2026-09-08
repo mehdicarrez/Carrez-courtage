@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FournisseurController;
+use App\Http\Controllers\Api\MessagerieController;
+use App\Http\Controllers\Api\ReseauSocialController;
+use App\Http\Controllers\Api\SimulationController;
 use Illuminate\Support\Facades\Route;
 
 // SPA React : point d'entrée unique
@@ -20,4 +23,19 @@ Route::get('/fournisseurs/{fournisseur}/logo', [FournisseurController::class, 'l
 
 Route::get('/fournisseurs/{fournisseur}/documents/{cle}', [FournisseurController::class, 'document'])
     ->name('fournisseurs.document')
+    ->middleware('signed');
+
+// Document joint d'une simulation via URL signée à durée de vie courte
+Route::get('/simulations/{simulation}/document', [SimulationController::class, 'document'])
+    ->name('simulations.document')
+    ->middleware('signed');
+
+// Logo d'une messagerie non référencée via URL signée
+Route::get('/messageries/{messagerie}/logo', [MessagerieController::class, 'logo'])
+    ->name('messageries.logo')
+    ->middleware('signed');
+
+// Logo d'un réseau social non référencé via URL signée
+Route::get('/reseaux-sociaux/{reseau}/logo', [ReseauSocialController::class, 'logo'])
+    ->name('reseaux_sociaux.logo')
     ->middleware('signed');

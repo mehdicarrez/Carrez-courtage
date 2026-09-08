@@ -50,6 +50,7 @@ export default function FournisseursList() {
     const [form2, setForm2] = useState({
         partenaire: '', telephone: '', email: '', contrats: '',
         montant_primes: '', dernier_contrat: '', nom_document: '',
+        mot_de_passe: '',
     });
     const [document, setDocument] = useState(null);
 
@@ -58,6 +59,8 @@ export default function FournisseursList() {
     const [searchPartenaires, setSearchPartenaires] = useState('');
     const [searchFournisseurs, setSearchFournisseurs] = useState('');
     const [confirmToggle, setConfirmToggle] = useState(null);
+    const [toggleEmail, setToggleEmail] = useState('');
+    const [togglePasse, setTogglePasse] = useState('');
 
     const load = async () => {
         setLoading(true);
@@ -95,6 +98,7 @@ export default function FournisseursList() {
         setForm2({
             partenaire: '', telephone: '', email: '', contrats: '',
             montant_primes: '', dernier_contrat: '', nom_document: '',
+            mot_de_passe: '',
         });
         setDocument(null);
     };
@@ -126,6 +130,7 @@ export default function FournisseursList() {
             montant_primes: f.montant_primes ?? '',
             dernier_contrat: toDateInput(f.dernier_contrat),
             nom_document: '',
+            mot_de_passe: '',
         });
         setDocument(null);
         setStep(2);
@@ -164,6 +169,18 @@ export default function FournisseursList() {
 
     const enregistrerPartenaire = async () => {
         if (!target) return;
+        if (partnerMode) {
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form2.email.trim())) {
+                setMsg('Un e-mail valide est obligatoire pour activer le partenaire.');
+                setMsgType('error');
+                return;
+            }
+            if (!form2.mot_de_passe || form2.mot_de_passe.length < 8) {
+                setMsg('Le mot de passe est obligatoire (minimum 8 caractères).');
+                setMsgType('error');
+                return;
+            }
+        }
         setSaving(true);
         try {
             const fd = new FormData();
@@ -181,7 +198,10 @@ export default function FournisseursList() {
             });
 
             if (partnerMode) {
-                await api.post(`/fournisseurs/${target.id}/devenir-partenaire`);
+                await api.post(`/fournisseurs/${target.id}/devenir-partenaire`, {
+                    email: form2.email.trim(),
+                    mot_de_passe: form2.mot_de_passe,
+                });
                 setMsg('Infos partenaire enregistrées. Fournisseur ajouté au tableau des partenaires.');
             } else {
                 setMsg('Fournisseur enregistré avec ses infos partenaire.');
@@ -211,23 +231,48 @@ export default function FournisseursList() {
             ouvrirFormPartenaire(f);
             return;
         }
-        setConfirmToggle({
-            id: f.id,
-            nom: f.nom,
-            action: f.devenir_partenaire ? 'désactiver' : 'activer',
-        });
+        if (f.devenir_partenaire) {
+            setConfirmToggle({ id: f.id, nom: f.nom, action: 'désactiver' });
+            return;
+        }
+        setToggleEmail(f.email || '');
+        setTogglePasse('');
+        setConfirmToggle({ id: f.id, nom: f.nom, action: 'activer' });
     };
 
     const confirmerToggle = async () => {
         if (!confirmToggle) return;
+        if (confirmToggle.action === 'activer') {
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(toggleEmail.trim())) {
+                setMsg('Un e-mail valide est obligatoire pour activer le partenaire.');
+                setMsgType('error');
+                return;
+            }
+            if (!togglePasse || togglePasse.length < 8) {
+                setMsg('Le mot de passe est obligatoire (minimum 8 caractères).');
+                setMsgType('error');
+                return;
+            }
+        }
         try {
-            await api.post(`/fournisseurs/${confirmToggle.id}/devenir-partenaire`);
+            await api.post(`/fournisseurs/${confirmToggle.id}/devenir-partenaire`,
+                confirmToggle.action === 'activer'
+                    ? { email: toggleEmail.trim(), mot_de_passe: togglePasse }
+                    : {}
+            );
+            setMsg(confirmToggle.action === 'activer'
+                ? 'Partenaire activé. Compte créé avec le mot de passe défini.'
+                : 'Partenaire désactivé.'
+            );
+            setMsgType('success');
             await load();
         } catch (err) {
             setMsg(err.response?.data?.message || 'Erreur lors de la modification.');
             setMsgType('error');
         } finally {
             setConfirmToggle(null);
+            setToggleEmail('');
+            setTogglePasse('');
         }
     };
 
@@ -300,10 +345,46 @@ export default function FournisseursList() {
                         <h3 className="text-lg font-semibold text-slate-900 mb-3">
                             Confirmer l&apos;action
                         </h3>
-                        <p className="text-sm text-slate-600 mb-6">
-                            Voulez-vous <span className="font-medium">{confirmToggle.action}</span> le partenaire{' '}
-                            <span className="font-medium text-slate-900">{confirmToggle.nom}</span> ?
-                        </p>
+                        {confirmToggle.action === 'activer' ? (
+                            <>
+                                <p className="text-sm text-slate-600 mb-4">
+                                    Choisissez l&apos;e-mail et le mot de passe avec lesquels le partenaire{' '}
+                                    <span className="font-medium text-slate-900">{confirmToggle.nom}</span>
+                                    {' '}se connectera à l&apos;espace partenaire.
+                                </p>
+                                <div className="space-y-3 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            E-mail de connexion <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={toggleEmail}
+                                            onChange={(e) => setToggleEmail(e.target.value)}
+                                            placeholder="E-mail du partenaire"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            Mot de passe <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={togglePasse}
+                                            onChange={(e) => setTogglePasse(e.target.value)}
+                                            placeholder="Minimum 8 caractères"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-sm text-slate-600 mb-6">
+                                Voulez-vous <span className="font-medium">désactiver</span> le partenaire{' '}
+                                <span className="font-medium text-slate-900">{confirmToggle.nom}</span> ?
+                            </p>
+                        )}
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setConfirmToggle(null)}
@@ -465,6 +546,20 @@ export default function FournisseursList() {
                                         className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
                                     />
                                 </div>
+                                {partnerMode && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            Mot de passe <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={form2.mot_de_passe}
+                                            onChange={(e) => setForm2({ ...form2, mot_de_passe: e.target.value })}
+                                            placeholder="Minimum 8 caractères"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                )}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Contrats</label>
                                     <input

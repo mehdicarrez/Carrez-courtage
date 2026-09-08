@@ -39,6 +39,16 @@ const Icones = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
         </svg>
     ),
+    simulations: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 14.25 12 10.5m0 0 3.75 3.75M12 10.5v9m-6.75 3h13.5a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-3.106a1.5 1.5 0 0 1-1.06-.44L14.06 2.69a1.5 1.5 0 0 0-1.06-.44H7.5a2.25 2.25 0 0 0-2.25 2.25v15.75A2.25 2.25 0 0 0 7.5 21.75h.75ZM6 5.25v15.75" />
+        </svg>
+    ),
+    taches: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+    ),
     messages: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
@@ -57,6 +67,11 @@ const Icones = {
     utilisateurs: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+        </svg>
+    ),
+    confirmations: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z" />
         </svg>
     ),
     audit: (
@@ -99,6 +114,8 @@ export default function Layout() {
         { to: '/clients', label: 'Clients', icon: 'clients' },
         { to: '/echeances', label: 'Échéancier', icon: 'echeances' },
         { to: '/commissions', label: 'Commissions', icon: 'commissions' },
+        { to: '/simulations', label: 'Simulations', icon: 'simulations' },
+        { to: '/taches', label: 'Tâches', icon: 'taches' },
         { to: '/messages', label: 'Messagerie', icon: 'messages' },
         { to: '/cabinet', label: 'Mon cabinet', icon: 'cabinet' },
         { to: '/utilisateurs', label: 'Mes utilisateurs', icon: 'utilisateurs', admin: user?.role === 'DIRIGEANT_PARTENAIRE' },
@@ -112,7 +129,10 @@ export default function Layout() {
         { to: '/contrats', label: 'Contrats', icon: 'contrats' },
         { to: '/echeances', label: 'Échéancier', icon: 'echeances' },
         { to: '/commissions', label: 'Commissions', icon: 'commissions' },
+        { to: '/simulations', label: 'Simulations', icon: 'simulations' },
+        { to: '/taches', label: 'Tâches', icon: 'taches' },
         { to: '/fournisseurs', label: 'Partenaires', icon: 'partenaires' },
+        { to: '/confirmations', label: 'Confirmations', icon: 'confirmations' },
         { to: '/pilotage', label: 'Pilotage', icon: 'pilotage', admin: true },
     ];
 

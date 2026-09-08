@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../auth';
@@ -145,11 +145,14 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
     const [form, setForm] = useState(EMPTY);
     const [saving, setSaving] = useState(false);
     const [erreur, setErreur] = useState('');
+    const [document, setDocument] = useState(null);
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (!ouvert) return;
         setChargementClients(true);
         setErreur('');
+        setDocument(null);
         api.get('/clients', { params: { per_page: 500 } })
             .then((res) => setClients(res.data.data))
             .catch(() => setErreur('Impossible de charger les clients.'))
@@ -218,13 +221,26 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
         setSaving(true);
         setErreur('');
         try {
-            await api.post('/simulations', {
+            const body = {
                 client_id: client.id,
                 produit,
                 criteres,
                 estimation,
                 client_data: form,
-            });
+            };
+
+            if (document) {
+                const fd = new FormData();
+                Object.entries(body).forEach(([k, v]) => {
+                    if (typeof v === 'object' && v !== null) fd.append(k, JSON.stringify(v));
+                    else fd.append(k, v);
+                });
+                fd.append('document', document);
+                await api.post('/simulations', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            } else {
+                await api.post('/simulations', body);
+            }
+
             onSaved();
             onClose();
         } catch (err) {
@@ -320,6 +336,31 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                                         <span className="text-sm text-slate-700">Exclure des opérations de communication et marketing</span>
                                     </label>
                                 </div>
+
+                                <div className="col-span-2">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".pdf,.jpeg,.jpg,.png,.docx,.xlsx,.csv"
+                                        onChange={(e) => setDocument(e.target.files?.[0] || null)}
+                                        className="hidden"
+                                    />
+                                    <button type="button" onClick={() => fileInputRef.current?.click()}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.122 2.122l7.81-7.81a1.5 1.5 0 0 0-2.122-2.122m-2.121 2.121 5.303-5.304a1.5 1.5 0 0 1 2.122 2.122l-5.303 5.303a1.5 1.5 0 0 1-2.122-2.122Z" />
+                                        </svg>
+                                        Ajouter un document
+                                    </button>
+                                    {document && (
+                                        <div className="mt-2 flex items-center gap-2 text-sm">
+                                            <span className="text-emerald-700 font-medium">Document sélectionné :</span>
+                                            <span className="text-slate-600">{document.name}</span>
+                                            <button type="button" onClick={() => { setDocument(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                                                className="text-red-600 hover:text-red-700 text-xs font-medium">Retirer</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2">
@@ -370,6 +411,366 @@ function SimulationsPanel({ simulations }) {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function MessagerieOnglet() {
+    const [messageries, setMessageries] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [erreur, setErreur] = useState('');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [form, setForm] = useState({ lien: '', nom: '', descriptif: '' });
+    const [logo, setLogo] = useState(null);
+    const [champErreur, setChampErreur] = useState({});
+    const [modalErreur, setModalErreur] = useState('');
+
+    const charger = () => {
+        setLoading(true);
+        api.get('/messageries')
+            .then((res) => setMessageries(res.data.data))
+            .catch(() => setErreur('Erreur de chargement des messageries.'))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { charger(); }, []);
+
+    const ouvrir = () => {
+        setForm({ lien: '', nom: '', descriptif: '' });
+        setLogo(null);
+        setChampErreur({});
+        setModalErreur('');
+        setModalOpen(true);
+    };
+
+    const validerChamps = () => {
+        const err = {};
+        if (!form.lien.trim()) err.lien = 'Champ obligatoire.';
+        if (!form.nom.trim()) err.nom = 'Champ obligatoire.';
+        setChampErreur(err);
+        return Object.keys(err).length === 0;
+    };
+
+    const enregistrer = async (e) => {
+        e.preventDefault();
+        if (!validerChamps()) return;
+        setSaving(true);
+        setModalErreur('');
+        try {
+            const fd = new FormData();
+            fd.append('lien', form.lien);
+            fd.append('nom', form.nom);
+            fd.append('descriptif', form.descriptif);
+            if (logo) fd.append('logo', logo);
+            await api.post('/messageries', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setModalOpen(false);
+            charger();
+        } catch (err) {
+            setModalErreur(err?.response?.data?.message || "Impossible d'ajouter la messagerie.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const champInput = (label, nom, obligatoire = false) => (
+        <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+                {label}{obligatoire && <span className="text-red-500"> *</span>}
+            </label>
+            <input
+                type="text"
+                value={form[nom]}
+                onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
+                className={`w-full border rounded px-3 py-2 text-sm ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                placeholder={label}
+            />
+            {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
+        </div>
+    );
+
+    return (
+        <div className="space-y-5">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                    <h2 className="font-semibold text-slate-900">Messagerie</h2>
+                    <button
+                        onClick={ouvrir}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm whitespace-nowrap"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Ajouter messagerie
+                    </button>
+                </div>
+
+                <div className="p-3">
+                    {erreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm mb-3">{erreur}</div>}
+
+                    {loading ? (
+                        <div className="text-slate-500 text-sm p-4">Chargement...</div>
+                    ) : messageries.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-slate-400">
+                            Aucune messagerie. Cliquez sur « Ajouter messagerie ».
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap gap-3">
+                            {messageries.map((m) => (
+                                <div key={m.id} className="w-[130px] flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
+                                    <div className="relative">
+                                        {m.logo_url ? (
+                                            <img src={m.logo_url} alt={m.nom} className="h-14 w-14 object-contain rounded-lg bg-white border border-gray-200 p-0.5" />
+                                        ) : (
+                                            <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-0.5">
+                                                {m.nom?.slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <a
+                                            href={m.lien}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            title={m.lien}
+                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-700"
+                                        >
+                                            +
+                                        </a>
+                                    </div>
+                                    <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{m.nom}</span>
+                                    {m.descriptif && <span className="text-[10px] text-slate-400 text-center line-clamp-2">{m.descriptif}</span>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md my-12">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-slate-900">Vous souhaitez ajouter une messagerie non référencée</h3>
+                            <button onClick={() => setModalOpen(false)} className="text-2xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+                        </div>
+                        <form onSubmit={enregistrer} className="p-5 space-y-4">
+                            {modalErreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{modalErreur}</div>}
+                            {champInput('Lien de Messagerie', 'lien', true)}
+                            {champInput('Nom', 'nom', true)}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <textarea
+                                    value={form.descriptif}
+                                    maxLength={255}
+                                    rows={3}
+                                    onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                />
+                                <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setLogo(e.target.files?.[0] || null)}
+                                    className="w-full text-sm"
+                                />
+                                {logo && <p className="mt-1 text-xs text-emerald-600">Logo sélectionné : {logo.name}</p>}
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button type="button" onClick={() => setModalOpen(false)}
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                    Annuler
+                                </button>
+                                <button type="submit" disabled={saving}
+                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                    {saving ? 'Enregistrement...' : 'Valider'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ReseauSocialOnglet() {
+    const [reseaux, setReseaux] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [erreur, setErreur] = useState('');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [form, setForm] = useState({ lien: '', nom: '', descriptif: '' });
+    const [logo, setLogo] = useState(null);
+    const [champErreur, setChampErreur] = useState({});
+    const [modalErreur, setModalErreur] = useState('');
+
+    const charger = () => {
+        setLoading(true);
+        api.get('/reseaux-sociaux')
+            .then((res) => setReseaux(res.data.data))
+            .catch(() => setErreur('Erreur de chargement des réseaux sociaux.'))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { charger(); }, []);
+
+    const ouvrir = () => {
+        setForm({ lien: '', nom: '', descriptif: '' });
+        setLogo(null);
+        setChampErreur({});
+        setModalErreur('');
+        setModalOpen(true);
+    };
+
+    const validerChamps = () => {
+        const err = {};
+        if (!form.lien.trim()) err.lien = 'Champ obligatoire.';
+        if (!form.nom.trim()) err.nom = 'Champ obligatoire.';
+        setChampErreur(err);
+        return Object.keys(err).length === 0;
+    };
+
+    const enregistrer = async (e) => {
+        e.preventDefault();
+        if (!validerChamps()) return;
+        setSaving(true);
+        setModalErreur('');
+        try {
+            const fd = new FormData();
+            fd.append('lien', form.lien);
+            fd.append('nom', form.nom);
+            fd.append('descriptif', form.descriptif);
+            if (logo) fd.append('logo', logo);
+            await api.post('/reseaux-sociaux', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setModalOpen(false);
+            charger();
+        } catch (err) {
+            setModalErreur(err?.response?.data?.message || "Impossible d'ajouter le réseau social.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const champInput = (label, nom, obligatoire = false) => (
+        <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+                {label}{obligatoire && <span className="text-red-500"> *</span>}
+            </label>
+            <input
+                type="text"
+                value={form[nom]}
+                onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
+                className={`w-full border rounded px-3 py-2 text-sm ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                placeholder={label}
+            />
+            {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
+        </div>
+    );
+
+    return (
+        <div className="space-y-5">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                    <h2 className="font-semibold text-slate-900">Réseaux sociaux</h2>
+                    <button
+                        onClick={ouvrir}
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm whitespace-nowrap"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        Ajouter un réseau social
+                    </button>
+                </div>
+
+                <div className="p-3">
+                    {erreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm mb-3">{erreur}</div>}
+
+                    {loading ? (
+                        <div className="text-slate-500 text-sm p-4">Chargement...</div>
+                    ) : reseaux.length === 0 ? (
+                        <div className="p-8 text-center text-sm text-slate-400">
+                            Aucun réseau social. Cliquez sur « Ajouter un réseau social ».
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap gap-3">
+                            {reseaux.map((r) => (
+                                <div key={r.id} className="w-[130px] flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
+                                    <div className="relative">
+                                        {r.logo_url ? (
+                                            <img src={r.logo_url} alt={r.nom} className="h-14 w-14 object-contain rounded-lg bg-white border border-gray-200 p-0.5" />
+                                        ) : (
+                                            <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-0.5">
+                                                {r.nom?.slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <a
+                                            href={r.lien}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            title={r.lien}
+                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-700"
+                                        >
+                                            +
+                                        </a>
+                                    </div>
+                                    <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{r.nom}</span>
+                                    {r.descriptif && <span className="text-[10px] text-slate-400 text-center line-clamp-2">{r.descriptif}</span>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md my-12">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-slate-900">Vous souhaitez ajouter un réseau social non référencé</h3>
+                            <button onClick={() => setModalOpen(false)} className="text-2xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+                        </div>
+                        <form onSubmit={enregistrer} className="p-5 space-y-4">
+                            {modalErreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{modalErreur}</div>}
+                            {champInput('Lien du réseau social', 'lien', true)}
+                            {champInput('Nom', 'nom', true)}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <textarea
+                                    value={form.descriptif}
+                                    maxLength={255}
+                                    rows={3}
+                                    onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                />
+                                <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setLogo(e.target.files?.[0] || null)}
+                                    className="w-full text-sm"
+                                />
+                                {logo && <p className="mt-1 text-xs text-emerald-600">Logo sélectionné : {logo.name}</p>}
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button type="button" onClick={() => setModalOpen(false)}
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">
+                                    Annuler
+                                </button>
+                                <button type="submit" disabled={saving}
+                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                    {saving ? 'Enregistrement...' : 'Valider'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>
@@ -585,15 +986,28 @@ export default function Dashboard() {
     const [fournisseurs, setFournisseurs] = useState([]);
     const [typeAssurance, setTypeAssurance] = useState('Tous');
     const [simulations, setSimulations] = useState([]);
+    const [ongletDroit, setOngletDroit] = useState('simulateur');
     const [confirmToggle, setConfirmToggle] = useState(null);
+    const [toggleEmail, setToggleEmail] = useState('');
+    const [togglePasse, setTogglePasse] = useState('');
     const [infosTarget, setInfosTarget] = useState(null);
     const [form2, setForm2] = useState({
         partenaire: '', telephone: '', email: '', contrats: '',
         montant_primes: '', dernier_contrat: '', nom_document: '',
+        mot_de_passe: '',
     });
     const [document, setDocument] = useState(null);
     const [savingInfos, setSavingInfos] = useState(false);
     const [msgFour, setMsgFour] = useState('');
+
+    const [showAjoutFour, setShowAjoutFour] = useState(false);
+    const [formAjoutFour, setFormAjoutFour] = useState({
+        service: '', nom: '', information: '', type_assurance: '', url_assurance: '',
+    });
+    const [logoFour, setLogoFour] = useState(null);
+    const [logoFourPreview, setLogoFourPreview] = useState(null);
+    const [savingAjoutFour, setSavingAjoutFour] = useState(false);
+    const [errAjoutFour, setErrAjoutFour] = useState('');
 
     useEffect(() => {
         api.get('/dashboard')
@@ -640,6 +1054,53 @@ export default function Dashboard() {
         }
     };
 
+    const ouvrirAjoutFour = () => {
+        setFormAjoutFour({ service: '', nom: '', information: '', type_assurance: '', url_assurance: '' });
+        setLogoFour(null);
+        setLogoFourPreview(null);
+        setErrAjoutFour('');
+        setShowAjoutFour(true);
+    };
+
+    const onLogoFourChange = (e) => {
+        const f = e.target.files?.[0] || null;
+        setLogoFour(f);
+        if (f) {
+            const reader = new FileReader();
+            reader.onload = () => setLogoFourPreview(reader.result);
+            reader.readAsDataURL(f);
+        } else {
+            setLogoFourPreview(null);
+        }
+    };
+
+    const creerFournisseur = async () => {
+        if (!formAjoutFour.service.trim() || !formAjoutFour.nom.trim()) {
+            setErrAjoutFour('Le service et le nom du fournisseur sont obligatoires.');
+            return;
+        }
+        setSavingAjoutFour(true);
+        setErrAjoutFour('');
+        try {
+            const fd = new FormData();
+            fd.append('service', formAjoutFour.service);
+            fd.append('nom', formAjoutFour.nom);
+            fd.append('information', formAjoutFour.information);
+            fd.append('type_assurance', formAjoutFour.type_assurance);
+            fd.append('url_assurance', formAjoutFour.url_assurance);
+            if (logoFour) fd.append('logo', logoFour);
+            await api.post('/fournisseurs', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setShowAjoutFour(false);
+            await reloadFournisseurs();
+        } catch (err) {
+            setErrAjoutFour(err?.response?.data?.message || "Impossible d'ajouter le fournisseur.");
+        } finally {
+            setSavingAjoutFour(false);
+        }
+    };
+
     const openPlus = (f) => {
         setMsgFour('');
         if (!f.devenir_partenaire && !hasPartnerInfo(f)) {
@@ -647,27 +1108,56 @@ export default function Dashboard() {
             setForm2({
                 partenaire: '', telephone: '', email: '', contrats: '',
                 montant_primes: '', dernier_contrat: '', nom_document: '',
+                mot_de_passe: '',
             });
             setDocument(null);
             return;
         }
         setConfirmToggle(f);
+        setToggleEmail(f.email || '');
+        setTogglePasse('');
     };
 
     const confirmerToggle = async () => {
         if (!confirmToggle) return;
+        const activation = !confirmToggle.devenir_partenaire;
+        if (activation) {
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(toggleEmail.trim())) {
+                setMsgFour('Un e-mail valide est obligatoire pour activer le partenaire.');
+                return;
+            }
+            if (!togglePasse || togglePasse.length < 8) {
+                setMsgFour('Le mot de passe est obligatoire (minimum 8 caractères).');
+                return;
+            }
+        }
         try {
-            await api.post(`/fournisseurs/${confirmToggle.id}/devenir-partenaire`);
+            await api.post(`/fournisseurs/${confirmToggle.id}/devenir-partenaire`,
+                activation ? { email: toggleEmail.trim(), mot_de_passe: togglePasse } : {}
+            );
             await reloadFournisseurs();
-        } catch {
-            setMsgFour('Erreur lors de la modification.');
+        } catch (err) {
+            setMsgFour(err.response?.data?.message || 'Erreur lors de la modification.');
         } finally {
             setConfirmToggle(null);
+            setToggleEmail('');
+            setTogglePasse('');
         }
     };
 
     const enregistrerInfos = async () => {
         if (!infosTarget) return;
+        const activation = !infosTarget.devenir_partenaire;
+        if (activation) {
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form2.email.trim())) {
+                setMsgFour('Un e-mail valide est obligatoire pour activer le partenaire.');
+                return;
+            }
+            if (!form2.mot_de_passe || form2.mot_de_passe.length < 8) {
+                setMsgFour('Le mot de passe est obligatoire (minimum 8 caractères).');
+                return;
+            }
+        }
         setSavingInfos(true);
         try {
             const fd = new FormData();
@@ -684,15 +1174,18 @@ export default function Dashboard() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
-            if (!infosTarget.devenir_partenaire) {
-                await api.post(`/fournisseurs/${infosTarget.id}/devenir-partenaire`);
+            if (activation) {
+                await api.post(`/fournisseurs/${infosTarget.id}/devenir-partenaire`, {
+                    email: form2.email.trim(),
+                    mot_de_passe: form2.mot_de_passe,
+                });
             }
 
             await reloadFournisseurs();
             setInfosTarget(null);
             setDocument(null);
-        } catch {
-            setMsgFour('Erreur lors de l\'enregistrement des infos partenaire.');
+        } catch (err) {
+            setMsgFour(err.response?.data?.message || 'Erreur lors de l\'enregistrement des infos partenaire.');
         } finally {
             setSavingInfos(false);
         }
@@ -706,9 +1199,9 @@ export default function Dashboard() {
 
     const LogoFournisseur = ({ f }) =>
         f.logo_url ? (
-            <img src={f.logo_url} alt={f.nom} className="h-14 w-14 object-contain rounded-lg bg-white border border-gray-200 p-1" />
+            <img src={f.logo_url} alt={f.nom} className="h-20 w-20 object-contain rounded-lg bg-white border border-gray-200 p-1" />
         ) : (
-            <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-1">
+            <div className="h-20 w-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-1">
                 {f.nom?.slice(0, 2).toUpperCase()}
             </div>
         );
@@ -757,13 +1250,54 @@ export default function Dashboard() {
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-8 items-start">
                             {/* Colonne latérale droite (col-md-4) */}
                             <div className="md:col-span-4 md:order-2 space-y-6">
-                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
-                                    <p className="text-xs text-slate-500">
-                                        La modification de votre mot de passe peut être effectuée à tout moment depuis les paramètres de votre compte.
-                                    </p>
+                                {/* Onglets de la colonne droite */}
+                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-1 flex">
+                                    {[
+                                        { id: 'simulateur', label: 'Simulateur de primes', icone: (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                                            </svg>
+                                        ) },
+                                        { id: 'messagerie', label: 'Messagerie', icone: (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                                            </svg>
+                                        ) },
+                                        { id: 'reseaux', label: 'Réseaux sociaux', icone: (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75a2.25 2.25 0 0 1 2.25-2.25h15a2.25 2.25 0 0 1 2.25 2.25v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75Zm4.5 1.5h3M7.5 12h4.5m-4.5 4.5h1.5" />
+                                            </svg>
+                                        ) },
+                                    ].map((o) => (
+                                        <button
+                                            key={o.id}
+                                            onClick={() => setOngletDroit(o.id)}
+                                            className={`flex-1 flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-medium transition-colors ${
+                                                ongletDroit === o.id
+                                                    ? 'bg-blue-600 text-white shadow'
+                                                    : 'text-slate-600 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            {o.icone}
+                                            {o.label}
+                                        </button>
+                                    ))}
                                 </div>
-                                <OutilEstimation onSimulationSaved={loadSimulations} />
-                                <SimulationsPanel simulations={simulations} />
+
+                                {ongletDroit === 'simulateur' && (
+                                    <>
+                                        <OutilEstimation onSimulationSaved={loadSimulations} />
+                                        <SimulationsPanel simulations={simulations} />
+                                    </>
+                                )}
+
+                                {ongletDroit === 'messagerie' && (
+                                    <MessagerieOnglet />
+                                )}
+
+                                {ongletDroit === 'reseaux' && (
+                                    <ReseauSocialOnglet />
+                                )}
                             </div>
 
                             {/* Partenaires & fournisseurs (col-md-8) */}
@@ -791,11 +1325,11 @@ export default function Dashboard() {
                                     <div className="px-5 py-4 border-b border-gray-100">
                                         <h2 className="font-semibold text-slate-900">Partenaires</h2>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-3 pb-2 px-2">
                                         {partenairesAccueil.map((p) => {
                                             const url = buildUrl(p.url_assurance);
                                             return (
-                                                <div key={p.id} className="flex flex-col items-center gap-2 p-2 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
+                                                <div key={p.id} className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
                                                     {url ? (
                                                         <a href={url} target="_blank" rel="noreferrer" title={p.url_assurance} className="flex flex-col items-center gap-2 w-full">
                                                             <LogoFournisseur f={p} />
@@ -817,11 +1351,11 @@ export default function Dashboard() {
                                     <div className="px-5 py-4 border-b border-gray-100">
                                         <h2 className="font-semibold text-slate-900">Fournisseurs</h2>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-3 pb-2 px-2">
                                         {fournisseursFiltres.map((f) => {
                                             const url = buildUrl(f.url_assurance);
                                             return (
-                                                <div key={f.id} className="relative flex flex-col items-center gap-2 p-2 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
+                                                <div key={f.id} className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
                                                     <button
                                                         onClick={() => openPlus(f)}
                                                         title={f.devenir_partenaire ? 'Désactiver le partenaire' : 'Devenir partenaire'}
@@ -845,6 +1379,17 @@ export default function Dashboard() {
                                         {fournisseursFiltres.length === 0 && (
                                             <div className="col-span-full text-center text-sm text-slate-400 py-6">Aucun fournisseur.</div>
                                         )}
+                                    </div>
+                                    <div className="px-3 pb-3 flex justify-end">
+                                        <button
+                                            onClick={ouvrirAjoutFour}
+                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                            </svg>
+                                            Ajouter un fournisseur
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -969,10 +1514,46 @@ export default function Dashboard() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
                     <div className="bg-white rounded-lg p-5 shadow-xl max-w-sm w-full">
                         <h3 className="text-lg font-semibold text-slate-900 mb-3">Confirmer l&apos;action</h3>
-                        <p className="text-sm text-slate-600 mb-6">
-                            Voulez-vous <span className="font-medium">{confirmToggle.devenir_partenaire ? 'désactiver' : 'activer'}</span> le partenaire{' '}
-                            <span className="font-medium text-slate-900">{confirmToggle.nom}</span> ?
-                        </p>
+                        {confirmToggle.devenir_partenaire ? (
+                            <p className="text-sm text-slate-600 mb-6">
+                                Voulez-vous <span className="font-medium">désactiver</span> le partenaire{' '}
+                                <span className="font-medium text-slate-900">{confirmToggle.nom}</span> ?
+                            </p>
+                        ) : (
+                            <>
+                                <p className="text-sm text-slate-600 mb-4">
+                                    Choisissez l&apos;e-mail et le mot de passe avec lesquels le partenaire{' '}
+                                    <span className="font-medium text-slate-900">{confirmToggle.nom}</span>
+                                    {' '}se connectera à l&apos;espace partenaire.
+                                </p>
+                                <div className="space-y-3 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            E-mail de connexion <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={toggleEmail}
+                                            onChange={(e) => setToggleEmail(e.target.value)}
+                                            placeholder="E-mail du partenaire"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                            Mot de passe <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={togglePasse}
+                                            onChange={(e) => setTogglePasse(e.target.value)}
+                                            placeholder="Minimum 8 caractères"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setConfirmToggle(null)}
@@ -1037,6 +1618,18 @@ export default function Dashboard() {
                                     />
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        Mot de passe <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={form2.mot_de_passe}
+                                        onChange={(e) => setForm2({ ...form2, mot_de_passe: e.target.value })}
+                                        placeholder="Minimum 8 caractères"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Contrats</label>
                                     <input
                                         type="number"
@@ -1097,6 +1690,103 @@ export default function Dashboard() {
                                     className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                                 >
                                     {savingInfos ? 'Enregistrement...' : 'Enregistrer'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal : ajouter un fournisseur */}
+            {showAjoutFour && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="bg-white border border-slate-200 rounded-lg p-5 w-full max-w-xl my-8 shadow-xl">
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-lg font-bold text-slate-900">Ajouter un fournisseur</h3>
+                            <button
+                                onClick={() => setShowAjoutFour(false)}
+                                className="text-sm text-slate-500 hover:text-slate-700"
+                            >
+                                Fermer
+                            </button>
+                        </div>
+
+                        {errAjoutFour && <div className="bg-red-50 text-red-700 p-3 rounded text-sm mb-4">{errAjoutFour}</div>}
+
+                        <div className="space-y-4 max-w-lg">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Service du fournisseur <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    value={formAjoutFour.service}
+                                    onChange={(e) => setFormAjoutFour({ ...formAjoutFour, service: e.target.value })}
+                                    placeholder="Ex : Compagnie, Mutuelle, Grossiste..."
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Nom <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    value={formAjoutFour.nom}
+                                    onChange={(e) => setFormAjoutFour({ ...formAjoutFour, nom: e.target.value })}
+                                    placeholder="Nom du fournisseur"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <textarea
+                                    value={formAjoutFour.information}
+                                    onChange={(e) => setFormAjoutFour({ ...formAjoutFour, information: e.target.value })}
+                                    rows={3}
+                                    placeholder="Description du fournisseur"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Type d&apos;assurance</label>
+                                    <input
+                                        value={formAjoutFour.type_assurance}
+                                        onChange={(e) => setFormAjoutFour({ ...formAjoutFour, type_assurance: e.target.value })}
+                                        placeholder="Ex : Assurances générales, prévoyance, santé..."
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">URL de l&apos;assurance</label>
+                                    <input
+                                        value={formAjoutFour.url_assurance}
+                                        onChange={(e) => setFormAjoutFour({ ...formAjoutFour, url_assurance: e.target.value })}
+                                        placeholder="Ex : https://www.axa.com"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+                                <div className="flex items-center gap-4">
+                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-50">
+                                        Upload logo
+                                        <input type="file" accept="image/*" className="hidden" onChange={onLogoFourChange} />
+                                    </label>
+                                    {logoFourPreview ? (
+                                        <img src={logoFourPreview} alt="logo" className="w-10 h-10 object-contain rounded border border-slate-200" />
+                                    ) : (
+                                        <span className="text-xs text-slate-400">Aucun logo sélectionné</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={creerFournisseur}
+                                    disabled={savingAjoutFour}
+                                    className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {savingAjoutFour ? 'Enregistrement...' : 'Enregistrer'}
                                 </button>
                             </div>
                         </div>

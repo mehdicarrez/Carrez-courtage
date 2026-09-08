@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
-import { useAuth } from '../../auth';
+import { useAuth, estPartenaire } from '../../auth';
 import ModifierDemande from './ModifierDemande';
 
 const statutLabels = {
@@ -38,6 +38,7 @@ export default function DemandesList() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const estCabinet = user && ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER', 'COMPTABLE'].includes(user.role);
+    const base = estPartenaire(user) ? '/espace-partenaire' : '';
 
 
     const [demandes, setDemandes] = useState([]);
@@ -520,7 +521,7 @@ export default function DemandesList() {
                     </div>
                     <div className="flex gap-2">
                         <Link
-                            to="/demandes/nouvelle"
+                            to={`${base}/demandes/nouvelle`}
                             className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
                         >
                             <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
@@ -700,7 +701,7 @@ export default function DemandesList() {
                                                 </td>
                                             )}
                                             <td className="px-4 py-3 font-semibold text-blue-700 whitespace-nowrap">
-                                                <Link to={`/demandes/${d.id}`}>{d.reference}</Link>
+                                                <Link to={`${base}/demandes/${d.id}`}>{d.reference}</Link>
                                             </td>
                                             <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                                                 {d.created_at ? new Date(d.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}

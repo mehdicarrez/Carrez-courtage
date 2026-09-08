@@ -324,7 +324,7 @@ export default function ContratDetail() {
     return (
         <>
         <div>
-            <button onClick={() => navigate('/contrats')} className="text-sm text-blue-700 mb-3">← Retour aux contrats</button>
+            <button onClick={() => navigate(estCabinet ? '/contrats' : '/espace-partenaire/contrats')} className="text-sm text-blue-700 mb-3">← Retour aux contrats</button>
             <h1 className="text-xl font-bold text-slate-900 mb-2">{contrat.reference}</h1>
             <div className="flex items-center gap-2 mb-4">
                 <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">{contrat.statut}</span>

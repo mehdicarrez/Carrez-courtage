@@ -45,7 +45,7 @@ class UserController extends Controller
             'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:12',
-            'role' => 'required|in:ADMIN,GESTIONNAIRE,CONSEILLER,COMPTABLE,DIRIGEANT_PARTENAIRE,COLLABORATEUR_PARTENAIRE,LECTEUR_PARTENAIRE',
+            'role' => 'required|in:ADMIN,GESTIONNAIRE,CONSEILLER,COMPTABLE,DIRIGEANT_PARTENAIRE,COLLABORATEUR_PARTENAIRE,LECTEUR_PARTENAIRE,PARTENAIRE',
             'access_level' => 'nullable|in:TOUS,CLIENTS_attribues',
             'visible_commissions' => 'nullable|boolean',
         ]);
@@ -72,7 +72,7 @@ class UserController extends Controller
 
         $data = $request->validate([
             'name' => 'nullable|string',
-            'role' => 'nullable|in:ADMIN,GESTIONNAIRE,CONSEILLER,COMPTABLE,DIRIGEANT_PARTENAIRE,COLLABORATEUR_PARTENAIRE,LECTEUR_PARTENAIRE',
+            'role' => 'nullable|in:ADMIN,GESTIONNAIRE,CONSEILLER,COMPTABLE,DIRIGEANT_PARTENAIRE,COLLABORATEUR_PARTENAIRE,LECTEUR_PARTENAIRE,PARTENAIRE',
             'access_level' => 'nullable|in:TOUS,CLIENTS_attribues',
             'actif' => 'nullable|boolean',
             'visible_commissions' => 'nullable|boolean',

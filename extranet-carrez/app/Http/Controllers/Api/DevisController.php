@@ -28,6 +28,39 @@ class DevisController extends Controller
     }
 
     /**
+     * Liste des devis visibles par l'utilisateur courant.
+     * Le cloisonnement est hérité de la demande (scope global RG-01) :
+     * un partenaire ne voit que les devis des demandes de son organisation.
+     */
+    public function liste(Request $request)
+    {
+        $query = Devis::with(['demande.client', 'demande.branche', 'garanties'])
+            ->whereHas('demande');
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->query('statut'));
+        }
+
+        if ($request->filled('q')) {
+            $q = $request->query('q');
+            $query->where(function ($sub) use ($q) {
+                $sub->where('reference_amont', 'like', "%{$q}%")
+                    ->orWhereHas('demande', fn ($d) => $d->where('reference', 'like', "%{$q}%")
+                        ->orWhereHas('client', fn ($c) => $c->where('nom', 'like', "%{$q}%")
+                            ->orWhere('prenom', 'like', "%{$q}%")
+                            ->orWhere('raison_sociale', 'like', "%{$q}%")));
+            });
+        }
+
+        $devis = $query->orderByDesc('created_at')->paginate($request->integer('per_page', 25));
+
+        return response()->json([
+            'data' => $devis->map(fn (Devis $d) => $this->presentListe($d)),
+            'meta' => ['total' => $devis->total(), 'per_page' => $devis->perPage()],
+        ]);
+    }
+
+    /**
      * F-200 : saisie d'un devis rattaché à une demande.
      */
     public function store(Request $request, \App\Models\DemandeTarification $demande)
@@ -219,6 +252,18 @@ class DevisController extends Controller
             $this->audit->accesRefuse('devis', (string) $devis->id);
             abort(404);
         }
+    }
+
+    private function presentListe(Devis $d): array
+    {
+        return $this->present($d) + [
+            'demande' => [
+                'id' => $d->demande_id,
+                'reference' => $d->demande?->reference,
+                'branche' => $d->demande?->branche?->nom,
+                'client' => $d->demande?->client?->getNomCompletAttribute(),
+            ],
+        ];
     }
 
     private function present(Devis $d): array

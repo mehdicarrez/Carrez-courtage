@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
-import { useAuth } from '../../auth';
+import { useAuth, estPartenaire } from '../../auth';
 
 export default function EcheancesPage() {
     const { user } = useAuth();
     const estCabinet = ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER', 'COMPTABLE'].includes(user?.role);
+    const base = estPartenaire(user) ? '/espace-partenaire' : '';
     const [echeances, setEcheances] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -61,7 +62,7 @@ export default function EcheancesPage() {
                         {echeances.map((e) => (
                             <tr key={e.id} className="border-t border-slate-100">
                                 <td className="px-4 py-2">
-                                    <Link to={`/contrats/${e.id}`} className="text-blue-700 hover:underline">{e.reference}</Link>
+                                    <Link to={`${base}/contrats/${e.id}`} className="text-blue-700 hover:underline">{e.reference}</Link>
                                 </td>
                                 <td className="px-4 py-2">{e.client || '—'}</td>
                                 <td className="px-4 py-2 text-slate-500">{e.partenaire || '—'}</td>

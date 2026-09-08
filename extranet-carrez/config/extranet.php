@@ -14,4 +14,9 @@ return [
     // Documents
     'upload_max_mo' => env('UPLOAD_MAX_MO', 25),
     'url_signee_duree_minutes' => env('URL_SIGNEE_DUREE_MINUTES', 15),
+
+    // Expéditeur des notifications (cabinet),
+    // doit correspondre à un compte autorisé par le transport SMTP (ex. Gmail) pour être livré.
+    'email_cabinet' => env('MAIL_FROM_ADDRESS', env('EMAIL_CABINET', 'elmehdi.eljahid555@gmail.com')),
+    'nom_cabinet' => env('NOM_CABINET', 'Carrez Co Courtage'),
 ];

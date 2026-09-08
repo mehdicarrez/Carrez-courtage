@@ -10,6 +10,7 @@ const roles = [
     { value: 'DIRIGEANT_PARTENAIRE', label: 'Dirigeant partenaire' },
     { value: 'COLLABORATEUR_PARTENAIRE', label: 'Collaborateur partenaire' },
     { value: 'LECTEUR_PARTENAIRE', label: 'Lecteur partenaire' },
+    { value: 'PARTENAIRE', label: 'Partenaire' },
 ];
 
 const accessLevels = [

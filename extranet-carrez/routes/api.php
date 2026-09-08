@@ -8,21 +8,25 @@ use App\Http\Controllers\Api\CommissionController;
 use App\Http\Controllers\Api\ContratController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\DemandeController;
+use App\Http\Controllers\Api\DemandeInscriptionPartenaireController;
 use App\Http\Controllers\Api\DevisController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EmailController;
 use App\Http\Controllers\Api\FournisseurController;
 use App\Http\Controllers\Api\GrossisteController;
+use App\Http\Controllers\Api\MessagerieController;
 use App\Http\Controllers\Api\PartenaireController;
 use App\Http\Controllers\Api\ProduitController;
 use App\Http\Controllers\Api\ReferentielController;
+use App\Http\Controllers\Api\ReseauSocialController;
 use App\Http\Controllers\Api\SimulationController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Authentification publique
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/enable-2fa', [AuthController::class, 'activer'])->middleware('auth:sanctum');
 Route::post('/auth/confirm-2fa', [AuthController::class, 'validerActivation'])->middleware('auth:sanctum');
 
@@ -90,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/factures/{facture}/lignes', [ClientController::class, 'ajouterLignes']);
 
     Route::get('/clients/{client}/taches', [ClientController::class, 'taches']);
+    Route::get('/taches', [ClientController::class, 'toutesTaches']);
     Route::post('/clients/{client}/taches', [ClientController::class, 'creerTache']);
     Route::put('/taches/{tache}', [ClientController::class, 'majTache']);
     Route::delete('/taches/{tache}', [ClientController::class, 'supprimerTache']);
@@ -99,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/demandes/affectation-clients', [ClientController::class, 'affectationMassive']);
 
     // Module 2 — Devis
+    Route::get('/devis', [DevisController::class, 'liste']);
     Route::get('/demandes/{demande}/devis', [DevisController::class, 'index']);
     Route::post('/demandes/{demande}/devis', [DevisController::class, 'store']);
     Route::get('/devis/{devis}', [DevisController::class, 'show']);
@@ -159,6 +165,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/conversations/{type}/{id}', [ConversationController::class, 'show']);
     Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'posterMessage']);
 
+    // Messageries non référencées (colonne droite du tableau de bord)
+    Route::get('/messageries', [MessagerieController::class, 'index']);
+    Route::post('/messageries', [MessagerieController::class, 'store']);
+
+    // Réseaux sociaux non référencés (colonne droite du tableau de bord)
+    Route::get('/reseaux-sociaux', [ReseauSocialController::class, 'index']);
+    Route::post('/reseaux-sociaux', [ReseauSocialController::class, 'store']);
+
     // Module 5 — E-mails
     Route::get('/emails', [EmailController::class, 'index']);
     Route::post('/emails', [EmailController::class, 'envoyer']);
@@ -171,6 +185,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/fournisseurs/{fournisseur}/informations', [FournisseurController::class, 'updateInformations']);
     Route::post('/fournisseurs/{fournisseur}/devenir-partenaire', [FournisseurController::class, 'togglePartenaire']);
     Route::post('/fournisseurs/{fournisseur}/activer', [FournisseurController::class, 'activer']);
+
+    // Demandes d'inscription partenaire (liées au formulaire du login)
+    Route::get('/demandes-inscriptions', [DemandeInscriptionPartenaireController::class, 'index']);
+    Route::post('/demandes-inscriptions/{demande}/approuver', [DemandeInscriptionPartenaireController::class, 'approuver']);
+    Route::post('/demandes-inscriptions/{demande}/refuser', [DemandeInscriptionPartenaireController::class, 'refuser']);
 
     Route::get('/partenaires', [PartenaireController::class, 'index']);
     Route::post('/partenaires', [PartenaireController::class, 'candidature']); // F-600

@@ -16,7 +16,7 @@ class User extends Authenticatable
     public const ACCESS_CLIENTS_attribues = 'CLIENTS_attribues';
 
     protected $fillable = [
-        'id', 'organisation_id', 'name', 'email', 'password', 'role',
+        'id', 'organisation_id', 'fournisseur_id', 'name', 'email', 'password', 'role',
         'access_level', 'actif', 'visible_commissions', 'two_factor_enabled', 'two_factor_secret',
         'two_factor_recovery_codes', 'two_factor_confirmed_at',
         'email_verified_at', 'last_login_at', 'last_login_ip',
@@ -44,10 +44,16 @@ class User extends Authenticatable
     public const ROLE_DIRIGEANT_PARTENAIRE = 'DIRIGEANT_PARTENAIRE';
     public const ROLE_COLLABORATEUR_PARTENAIRE = 'COLLABORATEUR_PARTENAIRE';
     public const ROLE_LECTEUR_PARTENAIRE = 'LECTEUR_PARTENAIRE';
+    public const ROLE_PARTENAIRE = 'PARTENAIRE';
 
     public function organisation()
     {
         return $this->belongsTo(Organisation::class);
+    }
+
+    public function fournisseur()
+    {
+        return $this->belongsTo(Fournisseur::class);
     }
 
     public function estCabinet(): bool
@@ -61,6 +67,7 @@ class User extends Authenticatable
     {
         return in_array($this->role, [
             self::ROLE_DIRIGEANT_PARTENAIRE, self::ROLE_COLLABORATEUR_PARTENAIRE, self::ROLE_LECTEUR_PARTENAIRE,
+            self::ROLE_PARTENAIRE,
         ]);
     }
 

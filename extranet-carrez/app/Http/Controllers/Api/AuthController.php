@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\DemandeInscriptionPartenaire;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -15,6 +17,55 @@ class AuthController extends Controller
 {
     public function __construct(private Google2FA $google2fa, private AuditLogger $audit)
     {
+    }
+
+    /**
+     * Candidature à l'espace partenaire depuis la page de connexion.
+     * La demande est enregistrée en attente ; un compte n'est créé
+     * qu'après confirmation du cabinet (lien « Confirmations »).
+     */
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'nom' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'telephone' => 'nullable|string|max:40',
+            'mot_de_passe' => 'required|string|min:8',
+        ]);
+
+        $email = mb_strtolower(trim($data['email']));
+
+        if (User::where('email', $email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => ['Un compte existe déjà avec cet e-mail.'],
+            ]);
+        }
+
+        if (DemandeInscriptionPartenaire::where('email', $email)->where('statut', DemandeInscriptionPartenaire::STATUT_EN_ATTENTE)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => ['Une demande est déjà en attente avec cet e-mail.'],
+            ]);
+        }
+
+        $demande = DemandeInscriptionPartenaire::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'nom' => $data['nom'],
+            'email' => $email,
+            'telephone' => $data['telephone'] ?? null,
+            'mot_de_passe' => Hash::make($data['mot_de_passe']),
+            'statut' => DemandeInscriptionPartenaire::STATUT_EN_ATTENTE,
+        ]);
+
+        $this->audit->log('partenaire.demande_inscription', 'demande_inscription_partenaire', (string) $demande->id);
+
+        return response()->json([
+            'data' => [
+                'id' => $demande->id,
+                'nom' => $demande->nom,
+                'email' => $demande->email,
+                'statut' => $demande->statut,
+            ],
+        ], 201);
     }
 
     public function login(Request $request)
@@ -37,6 +88,13 @@ class AuthController extends Controller
         if (!$user->actif) {
             throw ValidationException::withMessages([
                 'email' => ['Compte désactivé.'],
+            ]);
+        }
+
+        if ($user->role === User::ROLE_PARTENAIRE && !$user->fournisseur?->devenir_partenaire) {
+            $this->audit->accesRefuse('login');
+            throw ValidationException::withMessages([
+                'email' => ['Ce compte partenaire a été désactivé.'],
             ]);
         }
 

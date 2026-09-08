@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Fournisseur;
 use App\Models\Organisation;
+use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -142,6 +144,10 @@ class FournisseurController extends Controller
     /**
      * Toggle : active / désactive l'affichage du fournisseur
      * dans le tableau des partenaires.
+     *
+     * À l'activation, un e-mail et un mot de passe doivent être fournis :
+     * le compte utilisateur PARTENAIRE lié au fournisseur est créé (ou réactivé)
+     * avec ce mot de passe pour permettre la connexion à l'espace partenaire.
      */
     public function togglePartenaire(Fournisseur $fournisseur, Request $request)
     {
@@ -150,16 +156,139 @@ class FournisseurController extends Controller
         }
 
         $nouvelEtat = !$fournisseur->devenir_partenaire;
-        $fournisseur->update(['devenir_partenaire' => $nouvelEtat]);
+
+        if ($nouvelEtat) {
+            $data = $request->validate([
+                'email' => 'required|email',
+                'mot_de_passe' => 'required|string|min:8',
+            ]);
+
+            $fournisseur->update([
+                'devenir_partenaire' => true,
+                'email' => $data['email'],
+            ]);
+
+            $this->creerOuActiverCompte($fournisseur, $data['email'], $data['mot_de_passe']);
+        } else {
+            $fournisseur->update(['devenir_partenaire' => false]);
+            $this->desactiverCompte($fournisseur);
+        }
+
         $this->audit->log(
             $nouvelEtat ? 'fournisseur.devenir_partenaire' : 'fournisseur.retrait_partenaire',
             'fournisseur',
             (string) $fournisseur->id
         );
 
-        return response()->json(['data' => $this->present($fournisseur->fresh())]);
+        return response()->json([
+            'data' => $this->present($fournisseur->fresh()),
+        ]);
     }
 
+    /**
+     * Active directement le partenaire dans organisations s'il n'existe pas déjà.
+     * L'e-mail et le mot de passe du compte de connexion sont obligatoires.
+     */
+    public function activer(Fournisseur $fournisseur, Request $request)
+    {
+        if (!$request->user()->estCabinet()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'email' => 'required|email',
+            'mot_de_passe' => 'required|string|min:8',
+        ]);
+
+        $fournisseur->update([
+            'devenir_partenaire' => true,
+            'email' => $data['email'],
+        ]);
+
+        $partenaire = $this->organismePartenaire($fournisseur);
+        $this->audit->log('fournisseur.active', 'organisation', (string) $partenaire->id);
+
+        $this->creerOuActiverCompte($fournisseur, $data['email'], $data['mot_de_passe']);
+
+        return response()->json([
+            'data' => $this->presentOrganisation($partenaire),
+        ], 201);
+    }
+
+    private function organismePartenaire(Fournisseur $fournisseur): Organisation
+    {
+        $existant = Organisation::where('type', Organisation::TYPE_PARTENAIRE)
+            ->where('raison_sociale', $fournisseur->nom)
+            ->first();
+
+        if ($existant) {
+            if ($existant->statut !== 'ACTIVE') {
+                $existant->statut = 'ACTIVE';
+                $existant->date_activation = now();
+                $existant->save();
+            }
+
+            return $existant;
+        }
+
+        $partenaire = Organisation::create([
+            'id' => (string) Str::uuid(),
+            'type' => Organisation::TYPE_PARTENAIRE,
+            'raison_sociale' => $fournisseur->nom,
+            'statut' => 'ACTIVE',
+            'date_activation' => now(),
+        ]);
+
+        return $partenaire;
+    }
+
+    /**
+     * Crée ou réactive le compte PARTENAIRE lié au fournisseur
+     * avec l'e-mail et le mot de passe choisis par le cabinet.
+     */
+    private function creerOuActiverCompte(Fournisseur $fournisseur, string $email, string $motDePasse): void
+    {
+        if (User::where('email', $email)->where('fournisseur_id', '!=', $fournisseur->id)->exists()) {
+            abort(422, 'Cet e-mail est déjà utilisé par un autre compte.');
+        }
+
+        $user = User::where('fournisseur_id', $fournisseur->id)->first();
+
+        if ($user) {
+            $user->update([
+                'email' => $email,
+                'password' => Hash::make($motDePasse),
+                'actif' => true,
+            ]);
+
+            $this->audit->log('partenaire.compte_reactive', 'user', (string) $user->id);
+
+            return;
+        }
+
+        $user = User::create([
+            'fournisseur_id' => $fournisseur->id,
+            'organisation_id' => $this->organismePartenaire($fournisseur)->id,
+            'name' => $fournisseur->partenaire ?: $fournisseur->nom,
+            'email' => $email,
+            'password' => Hash::make($motDePasse),
+            'role' => User::ROLE_PARTENAIRE,
+            'actif' => true,
+        ]);
+
+        $this->audit->log('partenaire.compte_cree', 'user', (string) $user->id);
+    }
+
+    private function desactiverCompte(Fournisseur $fournisseur): void
+    {
+        $user = User::where('fournisseur_id', $fournisseur->id)->first();
+
+        if ($user) {
+            $user->tokens()->delete();
+            $user->update(['actif' => false]);
+            $this->audit->log('partenaire.compte_desactive', 'user', (string) $user->id);
+        }
+    }
     /**
      * Affichage du logo via URL signée (route publique).
      */
@@ -194,43 +323,6 @@ class FournisseurController extends Controller
         }
 
         return Storage::disk('local')->response($stocke, $document['fichier'] ?? null);
-    }
-
-    /**
-     * Activation directe : le fournisseur devient un partenaire ACTIVE (organisations).
-     */
-    public function activer(Fournisseur $fournisseur, Request $request)
-    {
-        if (!$request->user()->estCabinet()) {
-            abort(403);
-        }
-
-        $existant = Organisation::where('type', Organisation::TYPE_PARTENAIRE)
-            ->where('raison_sociale', $fournisseur->nom)
-            ->first();
-
-        if ($existant) {
-            if ($existant->statut !== 'ACTIVE') {
-                $existant->statut = 'ACTIVE';
-                $existant->date_activation = now();
-                $existant->save();
-            }
-            $this->audit->log('fournisseur.active', 'organisation', (string) $existant->id);
-
-            return response()->json(['data' => $this->presentOrganisation($existant)]);
-        }
-
-        $partenaire = Organisation::create([
-            'id' => (string) Str::uuid(),
-            'type' => Organisation::TYPE_PARTENAIRE,
-            'raison_sociale' => $fournisseur->nom,
-            'statut' => 'ACTIVE',
-            'date_activation' => now(),
-        ]);
-
-        $this->audit->log('fournisseur.active', 'organisation', (string) $partenaire->id);
-
-        return response()->json(['data' => $this->presentOrganisation($partenaire)], 201);
     }
 
     private function present(Fournisseur $f): array

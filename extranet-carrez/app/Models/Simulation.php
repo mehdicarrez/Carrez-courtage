@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Simulation extends Model
 {
-    protected $fillable = ['user_id', 'client_id', 'produit', 'criteres', 'estimation', 'client_data'];
+    protected $fillable = ['user_id', 'client_id', 'produit', 'criteres', 'estimation', 'client_data', 'document_path', 'document_nom'];
 
     protected $casts = [
         'criteres' => 'array',

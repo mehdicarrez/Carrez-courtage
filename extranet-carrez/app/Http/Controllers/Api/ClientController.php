@@ -700,6 +700,38 @@ class ClientController extends Controller
         ]);
     }
 
+    /**
+     * Liste des tâches de tous les clients (filtrée par statut/priorité).
+     */
+    public function toutesTaches(Request $request)
+    {
+        $query = \App\Models\Tache::with('client', 'assignee', 'creePar');
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->query('statut'));
+        }
+        if ($request->filled('priorite')) {
+            $query->where('priorite', $request->query('priorite'));
+        }
+        if ($request->filled('q')) {
+            $q = $request->query('q');
+            $query->where(function ($sub) use ($q) {
+                $sub->where('objet', 'like', "%{$q}%")
+                    ->orWhere('titre', 'like', "%{$q}%")
+                    ->orWhere('reference', 'like', "%{$q}%");
+            });
+        }
+
+        $taches = $query->orderByRaw("CASE statut WHEN 'TERMINEE' THEN 1 ELSE 0 END")
+            ->orderBy('date_echeance')
+            ->get();
+
+        return response()->json([
+            'data' => $taches->map(fn (\App\Models\Tache $t) => $this->presentTache($t)),
+            'meta' => ['total' => $taches->count()],
+        ]);
+    }
+
     public function creerTache(Client $client, Request $request)
     {
         $data = $request->validate([
@@ -791,6 +823,8 @@ class ClientController extends Controller
             'assignee_id' => $t->assignee_id,
             'assignee_name' => $t->assignee?->name,
             'cree_par_name' => $t->creePar?->name,
+            'client_id' => $t->client_id,
+            'client_nom' => $t->client?->getNomCompletAttribute(),
         ];
     }
 }

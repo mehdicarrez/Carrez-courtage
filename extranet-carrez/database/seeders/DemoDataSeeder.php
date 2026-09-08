@@ -92,6 +92,7 @@ class DemoDataSeeder extends Seeder
         $dirigeant1 = User::create(['name' => 'David Dirigeant', 'email' => 'dirigeant@courtiervii.local', 'password' => 'password', 'role' => User::ROLE_DIRIGEANT_PARTENAIRE, 'organisation_id' => $partenaires[0]->id, 'actif' => true]);
         $collab1 = User::create(['name' => 'Claire Collaboratrice', 'email' => 'collab@courtiervii.local', 'password' => 'password', 'role' => User::ROLE_COLLABORATEUR_PARTENAIRE, 'organisation_id' => $partenaires[0]->id, 'actif' => true, 'visible_commissions' => true]);
         $lecteur1 = User::create(['name' => 'Léon Lecteur', 'email' => 'lecteur@courtiervii.local', 'password' => 'password', 'role' => User::ROLE_LECTEUR_PARTENAIRE, 'organisation_id' => $partenaires[0]->id, 'actif' => true]);
+        $partenaire1 = User::create(['name' => 'Paul Partenaire', 'email' => 'partenaire@courtiervii.local', 'password' => 'password', 'role' => User::ROLE_PARTENAIRE, 'organisation_id' => $partenaires[0]->id, 'actif' => true]);
 
         $dirigeants[1] = User::create(['name' => 'Fatima Finance', 'email' => 'dirigeant@cafim.local', 'password' => 'password', 'role' => User::ROLE_DIRIGEANT_PARTENAIRE, 'organisation_id' => $partenaires[1]->id, 'actif' => true]);
         $collaborateurs[1] = User::create(['name' => 'Nadia Négociation', 'email' => 'collab@cafim.local', 'password' => 'password', 'role' => User::ROLE_COLLABORATEUR_PARTENAIRE, 'organisation_id' => $partenaires[1]->id, 'actif' => true, 'visible_commissions' => true]);

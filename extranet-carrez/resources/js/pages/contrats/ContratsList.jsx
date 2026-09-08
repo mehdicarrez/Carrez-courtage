@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
-import { useAuth } from '../../auth';
+import { useAuth, estPartenaire } from '../../auth';
 
 const STATUT_LABELS = {
     EN_CONSTITUTION: 'En constitution',
@@ -38,6 +38,7 @@ const FORMES_JURIDIQUES = ['Coopérative', 'SARL', 'SAS', 'SA', 'EURL', 'SCI', '
 export default function ContratsList() {
     const { user } = useAuth();
     const estCabinet = ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER', 'COMPTABLE'].includes(user?.role);
+    const base = estPartenaire(user) ? '/espace-partenaire' : '';
     const [contrats, setContrats] = useState([]);
     const [enSouscription, setEnSouscription] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -228,7 +229,7 @@ export default function ContratsList() {
                                         <td className="px-4 py-3 text-slate-600">{c.date_echeance_principale || '—'}</td>
                                         <td className="px-4 py-3 text-right">
                                             <Link
-                                                to={`/contrats/${c.id}`}
+                                                to={`${base}/contrats/${c.id}`}
                                                 className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-100"
                                             >
                                                 Ouvrir
