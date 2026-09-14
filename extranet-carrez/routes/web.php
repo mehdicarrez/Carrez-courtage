@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FournisseurController;
 use App\Http\Controllers\Api\MessagerieController;
+use App\Http\Controllers\Api\PartenaireController;
 use App\Http\Controllers\Api\ReseauSocialController;
 use App\Http\Controllers\Api\SimulationController;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +29,11 @@ Route::get('/fournisseurs/{fournisseur}/documents/{cle}', [FournisseurController
 // Document joint d'une simulation via URL signée à durée de vie courte
 Route::get('/simulations/{simulation}/document', [SimulationController::class, 'document'])
     ->name('simulations.document')
+    ->middleware('signed');
+
+// Logo d'un partenaire (organisation) via URL signée à durée de vie courte
+Route::get('/organisations/{organisation}/logo', [PartenaireController::class, 'logo'])
+    ->name('organisations.logo')
     ->middleware('signed');
 
 // Logo d'une messagerie non référencée via URL signée

@@ -98,6 +98,7 @@ function AppRoutes() {
                 <Route path="demandes" element={<DemandesList />} />
                 <Route path="demandes/nouvelle" element={<NouvelleDemande />} />
                 <Route path="demandes/:id" element={<DemandeDetail />} />
+                <Route path="demandes/:id/devis" element={<SaisieDevis />} />
                 <Route path="devis" element={<DevisPartenaire />} />
                 <Route path="contrats" element={<ContratsList />} />
                 <Route path="contrats/:id" element={<ContratDetail />} />

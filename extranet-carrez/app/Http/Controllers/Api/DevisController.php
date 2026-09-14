@@ -12,6 +12,7 @@ use App\Services\StateMachine;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class DevisController extends Controller
@@ -20,9 +21,17 @@ class DevisController extends Controller
     {
     }
 
-    public function index(\App\Models\DemandeTarification $demande, Request $request)
+    public function index($demandeId, Request $request)
     {
-        $devis = $demande->devis()->with('garanties')->get()->map(fn (Devis $d) => $this->present($d));
+        $demande = \App\Models\DemandeTarification::withoutGlobalScope('organisation')->findOrFail($demandeId);
+
+        // Un partenaire ne voit que les devis qu'il a proposés sur cette demande
+        $devis = $demande->devis()->with(['garanties', 'user.organisation', 'proposant.organisation']);
+        if ($request->user()->estPartenaire()) {
+            $devis->where('user_id', $request->user()->id);
+        }
+
+        $devis = $devis->get()->map(fn (Devis $d) => $this->present($d));
 
         return response()->json(['data' => $devis]);
     }
@@ -34,8 +43,13 @@ class DevisController extends Controller
      */
     public function liste(Request $request)
     {
-        $query = Devis::with(['demande.client', 'demande.branche', 'garanties'])
-            ->whereHas('demande');
+        $query = Devis::with(['demande.client', 'demande.branche', 'garanties', 'user.organisation', 'proposant.organisation'])
+            ->whereHas('demande', fn ($q) => $q->withoutGlobalScope('organisation'));
+
+        // Un partenaire ne voit que les devis qu'il a proposés (RG-01 bis)
+        if ($request->user()->estPartenaire()) {
+            $query->where('user_id', $request->user()->id);
+        }
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->query('statut'));
@@ -63,11 +77,14 @@ class DevisController extends Controller
     /**
      * F-200 : saisie d'un devis rattaché à une demande.
      */
-    public function store(Request $request, \App\Models\DemandeTarification $demande)
+    public function store(Request $request, $demandeId)
     {
-        if (!$request->user()->estCabinet()) {
-            abort(403);
+        // Seuls les partenaires peuvent créer des devis
+        if (!$request->user()->estPartenaire()) {
+            abort(403, 'Seuls les partenaires peuvent créer un devis.');
         }
+
+        $demande = \App\Models\DemandeTarification::withoutGlobalScope('organisation')->findOrFail($demandeId);
 
         $data = $request->validate([
             'porteur_risque_id' => 'nullable|exists:porteurs_risque,id',
@@ -94,7 +111,7 @@ class DevisController extends Controller
         $data['montant_retrocession_cts'] = $this->calc->estimerRetrocession($demande, $data['prime_ht_cts']);
 
         $devis = DB::transaction(function () use ($demande, $data, $request) {
-            $d = $demande->devis()->create($data);
+            $d = $demande->devis()->create($data + ['user_id' => $request->user()->id]);
             $this->enregistrerGaranties($d, $data['garanties'] ?? []);
 
             // À la première saisie, la demande passe en DEVIS_EMIS
@@ -181,8 +198,8 @@ class DevisController extends Controller
             if ($devis->estExpire()) {
                 abort(422, 'Ce devis a expiré.');
             }
-            if (!$request->user()->estPartenaire()) {
-                abort(403, 'Seul le partenaire peut accepter un devis.');
+            if (!$request->user()->estCabinet()) {
+                abort(403, 'Seul le cabinet peut accepter un devis.');
             }
 
             DB::transaction(function () use ($devis) {
@@ -200,6 +217,11 @@ class DevisController extends Controller
 
         if ($nouvelEtat === 'REFUSE' && empty($data['motif'])) {
             throw ValidationException::withMessages(['motif' => ['Le motif est obligatoire au refus.']]);
+        }
+
+        // RG-21 : seul le cabinet peut refuser un devis
+        if ($data['action'] === 'refuser' && !$request->user()->estCabinet()) {
+            abort(403, 'Seul le cabinet peut refuser un devis.');
         }
 
         $devis->motif = $data['motif'] ?? null;
@@ -246,11 +268,10 @@ class DevisController extends Controller
 
     private function verifierAcces(Devis $devis, $user): void
     {
-        $demande = $devis->demande;
-
-        if ($user->estPartenaire() && $demande->organisation_id !== $user->organisation_id) {
-            $this->audit->accesRefuse('devis', (string) $devis->id);
-            abort(404);
+        // Cabinet a accès à tous les devis
+        // Partenaires n'ont accès qu'aux devis qu'ils ont proposés
+        if ($user->estPartenaire() && (int) $devis->user_id !== (int) $user->id) {
+            abort(403, 'Accès non autorisé à ce devis.');
         }
     }
 
@@ -294,6 +315,29 @@ class DevisController extends Controller
                 'optionnelle' => $g->optionnelle,
                 'prix_option_cts' => $g->prix_option_cts,
             ]),
+            'propose_par' => $this->proposer($d),
+        ];
+    }
+
+    private function proposer(?Devis $d): ?array
+    {
+        $org = $d?->user?->organisation;
+
+        if (!$org) {
+            return null;
+        }
+
+        return [
+            'organisation_id' => $org->id,
+        'nom' => $org->raison_sociale,
+        'logo' => $org->logo,
+        'logo_url' => $org->logo
+            ? URL::temporarySignedRoute('organisations.logo', now()->addMinutes(1440), ['organisation' => $org->id])
+            : null,
+        'pays' => $org->pays,
+        'siren' => $org->siren,
+        'forme_juridique' => $org->forme_juridique,
+        'type'=>$org->type
         ];
     }
 }

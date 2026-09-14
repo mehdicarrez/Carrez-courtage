@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../api';
-import { useAuth } from '../../auth';
+import { useAuth, estPartenaire } from '../../auth';
 
 const eur = (cts) => ((cts ?? 0) / 100).toFixed(2);
 
@@ -42,17 +42,18 @@ export default function SaisieDevis() {
     useEffect(() => {
         Promise.all([
             api.get(`/demandes/${id}`),
-            api.get('/referentiels'),
+            api.get('/referentiels/actifs'),
         ])
             .then(([d, r]) => {
                 setDemande(d.data.data);
-                setReferentiels(r.data.data);
+                setReferentiels(r.data);
             })
             .catch(() => setError('Erreur de chargement.'))
             .finally(() => setLoading(false));
     }, [id]);
 
     const estCabinet = user && ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER'].includes(user.role);
+    const basePath = estPartenaire(user) ? '/espace-partenaire' : '';
 
     // Produits rattachés à la branche de la demande
     const produitsDeLaBranche = useMemo(() => {
@@ -101,7 +102,6 @@ export default function SaisieDevis() {
 
     const soumettre = async (e) => {
         e.preventDefault();
-        if (!estCabinet) return;
         setSaving(true);
         setError('');
         try {
@@ -125,7 +125,7 @@ export default function SaisieDevis() {
                 })),
             };
             const res = await api.post(`/demandes/${id}/devis`, payload);
-            navigate(`/demandes/${id}`, { state: { devis_cree: res.data.data?.id } });
+            navigate(`${basePath}/demandes/${id}`, { state: { devis_cree: res.data.data?.id } });
         } catch (err) {
             setError(err.response?.data?.message || "Erreur lors de l'enregistrement.");
         } finally {
@@ -134,9 +134,6 @@ export default function SaisieDevis() {
     };
 
     if (loading) return <div className="text-slate-500">Chargement...</div>;
-
-    if (!estCabinet)
-        return <div className="bg-red-50 text-red-700 p-4 rounded">Accès réservé au cabinet.</div>;
 
     const input = 'w-full border border-slate-300 rounded px-2 py-1.5 text-sm';
     const label = 'block text-sm text-slate-600 mb-1';
@@ -321,7 +318,7 @@ export default function SaisieDevis() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => navigate(`/demandes/${id}`)}
+                        onClick={() => navigate(`${basePath}/demandes/${id}`)}
                         className="px-4 py-2 rounded bg-slate-100 text-slate-600 text-sm"
                     >
                         Annuler

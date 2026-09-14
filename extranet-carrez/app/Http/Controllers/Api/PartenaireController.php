@@ -12,6 +12,8 @@ use App\Models\TypeDocument;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class PartenaireController extends Controller
@@ -322,6 +324,10 @@ class PartenaireController extends Controller
         $data = [
             'id' => $o->id,
             'raison_sociale' => $o->raison_sociale,
+            'logo' => $o->logo,
+            'logo_url' => $o->logo
+                ? URL::temporarySignedRoute('organisations.logo', now()->addMinutes(1440), ['organisation' => $o->id])
+                : null,
             'forme_juridique' => $o->forme_juridique,
             'siren' => $o->siren,
             'siret' => $o->siret,
@@ -359,6 +365,47 @@ class PartenaireController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * F-XXX : ajout / remplacement du logo du partenaire.
+     * Un utilisateur partenaire ne peut modifier que le logo de sa propre entité.
+     */
+    public function uploadLogo(Organisation $partenaire, Request $request)
+    {
+        if (!$request->user()->estPartenaire() || $partenaire->id !== $request->user()->organisation_id) {
+            abort(403, 'Vous ne pouvez modifier que le logo de votre propre entité.');
+        }
+
+        $data = $request->validate([
+            'logo' => 'required|file|image|max:2048',
+        ]);
+
+        $logo = $request->file('logo');
+        $cle = Str::uuid().'.'.$logo->getClientOriginalExtension();
+        $path = Storage::disk('local')->putFileAs('logos/partenaires', $logo, $cle);
+
+        if ($partenaire->logo && Storage::disk('local')->exists($partenaire->logo)) {
+            Storage::disk('local')->delete($partenaire->logo);
+        }
+
+        $partenaire->update(['logo' => $path]);
+
+        $this->audit->log('partenaire.logo_modifie', 'organisation', (string) $partenaire->id);
+
+        return response()->json(['data' => $this->present($partenaire->fresh())]);
+    }
+
+    /**
+     * Service du logo via URL signée (route publique).
+     */
+    public function logo(Organisation $organisation)
+    {
+        if (!$organisation->logo || !Storage::disk('local')->exists($organisation->logo)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($organisation->logo);
     }
 
     private function presentPiece(PieceOrganisation $p): array

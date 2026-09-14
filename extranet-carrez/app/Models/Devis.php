@@ -10,7 +10,7 @@ class Devis extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'demande_id', 'version_label', 'version', 'porteur_risque_id', 'grossiste_id', 'produit_id',
+        'demande_id', 'user_id', 'version_label', 'version', 'porteur_risque_id', 'grossiste_id', 'produit_id',
         'reference_amont', 'prime_ht_cts', 'taxes_cts', 'prime_ttc_cts', 'frais_courtage_cts',
         'fractionnement', 'premiere_echeance_cts', 'date_effet_possible', 'date_validite',
         'conditions_particulieres', 'reserves', 'taux_commission_percue', 'montant_retrocession_cts',
@@ -42,6 +42,16 @@ class Devis extends Model
     public function demande()
     {
         return $this->belongsTo(DemandeTarification::class, 'demande_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function proposant()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function produit()

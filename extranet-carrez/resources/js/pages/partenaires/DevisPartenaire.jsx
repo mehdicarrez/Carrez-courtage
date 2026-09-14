@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
 
-const statutBddges = {
+const statutBadges = {
     BROUILLON: 'bg-slate-100 text-slate-600',
     ENVOYE: 'bg-blue-50 text-blue-700',
     ACCEPTE: 'bg-emerald-50 text-emerald-700',
     REFUSE: 'bg-red-50 text-red-700',
     EXPIRE: 'bg-amber-50 text-amber-700',
     TRANSFORME: 'bg-violet-50 text-violet-700',
+};
+
+const statutLabels = {
+    BROUILLON: 'Brouillon',
+    ENVOYE: 'Envoyé',
+    ACCEPTE: 'Accepté',
+    REFUSE: 'Refusé',
+    EXPIRE: 'Expiré',
+    TRANSFORME: 'Transformé',
 };
 
 const montant = (cts) =>
@@ -46,11 +55,11 @@ export default function DevisPartenaire() {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Devis</h1>
                     <p className="text-sm text-slate-500 mt-0.5">
-                        {total > 0 ? `${total} devis sur vos demandes` : 'Aucune donnée'}
+                        {total > 0 ? `${total} devis` : 'Aucune donnée'}
                     </p>
                 </div>
                 <div className="ml-auto">
-                    {['', 'BROUILLON', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE'].map((s) => (
+                    {['', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME'].map((s) => (
                         <button
                             key={s || 'tous'}
                             onClick={() => setStatut(s)}
@@ -60,7 +69,7 @@ export default function DevisPartenaire() {
                                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                         >
-                            {s === '' ? 'Tous' : s.charAt(0) + s.slice(1).toLowerCase()}
+                            {s === '' ? 'Tous' : statutLabels[s] || s}
                         </button>
                     ))}
                 </div>
@@ -112,8 +121,8 @@ export default function DevisPartenaire() {
                                             {d.date_validite ? new Date(d.date_validite).toLocaleDateString('fr-FR') : '—'}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statutBddges[d.statut] || statutBddges.BROUILLON}`}>
-                                                {d.statut}
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statutBadges[d.statut] || statutBadges.BROUILLON}`}>
+                                                {statutLabels[d.statut] || d.statut}
                                             </span>
                                         </td>
                                     </tr>

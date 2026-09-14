@@ -199,6 +199,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/partenaires/{partenaire}/suspendre', [PartenaireController::class, 'suspendre']);
     Route::post('/partenaires/{partenaire}/reactiver', [PartenaireController::class, 'reactiver']);
     Route::post('/partenaires/{partenaire}/baremes', [PartenaireController::class, 'creerBareme']); // F-400
+    Route::post('/partenaires/{partenaire}/logo', [PartenaireController::class, 'uploadLogo']); // logo entité partenaire
     Route::put('/partenaires/{partenaire}/pieces/{piece}', [PartenaireController::class, 'controlePiece']); // RG-60
 
     Route::get('/utilisateurs', [UserController::class, 'index']);

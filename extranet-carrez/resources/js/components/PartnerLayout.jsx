@@ -73,7 +73,6 @@ export default function PartnerLayout() {
     const partenaireNav = [
         { to: '/espace-partenaire', label: 'Accueil', end: true, icon: 'accueil' },
         { to: '/espace-partenaire/demandes', label: 'Demandes', icon: 'demandes' },
-        { to: '/espace-partenaire/devis', label: 'Devis', icon: 'devis' },
         { to: '/espace-partenaire/contrats', label: 'Contrats', icon: 'contrats' },
         { to: '/espace-partenaire/clients', label: 'Clients', icon: 'clients' },
         { to: '/espace-partenaire/echeances', label: 'Échéancier', icon: 'echeances' },

@@ -16,7 +16,7 @@ class Organisation extends Model
         'id', 'type', 'raison_sociale', 'forme_juridique', 'siren', 'siret',
         'adresse', 'ville', 'code_postal', 'pays', 'numero_orias', 'categories_orias',
         'statut', 'date_activation', 'date_suspension', 'motif_suspension', 'parametres', 'admin_id',
-        'checklist_validation', 'branches_autorisees', 'decision', 'motif_decision', 'date_decision', 'decide_par',
+        'checklist_validation', 'branches_autorisees', 'decision', 'motif_decision', 'date_decision', 'decide_par', 'logo',
     ];
 
     protected $casts = [

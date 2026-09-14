@@ -12,6 +12,12 @@ use InvalidArgumentException;
 class StateMachine
 {
     /**
+     * Désactivable pendant les seeders / imports de masse pour ne pas
+     * saturer le journal d'audit (RG-62).
+     */
+    public static bool $logAuditTrail = true;
+
+    /**
      * @param array<string, array<int,string>> $transitions
      */
     public function __construct(private array $transitions)
@@ -46,7 +52,9 @@ class StateMachine
 
         $model->forceFill($data)->save();
 
-        app(AuditLogger::class)->transition($model, $etatCourant, $nouvelEtat, $model->getAttribute('motif'));
+        if (self::$logAuditTrail) {
+            app(AuditLogger::class)->transition($model, $etatCourant, $nouvelEtat, $model->getAttribute('motif'));
+        }
 
         return $nouvelEtat;
     }

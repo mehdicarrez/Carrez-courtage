@@ -168,6 +168,9 @@ class FournisseurController extends Controller
                 'email' => $data['email'],
             ]);
 
+            $partenaire = $this->organismePartenaire($fournisseur);
+            $this->reprendreLogo($fournisseur, $partenaire);
+
             $this->creerOuActiverCompte($fournisseur, $data['email'], $data['mot_de_passe']);
         } else {
             $fournisseur->update(['devenir_partenaire' => false]);
@@ -206,6 +209,7 @@ class FournisseurController extends Controller
         ]);
 
         $partenaire = $this->organismePartenaire($fournisseur);
+        $this->reprendreLogo($fournisseur, $partenaire);
         $this->audit->log('fournisseur.active', 'organisation', (string) $partenaire->id);
 
         $this->creerOuActiverCompte($fournisseur, $data['email'], $data['mot_de_passe']);
@@ -213,6 +217,17 @@ class FournisseurController extends Controller
         return response()->json([
             'data' => $this->presentOrganisation($partenaire),
         ], 201);
+    }
+
+    /**
+     * Reprise du logo du fournisseur sur l'organisation partenaire
+     * uniquement si celle-ci n'en a pas déjà un.
+     */
+    private function reprendreLogo(Fournisseur $fournisseur, Organisation $partenaire): void
+    {
+        if ($fournisseur->logo && !$partenaire->logo) {
+            $partenaire->update(['logo' => $fournisseur->logo]);
+        }
     }
 
     private function organismePartenaire(Fournisseur $fournisseur): Organisation

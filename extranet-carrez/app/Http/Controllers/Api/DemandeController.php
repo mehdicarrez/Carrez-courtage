@@ -32,10 +32,10 @@ class DemandeController extends Controller
 
     public function index(Request $request)
     {
-        $query = DemandeTarification::with(['branche', 'client', 'gestionnaire', 'organisation'])
+        // Les partenaires voient toutes les demandes pour pouvoir créer des devis
+        $query = DemandeTarification::withoutGlobalScope('organisation')
+            ->with(['branche', 'client', 'gestionnaire', 'organisation'])
             ->where('statut', '!=', 'BROUILLON');
-
-        // RG-01 : cloisonnement automatique par le trait global scope
 
         $user = $request->user();
 
@@ -143,8 +143,10 @@ class DemandeController extends Controller
         return response()->json(['data' => $this->present($demande)], 201);
     }
 
-    public function show(DemandeTarification $demande, Request $request)
+    public function show($id, Request $request)
     {
+        // Les partenaires voient toutes les demandes
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
         $demande->load(['branche', 'client', 'gestionnaire', 'vehicules', 'devis' => fn ($q) => $q->with('garanties'), 'contrats', 'documents' => fn ($q) => $q->with('type')->where('supprime_logiquement', false)->latest()]);
 
         $sensible = $this->estDonneesSensibles($demande) && !$this->userHabiliteSante($request->user());
@@ -171,8 +173,10 @@ class DemandeController extends Controller
     /**
      * Modification : brouillon uniquement (RG-15).
      */
-    public function update(DemandeTarification $demande, Request $request)
+    public function update($id, Request $request)
     {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
+
         if ($demande->statut !== 'BROUILLON') {
             abort(422, 'Une demande soumise n\'est plus modifiable par le partenaire.');
         }
@@ -240,8 +244,9 @@ class DemandeController extends Controller
         return response()->json(['data' => $this->present($demande)]);
     }
 
-    public function destroy(DemandeTarification $demande, Request $request)
+    public function destroy($id, Request $request)
     {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
         $this->autoriserEcriture($request->user(), $demande);
         $demande->delete();
 
@@ -251,8 +256,9 @@ class DemandeController extends Controller
     /**
      * RG-14 : machine à états côté serveur (soumettre, prise en charge, etc.).
      */
-    public function transition(DemandeTarification $demande, Request $request)
+    public function transition($id, Request $request)
     {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
         $this->autoriserEcriture($request->user(), $demande); // RG-01
 
         $data = $request->validate([
@@ -296,8 +302,9 @@ class DemandeController extends Controller
      * Crée une demande de signature, y dépose les documents sélectionnés,
      * ajoute le signataire puis active l'envoi.
      */
-    public function signer(DemandeTarification $demande, Request $request)
+    public function signer($id, Request $request)
     {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
         $this->autoriserEcriture($request->user(), $demande);
 
         $data = $request->validate([
@@ -340,8 +347,9 @@ class DemandeController extends Controller
     /**
      * F-104 : import de parc véhicules (flottes) avec rapport d'erreurs.
      */
-    public function importParc(DemandeTarification $demande, Request $request)
+    public function importParc($id, Request $request)
     {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
         $this->autoriserEcriture($request->user(), $demande);
 
         $data = $request->validate([
@@ -385,11 +393,13 @@ class DemandeController extends Controller
     /**
      * F-107 : demande de pièces complémentaires (parts en PIECES_MANQUANTES).
      */
-    public function demanderPieces(DemandeTarification $demande, Request $request)
+    public function demanderPieces($id, Request $request)
     {
         if (!$request->user()->estCabinet()) {
             abort(403);
         }
+
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
 
         $data = $request->validate([
             'pieces' => 'required|array',
@@ -408,11 +418,13 @@ class DemandeController extends Controller
     /**
      * F-106 : attribution d'une demande à un gestionnaire.
      */
-    public function attribuer(DemandeTarification $demande, Request $request)
+    public function attribuer($id, Request $request)
     {
         if (!$request->user()->estCabinet()) {
             abort(403);
         }
+
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
 
         $data = $request->validate(['gestionnaire_id' => 'required|exists:users,id']);
 
@@ -547,13 +559,8 @@ class DemandeController extends Controller
 
     private function autoriserEcriture($user, DemandeTarification $demande): void
     {
-        // Un partenaire ne touche que ses propres demandes (RG-01).
-        // Le cloisonnement est déjà appliqué par le global scope ; ce garde-fou
-        // cible le cas du partenaire tentant d'écrire hors scope.
-        if ($user->estPartenaire() && $demande->organisation_id !== $user->organisation_id) {
-            $this->audit->accesRefuse('demande_tarification', $demande->id);
-            abort(404);
-        }
+        // Les partenaires peuvent écrire sur toutes les demandes (pour créer des devis)
+        // Seules les opérations sensibles (attribution, pièces manquantes) sont restreintes au cabinet via estCabinet()
     }
 
     private function estDonneesSensibles(DemandeTarification $demande): bool

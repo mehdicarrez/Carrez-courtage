@@ -27,6 +27,8 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         const token = localStorage.getItem('extranet_token');
         if (!token) {
+            setUser(null);
+            localStorage.removeItem('extranet_user');
             setLoading(false);
             return;
         }
@@ -61,6 +63,16 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('extranet_user');
         setUser(null);
     };
+
+    // Fermeture de session à la fermeture du navigateur / de l'onglet
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            localStorage.removeItem('extranet_token');
+            localStorage.removeItem('extranet_user');
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, []);
 
     // Déconnexion automatique stricte après inactivité (souris, clavier, scroll, tactile)
     useEffect(() => {

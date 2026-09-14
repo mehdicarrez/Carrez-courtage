@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
-import { useAuth } from '../../auth';
+import { useAuth, estPartenaire } from '../../auth';
 import ModifierDemande from './ModifierDemande';
 
 const STATUT_CONFIG = {
@@ -18,16 +18,6 @@ const STATUT_CONFIG = {
     EXPIREE: { label: 'Expirée', color: 'text-gray-500', bg: 'bg-gray-100', dot: 'bg-gray-300', step: -1 },
 };
 
-const MAIN_STEPS = [
-    { key: 'BROUILLON', label: 'Brouillon', icon: '1' },
-    { key: 'SOUMISE', label: 'Soumise', icon: '2' },
-    { key: 'EN_ETUDE', label: 'En étude', icon: '3' },
-    { key: 'DEVIS_EMIS', label: 'Devis émis', icon: '4' },
-    { key: 'ACCEPTEE', label: 'Acceptée', icon: '5' },
-    { key: 'EN_SOUSCRIPTION', label: 'Souscription', icon: '6' },
-    { key: 'TRANSFORMEE', label: 'Transformée', icon: '✓' },
-];
-
 const fmt = (cts) => ((cts ?? 0) / 100).toFixed(2) + ' €';
 
 export default function DemandeDetail() {
@@ -35,6 +25,7 @@ export default function DemandeDetail() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const estCabinet = user && ['ADMIN', 'GESTIONNAIRE', 'CONSEILLER', 'COMPTABLE'].includes(user.role);
+    const basePath = estPartenaire(user) ? '/espace-partenaire' : '';
 
     const [demande, setDemande] = useState(null);
     const [devis, setDevis] = useState([]);
@@ -55,6 +46,9 @@ export default function DemandeDetail() {
 
     // Modal modification (brouillon uniquement)
     const [modifierOpen, setModifierOpen] = useState(false);
+
+    // Expansion devis
+    const [devisExpanded, setDevisExpanded] = useState(null);
 
     // Édition inline de l'onglet Informations (brouillon uniquement)
     const [editMode, setEditMode] = useState(false);
@@ -193,8 +187,6 @@ export default function DemandeDetail() {
     if (!demande) return null;
 
     const sc = STATUT_CONFIG[demande.statut] || STATUT_CONFIG.BROUILLON;
-    const currentStep = MAIN_STEPS.findIndex((s) => s.key === demande.statut);
-    const isTerminal = ['NON_ELIGIBLE', 'SANS_SUITE', 'EXPIREE', 'TRANSFORMEE'].includes(demande.statut);
 
     const tabs = [
         { key: 'devis', label: 'Devis', count: devis.length },
@@ -234,8 +226,8 @@ export default function DemandeDetail() {
                         Modifier
                     </button>
                 )}
-                {estCabinet && (
-                    <button onClick={() => navigate(`/demandes/${id}/devis`)}
+                {estPartenaire(user) && (
+                    <button onClick={() => navigate(`${basePath}/demandes/${id}/devis`)}
                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
                         <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
                         Saisir un devis
@@ -247,51 +239,6 @@ export default function DemandeDetail() {
                 <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" /></svg>
                 {error}
             </div>}
-
-            {/* Stepper */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    {MAIN_STEPS.map((step, i) => {
-                        const isCompleted = i < currentStep;
-                        const isCurrent = step.key === demande.statut;
-                        const isPast = i <= currentStep && !isTerminal;
-                        return (
-                            <div key={step.key} className="flex items-center flex-1 last:flex-none">
-                                <div className="flex flex-col items-center">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                                        isCurrent ? 'border-blue-600 bg-blue-600 text-white scale-110 shadow-md shadow-blue-200' :
-                                        isCompleted ? 'border-emerald-500 bg-emerald-500 text-white' :
-                                        isPast ? 'border-emerald-400 bg-emerald-50 text-emerald-700' :
-                                        'border-slate-200 bg-slate-50 text-slate-400'
-                                    }`}>
-                                        {isCompleted ? (
-                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
-                                        ) : step.icon}
-                                    </div>
-                                    <span className={`text-[10px] mt-1.5 font-medium text-center whitespace-nowrap ${
-                                        isCurrent ? 'text-blue-700' : isCompleted ? 'text-emerald-600' : 'text-slate-400'
-                                    }`}>{step.label}</span>
-                                </div>
-                                {i < MAIN_STEPS.length - 1 && (
-                                    <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-colors ${
-                                        i < currentStep ? 'bg-emerald-400' : i === currentStep ? 'bg-blue-200' : 'bg-slate-200'
-                                    }`}></div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-                {/* Terminaux (hors fil principal) */}
-                {isTerminal && demande.statut !== 'TRANSFORMEE' && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
-                            Statut final : {sc.label}
-                        </span>
-                        {demande.motif && <span className="text-xs text-slate-500">Motif : {demande.motif}</span>}
-                    </div>
-                )}
-            </div>
 
             {/* Actions transition */}
             {estCabinet && demande.transitions?.length > 0 && (
@@ -346,75 +293,380 @@ export default function DemandeDetail() {
 
             {/* Tab: Devis */}
             {activeTab === 'devis' && (
-                <div className="space-y-4">
-                    {devis.length === 0 ? (
-                        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
-                            <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
-                            <p className="text-slate-500 text-sm">Aucun devis pour cette demande.</p>
-                            {estCabinet && (
-                                <button onClick={() => navigate(`/demandes/${id}/devis`)}
-                                    className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Créer un devis</button>
+                devis.length === 0 ? (
+                    <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+                        <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        <p className="text-slate-500 text-sm">Aucun devis pour cette demande.</p>
+                        {estPartenaire(user) && (
+                            <button onClick={() => navigate(`${basePath}/demandes/${id}/devis`)}
+                                className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Créer un devis</button>
+                        )}
+                    </div>
+                ) : (
+                    <div>
+                        {/* Barre horizontale de devis */}
+                        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-slate-200 mb-4">
+                            {devis.map((d) => {
+                                const actif = (devisExpanded || devis[0]?.id) === d.id;
+                                return (
+                                    <button key={d.id} type="button" onClick={() => setDevisExpanded(d.id)}
+                                        className={`flex-shrink-0 inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
+                                            actif
+                                                ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
+                                                : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700'
+                                        }`}>
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            d.statut === 'ACCEPTE' ? 'bg-emerald-400' :
+                                            d.statut === 'ENVOYE' ? 'bg-blue-400' :
+                                            d.statut === 'EXPIRE' ? 'bg-red-400' :
+                                           'bg-slate-300'
+                                        }`}></span>
+                                        Devis {d.version ? `v${d.version}` : ''}
+                                    </button>
+                                );
+                            })}
+                            {estPartenaire(user) && (
+                                <button onClick={() => navigate(`${basePath}/demandes/${id}/devis`)}
+                                    className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3.5 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:border-blue-400 transition-colors">
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                    Nouveau devis
+                                </button>
                             )}
                         </div>
-                    ) : devis.map((d) => (
-                        <div key={d.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <h3 className="font-semibold text-slate-900">Devis {d.version ? `v${d.version}` : ''}</h3>
-                                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                                        d.statut === 'ACCEPTE' ? 'bg-emerald-50 text-emerald-700' :
-                                        d.statut === 'ENVOYE' ? 'bg-blue-50 text-blue-700' :
-                                        d.statut === 'EXPIRE' ? 'bg-red-50 text-red-700' :
-                                        'bg-slate-100 text-slate-600'
-                                    }`}>{d.statut}</span>
+
+                        {/* Détail du devis sélectionné */}
+                        {(() => {
+                            const d = devis.find((x) => x.id === (devisExpanded || devis[0]?.id)) || devis[0];
+                            if (!d) return null;
+                            return (
+                                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+
+                                {/* ========================================================= */}
+                                {/* 3 GRANDS BLOCS HORIZONTAUX                                */}
+                                {/* ========================================================= */}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+
+                                    {/* ===================================================== */}
+                                    {/* GRAND BLOC 1 — PARTENAIRE                             */}
+                                    {/* ===================================================== */}
+
+                                    {d.propose_par && (
+                                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                            <h3 className="text-sm font-semibold text-slate-900 mb-4">
+                                                Partenaire
+                                            </h3>
+                                            {/* Logo + nom */}
+                                            <div className="flex items-center gap-3 mb-4">
+
+                                                {d.propose_par.logo_url ? (
+                                                    <img
+                                                        src={d.propose_par.logo_url}
+                                                        alt=""
+                                                        className="w-14 h-14 rounded-lg object-contain border border-slate-200 bg-white flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-14 h-14 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                        {d.propose_par.nom
+                                                            ?.split(' ')
+                                                            .map((w) => w[0])
+                                                            .slice(0, 2)
+                                                            .join('')
+                                                            || '??'}
+                                                    </div>
+                                                )}
+
+                                                <div>
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        Partenaire
+                                                    </div>
+
+                                                    <div className="text-sm font-semibold text-slate-900">
+                                                        {d.propose_par.nom || '—'}
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                            {/* Contenu vertical */}
+                                            <div className="space-y-3">
+
+                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        Raison sociale
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                        {d.propose_par.nom || '—'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        Type
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                        {d.propose_par.type || '—'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        Forme juridique
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                        {d.propose_par.forme_juridique || '—'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        SIREN
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                        {d.propose_par.siren || '—'}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                        PAYS
+                                                    </div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                        {d.propose_par.pays || '—'}
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    )}
+
+
+                                    {/* ===================================================== */}
+                                    {/* GRAND BLOC 2 — DEVIS / STATUT / ACTIONS              */}
+                                    {/* ===================================================== */}
+
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+
+                                        {/* Header du devis */}
+                                        <div className="mb-4">
+
+                                            <div className="flex items-center gap-3 mb-3">
+
+                                                <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                    {d.version || '1'}
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-900">
+                                                        Devis {d.version ? `v${d.version}` : ''}
+                                                    </h3>
+
+                                                    <span
+                                                        className={`inline-block mt-1 text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                                                            d.statut === 'ACCEPTE'
+                                                                ? 'bg-emerald-50 text-emerald-700'
+                                                                : d.statut === 'ENVOYE'
+                                                                ? 'bg-blue-50 text-blue-700'
+                                                                : d.statut === 'EXPIRE'
+                                                                ? 'bg-red-50 text-red-700'
+                                                                : d.statut === 'REFUSE'
+                                                                ? 'bg-slate-100 text-slate-500'
+                                                                : 'bg-slate-100 text-slate-600'
+                                                        }`}
+                                                    >
+                                                        {d.statut}
+                                                    </span>
+                                                </div>
+
+                                            </div>
+
+                                            {/* Boutons */}
+                                            {d.statut === 'ENVOYE' && !d.est_expire && estCabinet && (
+                                                <div className="flex gap-2">
+
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            refuserDevis(d.id);
+                                                        }}
+                                                        disabled={busy}
+                                                        className="px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50 transition-colors"
+                                                    >
+                                                        Refuser
+                                                    </button>
+
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            accepterDevis(d.id);
+                                                        }}
+                                                        disabled={busy}
+                                                        className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50 transition-colors"
+                                                    >
+                                                        Accepter
+                                                    </button>
+
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                        {/* Informations du devis — verticales */}
+                                        <div className="space-y-3">
+
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Fractionnement
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {d.fractionnement || '—'}
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Valide jusqu'au
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {d.date_validite || '—'}
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* ===================================================== */}
+                                    {/* GRAND BLOC 3 — INFORMATIONS FINANCIÈRES              */}
+                                    {/* ===================================================== */}
+
+                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+
+                                        <div className="text-sm font-semibold text-slate-900 mb-4">
+                                            Informations financières
+                                        </div>
+
+                                        {/* Tous les champs dans UNE SEULE grande div */}
+                                        <div className="space-y-3">
+
+                                            {/* Prime HT */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Prime HT
+                                                </div>
+
+                                                <div className="text-lg font-bold text-slate-900 mt-1">
+                                                    {fmt(d.prime_ht_cts)}
+                                                </div>
+                                            </div>
+
+                                            {/* Prime TTC */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Prime TTC
+                                                </div>
+
+                                                <div className="text-lg font-bold text-slate-900 mt-1">
+                                                    {fmt(d.prime_ttc_cts)}
+                                                </div>
+                                            </div>
+
+                                            {/* Frais courtage */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Frais courtage
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {fmt(d.frais_courtage_cts)}
+                                                </div>
+                                            </div>
+
+                                            {/* Première échéance */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    1ère échéance
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {fmt(d.premiere_echeance_cts)}
+                                                </div>
+                                            </div>
+
+                                            {/* Fractionnement */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Fractionnement
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {d.fractionnement || '—'}
+                                                </div>
+                                            </div>
+
+                                            {/* Date de validité */}
+                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
+                                                    Valide jusqu'au
+                                                </div>
+
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {d.date_validite || '—'}
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
                                 </div>
-                                {d.statut === 'ENVOYE' && !d.est_expire && estCabinet && (
-                                    <div className="flex gap-2">
-                                        <button onClick={() => refuserDevis(d.id)} disabled={busy}
-                                            className="px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 disabled:opacity-50 transition-colors">Refuser</button>
-                                        <button onClick={() => accepterDevis(d.id)} disabled={busy}
-                                            className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm disabled:opacity-50 transition-colors">Accepter</button>
+
+
+                                {/* ========================================================= */}
+                                {/* CONDITIONS PARTICULIÈRES                                 */}
+                                {/* ========================================================= */}
+
+                                {d.conditions_particulieres && (
+                                    <div className="mb-3">
+
+                                        <div className="text-[10px] uppercase text-slate-500 font-medium mb-1">
+                                            Conditions particulières
+                                        </div>
+
+                                        <p className="text-sm text-slate-700 bg-slate-50 rounded-lg px-3 py-2">
+                                            {d.conditions_particulieres}
+                                        </p>
+
                                     </div>
                                 )}
-                            </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Prime HT</div>
-                                    <div className="text-lg font-bold text-slate-900">{fmt(d.prime_ht_cts)}</div>
+
+
+                                    {d.garanties && d.garanties.length > 0 && (
+                                        <div className="mb-3">
+                                            <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">Garanties</div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {d.garanties.map((g, i) => (
+                                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                                                        {g.intitule}
+                                                        {g.plafond_cts && <span className="text-slate-400">· {fmt(g.plafond_cts)}</span>}
+                                                        <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                            {g.optionnelle ? 'opt.' : 'incl.'}
+                                                        </span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Prime TTC</div>
-                                    <div className="text-lg font-bold text-slate-900">{fmt(d.prime_ttc_cts)}</div>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Fractionnement</div>
-                                    <div className="text-sm font-semibold text-slate-900 mt-0.5">{d.fractionnement || '—'}</div>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Valide jusqu'au</div>
-                                    <div className="text-sm font-semibold text-slate-900 mt-0.5">{d.date_validite || '—'}</div>
-                                </div>
-                            </div>
-                            {d.garanties && d.garanties.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-slate-100">
-                                    <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">Garanties</div>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {d.garanties.map((g, i) => (
-                                            <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
-                                                {g.intitule}
-                                                <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                                    {g.optionnelle ? 'opt.' : 'incl.'}
-                                                </span>
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                            );
+                        })()}
+                    </div>
+                )
             )}
 
             {/* Tab: Informations */}

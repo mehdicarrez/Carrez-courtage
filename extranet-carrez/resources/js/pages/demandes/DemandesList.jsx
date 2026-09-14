@@ -729,6 +729,13 @@ export default function DemandesList() {
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center gap-1 justify-end">
                                                     <button
+                                                        onClick={() => navigate(`${base}/demandes/${d.id}`)}
+                                                        title="Voir les devis"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                                    >
+                                                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clipRule="evenodd" /></svg>
+                                                    </button>
+                                                    <button
                                                         onClick={() => ouvrirVoir(d.id)}
                                                         title="Voir"
                                                         className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
@@ -1114,6 +1121,13 @@ export default function DemandesList() {
                                             <svg className="w-4 h-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 5.5A3.5 3.5 0 0 1 9.5 2h1A3.5 3.5 0 0 1 14 5.5v.55c1.7.39 3 1.93 3 3.8v3.4A3.25 3.25 0 0 1 13.75 16H6.25A3.25 3.25 0 0 1 3 12.75v-3.4c0-1.87 1.3-3.41 3-3.8V5.5Zm4 3.5a.75.75 0 0 1 .75.75v2.1l.95.5a.75.75 0 1 1-.75 1.3l-1.5-.8A.75.75 0 0 1 9 12.25v-3A.75.75 0 0 1 9.75 8.5Zm1.75-4.5v.53c.42 0 .83.08 1.2.23A2 2 0 0 0 11.25 4h-.75Z" clipRule="evenodd" /></svg>
                                             Créer une tâche
                                         </button>
+                                        {estPartenaire(user) && (
+                                            <button onClick={() => { setVoirOpen(false); navigate(`${base}/demandes/${voirData.id}/devis`); }}
+                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition-colors">
+                                                <svg className="w-4 h-4 text-purple-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Zm0 3a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Zm0-6a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Z" clipRule="evenodd" /></svg>
+                                                Ajouter un devis
+                                            </button>
+                                        )}
                                         <button onClick={ouvrirSignature}
                                             className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
                                             <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="m10.577 1.332 3.811 1.132-.415 1.017-3.393-1.008V10.35L13.68 8.88l-.41-2.05 1.42-.071.716 3.579c.022.112.022.226 0 .338l-.429 2.143c-.08.403-.3.77-.62 1.032l-3.472 2.88a1.75 1.75 0 0 1-2.4 0l-3.472-2.88a1.75 1.75 0 0 1-.62-1.032l-.429-2.143a1.75 1.75 0 0 1 0-.338l.716-3.579 1.42.071-.41 2.05 3.894 1.47V2.473L8.2 3.481l-.415-1.017 3.792-1.132Z" clipRule="evenodd" /></svg>
