@@ -1,0 +1,84 @@
+services:
+
+  # ---------- MySQL ----------
+  mysql:
+    image: mysql:8.0
+    container_name: carrez-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: extranet_carrez
+      MYSQL_USER: carrez
+      MYSQL_PASSWORD: carrez
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - carrez
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- PHP-FPM App ----------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carrez-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - .:/var/www
+      - ./storage:/var/www/storage
+    environment:
+      APP_NAME: "Extranet Partenaires Carrez"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: base64:aZtw5iaQ8JocEJLptvvzcZJVlAxP7FR5OsAMT++0Izw=
+      APP_URL: http://localhost
+      APP_LOCALE: fr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: extranet_carrez
+      DB_USERNAME: carrez
+      DB_PASSWORD: carrez
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      MAIL_MAILER: smtp
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: "587"
+      MAIL_ENCRYPTION: tls
+      YOUSIGN_API_URL: https://api-sandbox.yousign.app/v3
+    networks:
+      - carrez
+
+  # ---------- Nginx ----------
+  nginx:
+    image: nginx:alpine
+    container_name: carrez-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    volumes:
+      - .:/var/www
+      - ./public:/var/www/public
+      - ./storage:/var/www/storage
+      - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - carrez
+
+volumes:
+  mysql_data:
+
+networks:
+  carrez:
+    driver: bridge

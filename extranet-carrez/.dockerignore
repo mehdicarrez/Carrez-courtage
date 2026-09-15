@@ -1,0 +1,17 @@
+node_modules
+vendor
+.git
+.gitignore
+.env
+.env.example
+*.md
+.vscode
+.idea
+.DS_Store
+docker-compose.yml
+Dockerfile
+.dockerignore
+.docker
+tests
+.phpunit.result.cache
+phpunit.xml

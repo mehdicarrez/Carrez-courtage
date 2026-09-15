@@ -323,7 +323,23 @@ export default function DemandeDetail() {
                                             d.statut === 'EXPIRE' ? 'bg-red-400' :
                                            'bg-slate-300'
                                         }`}></span>
-                                        Devis {d.version ? `v${d.version}` : ''}
+                                         {d.propose_par.logo_url ? (
+                                                    <img
+                                                        src={d.propose_par.logo_url}
+                                                        alt=""
+                                                        className="w-10 h-10 rounded-lg object-contain border border-slate-200 bg-white flex-shrink-0"
+                                                    />
+                                                ) : (
+                                                    <div className="w-14 h-14 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                                        {d.propose_par.nom
+                                                            ?.split(' ')
+                                                            .map((w) => w[0])
+                                                            .slice(0, 2)
+                                                            .join('')
+                                                            || '??'}
+                                                    </div>
+                                                )}
+                                                <p>{d.propose_par.nom}</p>
                                     </button>
                                 );
                             })}
