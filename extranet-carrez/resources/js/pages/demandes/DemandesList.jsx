@@ -52,6 +52,8 @@ export default function DemandesList() {
     const [sansGestionnaire, setSansGestionnaire] = useState(false);
     const [q, setQ] = useState('');
     const [sort, setSort] = useState('recent');
+    const [page, setPage] = useState(1);
+    const perPage = 8;
 
     // Référentiels
     const [branches, setBranches] = useState([]);
@@ -147,8 +149,11 @@ export default function DemandesList() {
             .catch(() => setClients([]));
     };
 
+
+
     // Rechargement quand les filtres changent
     useEffect(() => {
+        setPage(1);
         const params = {};
         if (statut) params.statut = statut;
         if (brancheId) params.branche_id = brancheId;
@@ -505,9 +510,22 @@ export default function DemandesList() {
         setQ('');
         setSort('recent');
     };
+    const totalPages = Math.max(1, Math.ceil(demandes.length / perPage));
+    const demandesPage = demandes.slice((page - 1) * perPage, page * perPage);
 
-    return (
-        <div>
+        return (
+        <div
+            className="relative min-h-screen -m-4 md:-m-6 xl:-mx-10 xl:-my-8 p-4 md:p-6 xl:px-10 xl:py-8"
+            style={{
+                backgroundImage: "url('/images/img.jpg')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundAttachment: 'fixed',
+            }}
+        >
+            {/* Voile blanc semi-transparent pour garder le contenu lisible */}
+            <div className="absolute inset-0 bg-white/85 pointer-events-none"></div>
+            <div className="relative">
             {/* En-tête */}
             <div className="mb-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -660,7 +678,7 @@ export default function DemandesList() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200 bg-slate-50">
+                                <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60">
                                     {estCabinet && (
                                         <th className="px-4 py-3 w-10">
                                             <input
@@ -682,13 +700,13 @@ export default function DemandesList() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {demandes.map((d) => {
+                                {demandesPage.map((d) => {
                                     const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
                                     const brancheIdx = (d.branche?.length || d.branche_id?.length || 0) % brancheColor.length;
                                     return (
                                         <tr
                                             key={d.id}
-                                            className={`hover:bg-slate-50/60 transition-colors ${selected.includes(d.id) ? 'bg-blue-50/40' : ''}`}
+                                            className={`group hover:bg-blue-50/30 hover:shadow-sm transition-all duration-150 ${selected.includes(d.id) ? 'bg-blue-50/40' : ''}`}
                                         >
                                             {estCabinet && (
                                                 <td className="px-4 py-3">
@@ -715,8 +733,8 @@ export default function DemandesList() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap ${sc.cls}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${sc.cls}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} animate-pulse`}></span>
                                                     {sc.label}
                                                 </span>
                                             </td>
@@ -731,21 +749,21 @@ export default function DemandesList() {
                                                     <button
                                                         onClick={() => navigate(`${base}/demandes/${d.id}`)}
                                                         title="Voir les devis"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clipRule="evenodd" /></svg>
                                                     </button>
                                                     <button
                                                         onClick={() => ouvrirVoir(d.id)}
                                                         title="Voir"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" /></svg>
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteModal({ id: d.id, reference: d.reference })}
                                                         title="Supprimer"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
                                                     </button>
@@ -757,6 +775,56 @@ export default function DemandesList() {
                             </tbody>
                         </table>
                     </div>
+                                        {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                            <span className="text-xs text-slate-500">
+                                Page <span className="font-semibold text-slate-700">{page}</span> sur{' '}
+                                <span className="font-semibold text-slate-700">{totalPages}</span>
+                                {' · '}{demandes.length} demande{demandes.length > 1 ? 's' : ''} au total
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                                    .reduce((acc, p, idx, arr) => {
+                                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                                        acc.push(p);
+                                        return acc;
+                                    }, [])
+                                    .map((p, i) =>
+                                        p === '...' ? (
+                                            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">…</span>
+                                        ) : (
+                                            <button
+                                                key={p}
+                                                onClick={() => setPage(p)}
+                                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
+                                                    p === page
+                                                        ? 'bg-blue-600 text-white shadow-sm scale-105'
+                                                        : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
+                                    )}
+                                <button
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1508,6 +1576,9 @@ export default function DemandesList() {
                     }}
                 />
             )}
+            </div>
         </div>
     );
 }
+
+
