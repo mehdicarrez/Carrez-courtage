@@ -14,6 +14,8 @@ const STATUT_LABELS = {
     RESILIE: 'Résilié',
     SANS_EFFET: 'Sans effet',
     EXPIRE: 'Expiré',
+    REGLE: 'Réglé',
+    NON_REGLE: 'Non réglé',
 };
 
 const STATUT_CLS = {
@@ -27,6 +29,8 @@ const STATUT_CLS = {
     RESILIE: 'bg-slate-100 text-slate-500',
     SANS_EFFET: 'bg-gray-100 text-gray-500',
     EXPIRE: 'bg-purple-50 text-purple-700',
+    REGLE: 'bg-emerald-50 text-emerald-700',
+    NON_REGLE: 'bg-rose-50 text-rose-700',
 };
 
 const EMPTY = { type: 'PHYSIQUE', civilite: '', nom: '', prenom: '', raison_sociale: '', siren: '', siret: '', forme_juridique: '', personne_a_contacter: '', adresse: '', code_postal: '', ville: '', telephone: '', tel2: '', email: '', email2: '', preference_contact: '', origine: '', rgpd_consentement: false, exclure_marketing: false };

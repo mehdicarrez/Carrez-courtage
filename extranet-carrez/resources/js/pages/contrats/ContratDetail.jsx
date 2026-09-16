@@ -28,6 +28,13 @@ const STATUT_COLORS = {
     EN_COURS_EXPERTISE: 'bg-blue-50 text-blue-700', CLOS: 'bg-slate-100 text-slate-500',
 };
 
+const CONTRAT_STATUT_LABELS = {
+    EN_CONSTITUTION: 'En constitution', EN_ATTENTE_SIGNATURE: 'En attente signature',
+    SIGNE: 'Signé', EN_ATTENTE_EMISSION: "En attente d'émission", EN_VIGUEUR: 'En vigueur',
+    IMPAYE: 'Impayé', SUSPENDU: 'Suspendu', RESILIE: 'Résilié', SANS_EFFET: 'Sans effet',
+    EXPIRE: 'Expiré', REGLE: 'Réglé', NON_REGLE: 'Non réglé',
+};
+
 const DOC_GENERE_CODES = ['FICHE_CONSEIL', 'ORDRE_REMPLACEMENT', 'MANDAT_EXCLUSIF', 'POLICE'];
 
 export default function ContratDetail() {
@@ -108,11 +115,17 @@ export default function ContratDetail() {
                     date_echeance_principale: res.data.data.date_echeance_principale || '',
                     fractionnement: res.data.data.fractionnement || '',
                 });
+                const devisId = res.data.data?.devis_id;
+                if (!devisId) {
+                    setClientDossierDocs([]);
+                    return;
+                }
+                return api.get('/documents', { params: { objet_type: 'devis', objet_id: devisId } })
+                    .then((dr) => setClientDossierDocs(dr.data.data || []))
+                    .catch(() => setClientDossierDocs([]));
             })
             .catch((err) => setError(err.response?.status === 404 ? 'Contrat introuvable.' : 'Erreur.'))
             .finally(() => setLoading(false));
-        api.get('/documents').catch(() => ({ data: { data: [] } }))
-            .then((res) => setClientDossierDocs(res.data.data || []));
     };
 
     useEffect(() => { charger(); }, [id]);
@@ -148,6 +161,8 @@ export default function ContratDetail() {
 
     const genererQuittances = () => call('post', `/contrats/${id}/quittances`);
     const majQuittance = (qid, statut) => call('patch', `/quittances/${qid}`, { statut });
+
+    const changerStatutManuel = (statut) => call('post', `/contrats/${id}/statut-manuel`, { statut });
 
     const declarerSinistre = async () => {
         const ok = await call('post', `/contrats/${id}/sinistres`, formSinistre);
@@ -418,7 +433,33 @@ export default function ContratDetail() {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                             <div>
                                 <span className="text-slate-500">Statut :</span>{' '}
-                                <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">{contrat.statut}</span>
+                                <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                                    {CONTRAT_STATUT_LABELS[contrat.statut] || contrat.statut}
+                                </span>
+                                {['EN_ATTENTE_SIGNATURE', 'REGLE', 'NON_REGLE'].includes(contrat.statut) && (
+                                    <div className="flex gap-2 mt-3">
+                                        <button
+                                            onClick={() => changerStatutManuel('REGLE')}
+                                            disabled={busy || contrat.statut === 'REGLE'}
+                                            className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                                                contrat.statut === 'REGLE'
+                                                    ? 'bg-emerald-600 border-emerald-600 text-white'
+: 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
+                                            }`}>
+                                        Réglé
+                                    </button>
+                                        <button
+                                            onClick={() => changerStatutManuel('NON_REGLE')}
+                                            disabled={busy || contrat.statut === 'NON_REGLE'}
+                                            className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                                                contrat.statut === 'NON_REGLE'
+                                                    ? 'bg-rose-600 border-rose-600 text-white'
+                                                    : 'border-rose-300 text-rose-700 hover:bg-rose-50'
+                                            }`}>
+                                            Non réglé
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             <div><span className="text-slate-500">Souscription :</span> {progression}%</div>
                             <div><span className="text-slate-500">Quittances :</span> {contrat.nb_quittances}</div>

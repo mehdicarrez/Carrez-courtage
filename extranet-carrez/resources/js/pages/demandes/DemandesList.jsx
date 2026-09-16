@@ -41,7 +41,7 @@ const devisStatutLabels = {
     REFUSE: 'Refusé',
     EXPIRE: 'Expiré',
     TRANSFORME: 'Transformé',
-    CONTRAT_SIGNE: 'Contrat signé',
+    DEVIS_SIGNE: 'Devis signé',
 };
 
 const devisStatutConfig = {
@@ -51,7 +51,7 @@ const devisStatutConfig = {
     REFUSE: { cls: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
     EXPIRE: { cls: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
     TRANSFORME: { cls: 'bg-green-50 text-green-700 ring-green-200', dot: 'bg-green-600' },
-    CONTRAT_SIGNE: { cls: 'bg-teal-50 text-teal-700 ring-teal-200', dot: 'bg-teal-600' },
+    DEVIS_SIGNE: { cls: 'bg-teal-50 text-teal-700 ring-teal-200', dot: 'bg-teal-600' },
 };
 
 const fmtCts = (v) => (v == null ? '—' : (v / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }));
