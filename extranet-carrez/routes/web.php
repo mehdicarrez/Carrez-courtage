@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\FournisseurController;
 use App\Http\Controllers\Api\MessagerieController;
 use App\Http\Controllers\Api\PartenaireController;
@@ -15,6 +16,11 @@ Route::get('/', fn () => view('app'));
 // (CA-51 — l'URL rejouée après expiration est refusée par Laravel)
 Route::get('/documents/{document}/secure', [DocumentController::class, 'telechargement'])
     ->name('documents.telechargement')
+    ->middleware('signed');
+
+// Pièce jointe d'un message via URL signée à durée de vie courte (RG-51)
+Route::get('/messages/{message}/fichier/{cle}', [ConversationController::class, 'telechargerPiece'])
+    ->name('messages.fichier')
     ->middleware('signed');
 
 // Visualisation du logo et des documents joints d'un fournisseur via URL signée

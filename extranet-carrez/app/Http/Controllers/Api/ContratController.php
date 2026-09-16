@@ -131,7 +131,7 @@ class ContratController extends Controller
             'prime_ttc_cts' => $devis->prime_ttc_cts,
             'frais_courtage_cts' => $devis->frais_courtage_cts,
             'fractionnement' => $data['fractionnement'] ?? $devis->fractionnement ?? 'ANNUEL',
-            'statut' => 'SIGNE',
+            'statut' => 'EN_ATTENTE_SIGNATURE',
             'annee_assurance' => 1,
         ]);
 
@@ -153,8 +153,8 @@ class ContratController extends Controller
             $this->rattacherFichierContrat($contrat, $request->file('fichier_contrat'));
         }
 
-        // Le devis passe en CONTRAT_SIGNE, la demande en TRANSFORMEE
-        StateMachine::pour($devis)->appliquer($devis, 'CONTRAT_SIGNE');
+        // Le devis passe en DEVIS_SIGNE, la demande en TRANSFORMEE
+        StateMachine::pour($devis)->appliquer($devis, 'DEVIS_SIGNE');
         if ($demande->peutTransiterVers('TRANSFORMEE')) {
             StateMachine::pour($demande)->appliquer($demande, 'TRANSFORMEE');
         } elseif ($demande->peutTransiterVers('EN_SOUSCRIPTION')) {
@@ -244,6 +244,25 @@ class ContratController extends Controller
         if ($nouvelEtat === 'SANS_EFFET') {
             $this->calc->genererReprise($contrat, 'SANS_EFFET');
         }
+
+        return response()->json(['data' => $this->present($contrat->fresh())]);
+    }
+
+    /**
+     * Changement manuel du statut vers Réglé / Non réglé (cabinet et partenaire).
+     */
+    public function changerStatutManuel(Contrat $contrat, Request $request)
+    {
+        $this->verifierAcces($contrat, $request->user());
+
+        $data = $request->validate(['statut' => 'required|in:REGLE,NON_REGLE']);
+
+        if (!$contrat->peutTransiterVers($data['statut'])) {
+            abort(422, 'Transition interdite.');
+        }
+
+        StateMachine::pour($contrat)->appliquer($contrat, $data['statut']);
+        $this->audit->log('contrat.statut_manuel', 'contrat', (string) $contrat->id, null, ['statut' => $data['statut']]);
 
         return response()->json(['data' => $this->present($contrat->fresh())]);
     }
@@ -859,6 +878,7 @@ class ContratController extends Controller
         return [
             'id' => $c->id,
             'reference' => $c->reference,
+            'devis_id' => $c->devis_id,
             'numero_police' => $c->numero_police,
             'statut' => $c->statut,
             'date_statut' => $c->date_statut,

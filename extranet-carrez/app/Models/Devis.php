@@ -28,16 +28,16 @@ class Devis extends Model
         'taux_commission_percue' => 'float',
     ];
 
-    public const ETATS = ['BROUILLON', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME', 'CONTRAT_SIGNE'];
+    public const ETATS = ['BROUILLON', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME', 'DEVIS_SIGNE'];
 
     public const TRANSITIONS = [
         'BROUILLON' => ['ENVOYE'],
         'ENVOYE' => ['ACCEPTE', 'REFUSE', 'EXPIRE'],
-        'ACCEPTE' => ['TRANSFORME', 'CONTRAT_SIGNE'],
+        'ACCEPTE' => ['TRANSFORME', 'DEVIS_SIGNE'],
         'REFUSE' => [],
         'EXPIRE' => ['ENVOYE'], // prolongation (RG-21)
         'TRANSFORME' => [],
-        'CONTRAT_SIGNE' => [],
+        'DEVIS_SIGNE' => [],
     ];
 
     public function demande()

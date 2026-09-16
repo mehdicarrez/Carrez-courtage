@@ -119,6 +119,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/contrats/{contrat}', [ContratController::class, 'show']);
     Route::put('/contrats/{contrat}', [ContratController::class, 'update']);
     Route::post('/contrats/{contrat}/transitions', [ContratController::class, 'transition']);
+    Route::post('/contrats/{contrat}/statut-manuel', [ContratController::class, 'changerStatutManuel']);
     Route::post('/contrats/{contrat}/avenants', [ContratController::class, 'creerAvenant']);
     Route::post('/contrats/{contrat}/quittances', [ContratController::class, 'genererQuittances']);
     Route::patch('/quittances/{quittance}', [ContratController::class, 'majQuittance']);

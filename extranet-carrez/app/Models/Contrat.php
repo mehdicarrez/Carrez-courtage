@@ -58,11 +58,12 @@ class Contrat extends Model
     public const ETATS = [
         'EN_CONSTITUTION', 'EN_ATTENTE_SIGNATURE', 'SIGNE', 'EN_ATTENTE_EMISSION',
         'EN_VIGUEUR', 'IMPAYE', 'SUSPENDU', 'RESILIE', 'SANS_EFFET', 'EXPIRE',
+        'REGLE', 'NON_REGLE',
     ];
 
     public const TRANSITIONS = [
         'EN_CONSTITUTION' => ['EN_ATTENTE_SIGNATURE'],
-        'EN_ATTENTE_SIGNATURE' => ['SIGNE'],
+        'EN_ATTENTE_SIGNATURE' => ['SIGNE', 'REGLE', 'NON_REGLE'],
         'SIGNE' => ['EN_ATTENTE_EMISSION', 'SANS_EFFET'],
         'EN_ATTENTE_EMISSION' => ['EN_VIGUEUR', 'SANS_EFFET'],
         'EN_VIGUEUR' => ['IMPAYE', 'SUSPENDU', 'RESILIE', 'SANS_EFFET', 'EXPIRE'],
@@ -71,6 +72,8 @@ class Contrat extends Model
         'RESILIE' => [],
         'SANS_EFFET' => [],
         'EXPIRE' => [],
+        'REGLE' => ['NON_REGLE'],
+        'NON_REGLE' => ['REGLE'],
     ];
 
     public const MOTIFS_RESILIATION = [

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { useAuth, estPartenaire } from '../../auth';
 import ModifierDemande from './ModifierDemande';
+import DevisMessagerie from './DevisMessagerie';
 
 const STATUT_CONFIG = {
     BROUILLON: { label: 'Brouillon', color: 'text-slate-500', bg: 'bg-slate-100', dot: 'bg-slate-400', step: 0 },
@@ -44,10 +45,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
     // Projet Co-Courtage
     const [vueProjet, setVueProjet] = useState(false);
-
-    // Attacher contrat
-    const [contratFile, setContratFile] = useState(null);
-    const [contratEnvoiDevisId, setContratEnvoiDevisId] = useState(null);
 
     const load = async () => {
         try {
@@ -113,29 +110,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
             setError(err.response?.data?.message || 'Erreur.');
         } finally {
             setBusy(false);
-        }
-    };
-
-    const signerContrat = async (devisId) => {
-        if (!contratFile) {
-            setError('Veuillez sélectionner le fichier contrat.');
-            return;
-        }
-        setContratEnvoiDevisId(devisId);
-        setError('');
-        const fd = new FormData();
-        fd.append('fichier_contrat', contratFile);
-        try {
-            await api.post(`/devis/${devisId}/contrat`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            setContratFile(null);
-            setContratEnvoiDevisId(null);
-            await load();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Erreur lors de la création du contrat.');
-        } finally {
-            setContratEnvoiDevisId(null);
         }
     };
 
@@ -275,7 +249,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700'
                                         }`}>
                                         <span className={`w-2 h-2 rounded-full ${
-                                            d.statut === 'CONTRAT_SIGNE' ? 'bg-teal-400' :
+                                            d.statut === 'DEVIS_SIGNE' ? 'bg-teal-400' :
                                             d.statut === 'ACCEPTE' ? 'bg-emerald-400' :
                                             d.statut === 'ENVOYE' ? 'bg-blue-400' :
                                             d.statut === 'EXPIRE' ? 'bg-red-400' :
@@ -518,7 +492,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
                                                     <span
                                                         className={`inline-block mt-1 text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
-                                                            d.statut === 'CONTRAT_SIGNE'
+                                                            d.statut === 'DEVIS_SIGNE'
                                                                 ? 'bg-teal-50 text-teal-700'
                                                                 : d.statut === 'ACCEPTE'
                                                                 ? 'bg-emerald-50 text-emerald-700'
@@ -531,7 +505,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                                 : 'bg-slate-100 text-slate-600'
                                                         }`}
                                                     >
-                                                        {d.statut === 'CONTRAT_SIGNE' ? 'Contrat signé' : d.statut}
+                                                        {d.statut === 'DEVIS_SIGNE' ? 'Devis signé' : d.statut}
                                                     </span>
                                                 </div>
 
@@ -595,36 +569,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                             </span>
                                                         </button>
                                                     </div>
-                                                </div>
-                                            )}
-
-                                            {d.statut === 'ACCEPTE' && estCabinet && (
-                                                <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-lg px-3 py-3">
-                                                    <div className="text-[10px] uppercase text-teal-700 font-semibold mb-2">
-                                                        Action
-                                                    </div>
-                                                    {d.contrat ? (
-                                                        <a href={`${basePath}/contrats/${d.contrat.id}`}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-teal-600 text-white hover:bg-teal-700 shadow-sm transition-colors">
-                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3.5A1.5 1.5 0 0 1 5.5 2h9A1.5 1.5 0 0 1 16 3.5v13a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 16.5v-13Z" /></svg>
-                                                            Voir le contrat
-                                                        </a>
-                                                    ) : (
-                                                        <div className="space-y-2">
-                                                            <label className="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer bg-white border border-slate-200 rounded-lg px-3 py-2 hover:border-teal-300 transition-colors">
-                                                                <svg className="w-4 h-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
-                                                                <span>{contratFile ? contratFile.name : 'Attacher contrat'}</span>
-                                                                <input type="file" accept=".pdf,.jpeg,.jpg,.png,.docx" className="hidden"
-                                                                    onChange={(e) => setContratFile(e.target.files[0] || null)} />
-                                                            </label>
-                                                            <button onClick={(e) => { e.stopPropagation(); signerContrat(d.id); }}
-                                                                disabled={contratEnvoiDevisId === d.id || !contratFile}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-white text-teal-700 border border-teal-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-teal-50">
-                                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
-                                                                {contratEnvoiDevisId === d.id ? 'Envoi...' : 'Envoyer'}
-                                                            </button>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             )}
 
@@ -798,6 +742,9 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Messagerie cabinet / partenaire */}
+                                    <DevisMessagerie devis={d} onSigne={() => load()} />
                                 </div>
                             );
                         })()}
