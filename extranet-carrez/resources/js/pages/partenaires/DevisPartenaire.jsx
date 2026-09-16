@@ -9,6 +9,7 @@ const statutBadges = {
     REFUSE: 'bg-red-50 text-red-700',
     EXPIRE: 'bg-amber-50 text-amber-700',
     TRANSFORME: 'bg-violet-50 text-violet-700',
+    CONTRAT_SIGNE: 'bg-teal-50 text-teal-700',
 };
 
 const statutLabels = {
@@ -18,6 +19,7 @@ const statutLabels = {
     REFUSE: 'Refusé',
     EXPIRE: 'Expiré',
     TRANSFORME: 'Transformé',
+    CONTRAT_SIGNE: 'Contrat signé',
 };
 
 const montant = (cts) =>
@@ -59,7 +61,7 @@ export default function DevisPartenaire() {
                     </p>
                 </div>
                 <div className="ml-auto">
-                    {['', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME'].map((s) => (
+                    {['', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME', 'CONTRAT_SIGNE'].map((s) => (
                         <button
                             key={s || 'tous'}
                             onClick={() => setStatut(s)}

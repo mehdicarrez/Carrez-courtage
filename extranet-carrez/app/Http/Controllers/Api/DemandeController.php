@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branche;
 use App\Models\Client;
 use App\Models\DemandeTarification;
+use App\Models\Devis;
 use App\Models\Document;
 use App\Models\SchemaFormulaire;
 use App\Models\User;
@@ -35,6 +36,7 @@ class DemandeController extends Controller
         // Les partenaires voient toutes les demandes pour pouvoir créer des devis
         $query = DemandeTarification::withoutGlobalScope('organisation')
             ->with(['branche', 'client', 'gestionnaire', 'organisation'])
+            ->withCount('devis')
             ->where('statut', '!=', 'BROUILLON');
 
         $user = $request->user();
@@ -147,7 +149,8 @@ class DemandeController extends Controller
     {
         // Les partenaires voient toutes les demandes
         $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
-        $demande->load(['branche', 'client', 'gestionnaire', 'vehicules', 'devis' => fn ($q) => $q->with('garanties'), 'contrats', 'documents' => fn ($q) => $q->with('type')->where('supprime_logiquement', false)->latest()]);
+        $demande->load(['branche', 'client', 'gestionnaire', 'vehicules', 'devis' => fn ($q) => $q->with(['garanties', 'user.organisation']), 'contrats', 'documents' => fn ($q) => $q->with('type')->where('supprime_logiquement', false)->latest()]);
+        $demande->loadCount('devis');
 
         $sensible = $this->estDonneesSensibles($demande) && !$this->userHabiliteSante($request->user());
         $data = $this->present($demande);
@@ -165,6 +168,33 @@ class DemandeController extends Controller
             'taille' => $doc->taille,
             'creation' => $doc->created_at,
             'statut_validation' => $doc->statut_validation,
+        ])->values();
+
+        // RG-01 bis : un partenaire ne voit que les devis qu'il a proposés
+        $devis = $demande->devis;
+        if ($request->user()->estPartenaire()) {
+            $devis = $devis->where('user_id', $request->user()->id);
+        }
+
+        $data['devis'] = $devis->map(fn (Devis $d) => [
+            'id' => $d->id,
+            'version' => $d->version,
+            'statut' => $d->statut,
+            'est_expire' => $d->estExpire(),
+            'prime_ttc_cts' => $d->prime_ttc_cts,
+            'date_effet_possible' => $d->date_effet_possible,
+            'date_validite' => $d->date_validite,
+            'created_at' => $d->created_at,
+            'propose_par' => $d->user?->organisation ? [
+                'organisation_id' => $d->user->organisation->id,
+                'nom' => $d->user->organisation->raison_sociale,
+            ] : null,
+            'garanties' => $d->garanties?->map(fn ($g) => [
+                'intitule' => $g->intitule,
+                'plafond_cts' => $g->plafond_cts,
+                'franchise_cts' => $g->franchise_cts,
+                'incluse' => $g->incluse,
+            ])->values() ?? [],
         ])->values();
 
         return response()->json(['data' => $data]);

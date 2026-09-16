@@ -9,6 +9,7 @@ const statutLabels = {
     REFUSE: 'Refusé',
     EXPIRE: 'Expiré',
     TRANSFORME: 'Transformé',
+    CONTRAT_SIGNE: 'Contrat signé',
 };
 
 const statutConfig = {
@@ -18,6 +19,7 @@ const statutConfig = {
     REFUSE: { cls: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
     EXPIRE: { cls: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
     TRANSFORME: { cls: 'bg-green-50 text-green-700 ring-green-200', dot: 'bg-green-600' },
+    CONTRAT_SIGNE: { cls: 'bg-teal-50 text-teal-700 ring-teal-200', dot: 'bg-teal-600' },
 };
 
 const eur = (cts) => cts != null ? (cts / 100).toFixed(2) + ' €' : '—';
