@@ -26,7 +26,7 @@ class DevisController extends Controller
         $demande = \App\Models\DemandeTarification::withoutGlobalScope('organisation')->findOrFail($demandeId);
 
         // Un partenaire ne voit que les devis qu'il a proposés sur cette demande
-        $devis = $demande->devis()->with(['garanties', 'user.organisation', 'proposant.organisation']);
+        $devis = $demande->devis()->with(['garanties', 'documents.type', 'user.organisation', 'proposant.organisation', 'contrat']);
         if ($request->user()->estPartenaire()) {
             $devis->where('user_id', $request->user()->id);
         }
@@ -43,7 +43,7 @@ class DevisController extends Controller
      */
     public function liste(Request $request)
     {
-        $query = Devis::with(['demande.client', 'demande.branche', 'garanties', 'user.organisation', 'proposant.organisation'])
+        $query = Devis::with(['demande.client', 'demande.branche', 'garanties', 'user.organisation', 'proposant.organisation', 'contrat'])
             ->whereHas('demande', fn ($q) => $q->withoutGlobalScope('organisation'));
 
         // Un partenaire ne voit que les devis qu'il a proposés (RG-01 bis)
@@ -134,7 +134,7 @@ class DevisController extends Controller
     public function show(Devis $devis, Request $request)
     {
         $this->verifierAcces($devis, $request->user());
-        $devis->load('garanties', 'demande');
+        $devis->load(['garanties', 'demande', 'documents.type']);
 
         return response()->json(['data' => $this->present($devis)]);
     }
@@ -305,6 +305,11 @@ class DevisController extends Controller
             'motif' => $d->motif,
             'version' => $d->version,
             'est_expire' => $d->estExpire(),
+            'contrat' => $d->relationLoaded('contrat') && $d->contrat ? [
+                'id' => $d->contrat->id,
+                'reference' => $d->contrat->reference,
+                'statut' => $d->contrat->statut,
+            ] : null,
             'conditions_particulieres' => $d->conditions_particulieres,
             'reserves' => $d->reserves,
             'garanties' => $d->garanties?->map(fn ($g) => [
@@ -316,6 +321,15 @@ class DevisController extends Controller
                 'prix_option_cts' => $g->prix_option_cts,
             ]),
             'propose_par' => $this->proposer($d),
+            'documents' => $d->documents?->map(fn ($doc) => [
+                'id' => $doc->id,
+                'type_document' => $doc->type?->libelle,
+                'type_document_id' => $doc->type_document_id,
+                'nom_origine' => $doc->nom_origine,
+                'taille' => $doc->taille,
+                'creation' => $doc->created_at,
+                'statut_validation' => $doc->statut_validation,
+            ])->values() ?? [],
         ];
     }
 

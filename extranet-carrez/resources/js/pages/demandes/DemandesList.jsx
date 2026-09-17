@@ -34,6 +34,28 @@ const statutConfig = {
 
 const brancheColor = ['bg-blue-50 text-blue-700', 'bg-violet-50 text-violet-700', 'bg-rose-50 text-rose-700', 'bg-emerald-50 text-emerald-700', 'bg-amber-50 text-amber-700'];
 
+const devisStatutLabels = {
+    BROUILLON: 'Brouillon',
+    ENVOYE: 'Envoyé',
+    ACCEPTE: 'Accepté',
+    REFUSE: 'Refusé',
+    EXPIRE: 'Expiré',
+    TRANSFORME: 'Transformé',
+    CONTRAT_SIGNE: 'Contrat signé',
+};
+
+const devisStatutConfig = {
+    BROUILLON: { cls: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' },
+    ENVOYE: { cls: 'bg-blue-50 text-blue-700 ring-blue-200', dot: 'bg-blue-500' },
+    ACCEPTE: { cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+    REFUSE: { cls: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
+    EXPIRE: { cls: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
+    TRANSFORME: { cls: 'bg-green-50 text-green-700 ring-green-200', dot: 'bg-green-600' },
+    CONTRAT_SIGNE: { cls: 'bg-teal-50 text-teal-700 ring-teal-200', dot: 'bg-teal-600' },
+};
+
+const fmtCts = (v) => (v == null ? '—' : (v / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }));
+
 export default function DemandesList() {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -1134,6 +1156,48 @@ export default function DemandesList() {
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Devis de la demande */}
+                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-4">
+                                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
+                                        Devis de la demande ({voirData.devis?.length || 0})
+                                    </div>
+                                    <div className="p-4">
+                                        {!voirData.devis || voirData.devis.length === 0 ? (
+                                            <p className="text-sm text-slate-400">Aucun devis créé pour cette demande.</p>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {voirData.devis.map((d) => {
+                                                    const dsc = devisStatutConfig[d.statut] || devisStatutConfig.BROUILLON;
+                                                    return (
+                                                        <div key={d.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+                                                            {d.propose_par?.logo_url ? (
+                                                                <img src={d.propose_par.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover bg-white border border-slate-200 flex-shrink-0" />
+                                                            ) : (
+                                                                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold uppercase flex-shrink-0">
+                                                                    {(d.propose_par?.nom || '?').slice(0, 2)}
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="text-sm font-medium text-slate-900 truncate">{d.propose_par?.nom || '—'}</div>
+                                                                <div className="text-xs text-slate-500">
+                                                                    {d.version ? `V${d.version} · ` : ''}
+                                                                    {d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '—'}
+                                                                    {d.date_validite ? ` · valable au ${d.date_validite}` : ''}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-sm font-semibold text-slate-900 tabular-nums">{fmtCts(d.prime_ttc_cts)}</div>
+                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${dsc.cls}`}>
+                                                                <span className={`w-1.5 h-1.5 rounded-full ${dsc.dot}`}></span>
+                                                                {devisStatutLabels[d.statut] || d.statut}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

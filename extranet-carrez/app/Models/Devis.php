@@ -28,15 +28,16 @@ class Devis extends Model
         'taux_commission_percue' => 'float',
     ];
 
-    public const ETATS = ['BROUILLON', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME'];
+    public const ETATS = ['BROUILLON', 'ENVOYE', 'ACCEPTE', 'REFUSE', 'EXPIRE', 'TRANSFORME', 'CONTRAT_SIGNE'];
 
     public const TRANSITIONS = [
         'BROUILLON' => ['ENVOYE'],
         'ENVOYE' => ['ACCEPTE', 'REFUSE', 'EXPIRE'],
-        'ACCEPTE' => ['TRANSFORME'],
+        'ACCEPTE' => ['TRANSFORME', 'CONTRAT_SIGNE'],
         'REFUSE' => [],
         'EXPIRE' => ['ENVOYE'], // prolongation (RG-21)
         'TRANSFORME' => [],
+        'CONTRAT_SIGNE' => [],
     ];
 
     public function demande()
@@ -62,6 +63,11 @@ class Devis extends Model
     public function garanties()
     {
         return $this->morphMany(LigneGarantie::class, 'garantissable');
+    }
+
+    public function documents()
+    {
+        return $this->morphMany(Document::class, 'objet');
     }
 
     public function contrat()

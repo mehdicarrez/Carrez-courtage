@@ -14,6 +14,7 @@ export default function SaisieDevis() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
+    const [envoyerApres, setEnvoyerApres] = useState(false);
     const [form, setForm] = useState({
         porteur_risque_id: '',
         grossiste_id: '',
@@ -38,6 +39,10 @@ export default function SaisieDevis() {
         type: 'INCLUSE',
         prix_option_cts: '',
     });
+
+    // Documents à joindre au devis
+    const [piecesJointes, setPiecesJointes] = useState([]);
+    const [nouveauDoc, setNouveauDoc] = useState({ type_document_id: '', file: null });
 
     useEffect(() => {
         Promise.all([
@@ -125,13 +130,33 @@ export default function SaisieDevis() {
                 })),
             };
             const res = await api.post(`/demandes/${id}/devis`, payload);
-            navigate(`${basePath}/demandes/${id}`, { state: { devis_cree: res.data.data?.id } });
+            const devisId = res.data.data?.id;
+            if (envoyerApres && devisId) {
+                await api.post(`/devis/${devisId}/transitions`, { action: 'envoyer' });
+            }
+            for (const p of piecesJointes) {
+                const fd = new FormData();
+                fd.append('type_document_id', p.type_document_id);
+                fd.append('objet_type', 'devis');
+                fd.append('objet_id', devisId);
+                fd.append('file', p.file);
+                await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            }
+            navigate(`${basePath}/demandes/${id}`, { state: { devis_cree: devisId } });
         } catch (err) {
             setError(err.response?.data?.message || "Erreur lors de l'enregistrement.");
         } finally {
             setSaving(false);
         }
     };
+
+    const ajouterDocument = () => {
+        if (!nouveauDoc.type_document_id || !nouveauDoc.file) return;
+        setPiecesJointes((arr) => [...arr, nouveauDoc]);
+        setNouveauDoc({ type_document_id: '', file: null });
+    };
+
+    const retirerDocument = (index) => setPiecesJointes((arr) => arr.filter((_, i) => i !== index));
 
     if (loading) return <div className="text-slate-500">Chargement...</div>;
 
@@ -308,13 +333,83 @@ export default function SaisieDevis() {
                     </div>
                 </div>
 
+                <div className="bg-white border border-slate-200 rounded-lg p-5">
+                    <h2 className="font-semibold text-slate-900 mb-3">Documents du devis</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end mb-3">
+                        <div className="md:col-span-3">
+                            <label className={label}>Type de document <span className="text-red-500">*</span></label>
+                            <select
+                                className={input}
+                                value={nouveauDoc.type_document_id}
+                                onChange={(e) => setNouveauDoc((d) => ({ ...d, type_document_id: e.target.value }))}
+                            >
+                                <option value="">— Choisir un type —</option>
+                                {(referentiels?.types_documents || []).map((t) => (
+                                    <option key={t.id} value={t.id}>{t.libelle}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className={label}>Fichier <span className="text-red-500">*</span></label>
+                            <input
+                                type="file"
+                                className={input}
+                                onChange={(e) => setNouveauDoc((d) => ({ ...d, file: e.target.files[0] }))}
+                            />
+                        </div>
+                        <div className="md:col-span-1">
+                            <button
+                                type="button"
+                                onClick={ajouterDocument}
+                                disabled={!nouveauDoc.type_document_id || !nouveauDoc.file}
+                                className="w-full px-3 py-1.5 rounded bg-slate-800 text-white text-sm disabled:opacity-40"
+                            >
+                                Ajouter
+                            </button>
+                        </div>
+                    </div>
+                    {piecesJointes.length === 0 && (
+                        <div className="text-sm text-slate-400 mb-2">Aucun document sélectionné.</div>
+                    )}
+                    {piecesJointes.map((p, i) => (
+                        <div key={i} className="flex items-center gap-3 mb-2 text-sm bg-gray-50 rounded px-3 py-2">
+                            <svg className="w-4 h-4 text-blue-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
+                            <span className="flex-1 truncate font-medium">
+                                {p.file.name}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                                {(referentiels?.types_documents || []).find((t) => String(t.id) === String(p.type_document_id))?.libelle || 'Document'}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                                {(p.file.size / 1024).toFixed(0)} Ko
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => retirerDocument(i)}
+                                className="text-red-600 text-xs"
+                            >
+                                Supprimer
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
                 <div className="flex gap-3">
                     <button
                         type="submit"
+                        onClick={() => setEnvoyerApres(false)}
+                        disabled={saving}
+                        className="px-4 py-2 rounded bg-slate-100 text-slate-600 text-sm hover:bg-slate-200 disabled:opacity-50"
+                    >
+                        Enregistrer en brouillon
+                    </button>
+                    <button
+                        type="submit"
+                        onClick={() => setEnvoyerApres(true)}
                         disabled={saving}
                         className="px-4 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
                     >
-                        {saving ? 'Enregistrement...' : 'Enregistrer le devis'}
+                        {saving ? 'Envoi...' : 'Enregistrer et envoyer'}
                     </button>
                     <button
                         type="button"

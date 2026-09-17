@@ -101,10 +101,15 @@ class ContratController extends Controller
 
         $data = $request->validate([
             'numero_police' => 'nullable|string',
-            'date_effet' => 'required|date',
+            'date_effet' => 'nullable|date',
             'date_echeance_principale' => 'nullable|date',
-            'fractionnement' => 'required|in:ANNUEL,SEMESTRIEL,TRIMESTRIEL,MENSUEL',
+            'fractionnement' => 'nullable|in:ANNUEL,SEMESTRIEL,TRIMESTRIEL,MENSUEL',
+            'fichier_contrat' => 'nullable|file',
         ]);
+
+        $dateEffet = ($data['date_effet'] ?? null)
+            ? \Carbon\Carbon::parse($data['date_effet'])
+            : ($devis->date_effet_possible ?? now());
 
         $contrat = Contrat::create([
             'id' => (string) Str::uuid(),
@@ -112,20 +117,21 @@ class ContratController extends Controller
             'numero_police' => $data['numero_police'] ?? null,
             'devis_id' => $devis->id,
             'demande_id' => $demande->id,
-            'organisation_id' => $demande->organisation_id,
+            'organisation_id' => $devis->user?->organisation_id ?? $demande->organisation_id,
             'client_id' => $demande->client_id,
             'porteur_risque_id' => $devis->porteur_risque_id,
             'grossiste_id' => $devis->grossiste_id,
             'produit_id' => $devis->produit_id,
-            'date_effet' => $data['date_effet'],
-            'date_echeance_principale' => $data['date_echeance_principale']
-                ?? $data['date_effet']->copy()->addYear(),
+            'date_effet' => $dateEffet,
+            'date_echeance_principale' => ($data['date_echeance_principale'] ?? null)
+                ? \Carbon\Carbon::parse($data['date_echeance_principale'])
+                : $dateEffet->copy()->addYear(),
             'prime_ht_cts' => $devis->prime_ht_cts,
             'taxes_cts' => $devis->taxes_cts,
             'prime_ttc_cts' => $devis->prime_ttc_cts,
             'frais_courtage_cts' => $devis->frais_courtage_cts,
-            'fractionnement' => $data['fractionnement'],
-            'statut' => 'EN_CONSTITUTION',
+            'fractionnement' => $data['fractionnement'] ?? $devis->fractionnement ?? 'ANNUEL',
+            'statut' => 'SIGNE',
             'annee_assurance' => 1,
         ]);
 
@@ -142,10 +148,20 @@ class ContratController extends Controller
             ]);
         }
 
-        // Le devis passe en TRANSFORME, la demande en TRANSFORMEE
-        StateMachine::pour($devis)->appliquer($devis, 'TRANSFORME');
+        // Rattache le fichier contrat téléversé au contrat (type POLICE)
+        if ($request->hasFile('fichier_contrat')) {
+            $this->rattacherFichierContrat($contrat, $request->file('fichier_contrat'));
+        }
+
+        // Le devis passe en CONTRAT_SIGNE, la demande en TRANSFORMEE
+        StateMachine::pour($devis)->appliquer($devis, 'CONTRAT_SIGNE');
         if ($demande->peutTransiterVers('TRANSFORMEE')) {
             StateMachine::pour($demande)->appliquer($demande, 'TRANSFORMEE');
+        } elseif ($demande->peutTransiterVers('EN_SOUSCRIPTION')) {
+            StateMachine::pour($demande)->appliquer($demande, 'EN_SOUSCRIPTION');
+            if ($demande->peutTransiterVers('TRANSFORMEE')) {
+                StateMachine::pour($demande)->appliquer($demande, 'TRANSFORMEE');
+            }
         }
 
         // F-401 : génération des commissions prévisionnelles
@@ -154,6 +170,42 @@ class ContratController extends Controller
         $this->audit->log('contrat.cree', 'contrat', (string) $contrat->id);
 
         return response()->json(['data' => $this->present($contrat->fresh())], 201);
+    }
+
+    /**
+     * Rattache un fichier (contrat signé) à un contrat avec le type document POLICE.
+     */
+    private function rattacherFichierContrat(Contrat $contrat, $file): void
+    {
+        $extensions = ['pdf', 'jpeg', 'jpg', 'png', 'docx'];
+        if (!in_array(strtolower($file->getClientOriginalExtension()), $extensions, true)) {
+            abort(422, 'Format non accepté.');
+        }
+        if ($file->getSize() > config('extranet.upload_max_mo', 25) * 1024 * 1024) {
+            abort(422, 'Fichier trop volumineux.');
+        }
+
+        $cle = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $path = Storage::disk('local')->putFileAs('documents', $file, $cle);
+
+        $document = Document::create([
+            'type_document_id' => TypeDocument::where('code', 'POLICE')->value('id'),
+            'nom_origine' => $file->getClientOriginalName(),
+            'taille' => $file->getSize(),
+            'mime_reel' => $file->getMimeType(),
+            'mime_declare' => $file->getClientMimeType(),
+            'objet_type' => 'contrat',
+            'objet_id' => $contrat->id,
+            'organisation_id' => $contrat->organisation_id,
+            'cle_stockage' => $path,
+            'version' => 1,
+            'sensibilite' => Document::SENSIBILITE_SENSIBLE,
+            'statut_antivirus' => 'SAIN',
+            'statut_validation' => 'VALIDE',
+            'hash_sha256' => hash_file('sha256', $file->getPathname()),
+        ]);
+
+        $this->audit->log('contrat.document_depose', 'contrat', (string) $contrat->id, null, ['document_id' => $document->id]);
     }
 
     public function show(Contrat $contrat, Request $request)
