@@ -164,19 +164,37 @@ export default function SaisieDevis() {
     const label = 'block text-sm text-slate-600 mb-1';
 
     return (
-        <div className="max-w-4xl">
-            <h1 className="text-xl font-bold text-slate-900 mb-1">
-                Saisie d'un devis — {demande?.reference}
-            </h1>
-            <div className="text-sm text-slate-500 mb-4">
-                {demande?.client} · {demande?.branche} · statut {demande?.statut}
+        <div className="max-w-4xl mx-auto px-1">
+            {/* En-tête */}
+            <div className="rounded-xl bg-gradient-to-br from-blue-700 via-blue-600 to-sky-500 text-white p-6 mb-6 shadow-md">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl font-bold leading-tight">
+                            Saisie d'un devis — {demande?.reference}
+                        </h1>
+                        <p className="text-sm text-blue-100 truncate">
+                            {demande?.client} · {demande?.branche}
+                        </p>
+                    </div>
+                    <span className="px-3 py-1 text-xs font-semibold rounded-full bg-white/15 border border-white/30">
+                        Statut : {demande?.statut}
+                    </span>
+                </div>
             </div>
 
             {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
 
             <form onSubmit={soumettre} className="space-y-6">
-                <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <h2 className="font-semibold text-slate-900">Offre et produit</h2>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
+                    <h2 className="flex items-center gap-2.5 font-semibold text-slate-900">
+                        <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center flex-shrink-0">1</span>
+                        Offre et produit
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className={label}>Référence amont</label>
@@ -219,8 +237,11 @@ export default function SaisieDevis() {
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
-                    <h2 className="font-semibold text-slate-900">Prime et tarification</h2>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
+                    <h2 className="flex items-center gap-2.5 font-semibold text-slate-900">
+                        <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center flex-shrink-0">2</span>
+                        Prime et tarification
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className={label}>Prime HT * <span className="text-xs text-slate-400">(cts)</span></label>
@@ -277,8 +298,11 @@ export default function SaisieDevis() {
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <h2 className="font-semibold text-slate-900 mb-3">Garanties</h2>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                    <h2 className="flex items-center gap-2.5 font-semibold text-slate-900 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center flex-shrink-0">3</span>
+                        Garanties
+                    </h2>
                     {garanties.length === 0 && (
                         <div className="text-sm text-slate-400 mb-3">Aucune garantie ajoutée.</div>
                     )}
@@ -333,8 +357,11 @@ export default function SaisieDevis() {
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <h2 className="font-semibold text-slate-900 mb-3">Documents du devis</h2>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+                    <h2 className="flex items-center gap-2.5 font-semibold text-slate-900 mb-3">
+                        <span className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center flex-shrink-0">4</span>
+                        Documents du devis
+                    </h2>
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end mb-3">
                         <div className="md:col-span-3">
                             <label className={label}>Type de document <span className="text-red-500">*</span></label>
@@ -394,7 +421,7 @@ export default function SaisieDevis() {
                     ))}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-wrap justify-end gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
                     <button
                         type="submit"
                         onClick={() => setEnvoyerApres(false)}
