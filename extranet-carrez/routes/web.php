@@ -51,3 +51,11 @@ Route::get('/messageries/{messagerie}/logo', [MessagerieController::class, 'logo
 Route::get('/reseaux-sociaux/{reseau}/logo', [ReseauSocialController::class, 'logo'])
     ->name('reseaux_sociaux.logo')
     ->middleware('signed');
+
+// SPA React : toute URL non correspondante renvoie l'application (refresh navigateur)
+Route::fallback(function () {
+    if (str_starts_with(request()->path(), 'api/')) {
+        abort(404);
+    }
+    return view('app');
+});

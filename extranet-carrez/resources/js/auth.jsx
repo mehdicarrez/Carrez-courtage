@@ -65,8 +65,11 @@ export function AuthProvider({ children }) {
     };
 
     // Fermeture de session à la fermeture du navigateur / de l'onglet
+    // (le refresh conserve la session : beforeunload est aussi déclenché au reload)
     useEffect(() => {
         const handleBeforeUnload = () => {
+            const nav = performance.getEntriesByType('navigation')[0];
+            if (nav && nav.type === 'reload') return;
             localStorage.removeItem('extranet_token');
             localStorage.removeItem('extranet_user');
         };
