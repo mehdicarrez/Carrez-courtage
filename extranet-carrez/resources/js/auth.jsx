@@ -38,8 +38,13 @@ export function AuthProvider({ children }) {
                 setUser(u);
                 localStorage.setItem('extranet_user', JSON.stringify(u));
             })
-            .catch(() => {
-                setUser(null);
+            .catch((error) => {
+                if (error.response?.status === 401) {
+                    localStorage.removeItem('extranet_token');
+                    localStorage.removeItem('extranet_user');
+                    setUser(null);
+                    window.location.href = '/login';
+                }
             })
             .finally(() => setLoading(false));
     }, []);
@@ -70,7 +75,9 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('extranet_token');
             localStorage.removeItem('extranet_user');
         };
+
         window.addEventListener('beforeunload', handleBeforeUnload);
+
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, []);
 

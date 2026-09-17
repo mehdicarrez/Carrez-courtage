@@ -45,6 +45,7 @@ Route::get('/messageries/{messagerie}/logo', [MessagerieController::class, 'logo
 Route::get('/reseaux-sociaux/{reseau}/logo', [ReseauSocialController::class, 'logo'])
     ->name('reseaux_sociaux.logo')
     ->middleware('signed');
+
 // SPA React : toute URL non reconnue par les routes ci-dessus
 // est renvoyée vers l'app React, qui gère le routing côté client
 Route::get('/{any}', fn () => view('app'))->where('any', '.*');

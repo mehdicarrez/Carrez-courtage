@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, estPartenaire } from '../auth';
 import api from '../api';
@@ -22,10 +22,14 @@ export default function Login() {
     const [regLoading, setRegLoading] = useState(false);
     const [regSuccess, setRegSuccess] = useState(false);
 
-    if (user) {
-        navigate(estPartenaire(user) ? '/espace-partenaire' : '/', { replace: true });
-        return null;
-    }
+    useEffect(() => {
+        if (user) {
+            navigate(
+                estPartenaire(user) ? '/espace-partenaire' : '/',
+                { replace: true }
+            );
+        }
+    }, [user, navigate]);
 
     const submit = async (e) => {
         e.preventDefault();

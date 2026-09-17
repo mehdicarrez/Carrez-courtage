@@ -62,6 +62,7 @@ export default function DemandesList() {
     // Attribution en masse
     const [selected, setSelected] = useState([]);
     const [attributionGestionnaire, setAttributionGestionnaire] = useState('');
+    const [attribDropdownOpen, setAttribDropdownOpen] = useState(false);
     const [attributionBusy, setAttributionBusy] = useState(false);
 
     // Affecter / importer des clients
@@ -514,40 +515,46 @@ export default function DemandesList() {
     const demandesPage = demandes.slice((page - 1) * perPage, page * perPage);
 
         return (
-        <div
-            className="relative min-h-screen -m-4 md:-m-6 xl:-mx-10 xl:-my-8 p-4 md:p-6 xl:px-10 xl:py-8"
-            style={{
-                backgroundImage: "url('/images/img.jpg')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundAttachment: 'fixed',
-            }}
-        >
-            {/* Voile blanc semi-transparent pour garder le contenu lisible */}
-            <div className="absolute inset-0 bg-white/85 pointer-events-none"></div>
             <div className="relative">
             {/* En-tête */}
             <div className="mb-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            {sansGestionnaire ? 'File d\'attribution' : 'Demandes de tarification'}
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-0.5">
-                            Suivi des demandes envoyées par vos partenaires au cabinet.
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Link
-                            to={`${base}/demandes/nouvelle`}
-                            className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
-                        >
-                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
-                            Nouvelle demande
-                        </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="flex items-center gap-3">
+
+                        <div>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent tracking-tight">
+                                {sansGestionnaire ? 'File d\'attribution' : 'Demandes de tarification'}
+                            </h1>
+
+                            <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                Suivi des demandes envoyées par vos partenaires au cabinet.
+                            </p>
+                        </div>
+
                     </div>
                 </div>
+
+                <div className="flex gap-2">
+                    <Link
+                        to={`${base}/demandes/nouvelle`}
+                        className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                        </svg>
+                        Nouvelle demande
+                    </Link>
+                </div>
             </div>
+        </div>
 
             {/* Barre de filtres */}
             <div className="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center text-sm shadow-sm">
@@ -614,36 +621,72 @@ export default function DemandesList() {
 
             {/* Barre d'action de masse */}
             {estCabinet && selected.length > 0 && (
-                <div className="bg-blue-600 rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-blue-600/20">
-                    <span className="font-semibold text-white">
+            <div className="relative bg-white rounded-2xl p-3.5 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-blue-900/10 border border-blue-100 ring-1 ring-blue-700/5">
+                <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-700 rounded-l-2xl"></span>
+
+                <span className="inline-flex items-center gap-2 pl-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-700 animate-pulse"></span>
+                    <span className="font-semibold text-slate-800">
                         {selected.length} demande{selected.length > 1 ? 's' : ''} sélectionnée{selected.length > 1 ? 's' : ''}
                     </span>
-                    <select
-                        value={attributionGestionnaire}
-                        onChange={(e) => setAttributionGestionnaire(e.target.value)}
-                        className="bg-white border-0 rounded-lg px-3 py-1.5 text-sm"
-                    >
-                        <option value="">Attribuer à...</option>
-                        {gestionnaires.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                    </select>
+                </span>
+
+                {/* Dropdown custom "Attribuer à..." */}
+                <div className="relative">
                     <button
-                        onClick={attribuerMasse}
-                        disabled={!attributionGestionnaire || attributionBusy}
-                        className="bg-white text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 disabled:opacity-50 transition-colors"
+                        type="button"
+                        onClick={() => setAttribDropdownOpen((v) => !v)}
+                        className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full pl-4 pr-3 py-1.5 text-sm text-slate-700 font-medium transition-colors"
                     >
-                        {attributionBusy ? 'Attribution...' : 'Attribuer'}
+                        {attributionGestionnaire
+                            ? gestionnaires.find((g) => String(g.id) === String(attributionGestionnaire))?.name
+                            : 'Attribuer à...'}
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform ${attribDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                        </svg>
                     </button>
-                    <span className="text-white/80 text-xs hidden md:inline">À tout moment, via « Affecter » / « Importer ».</span>
-                    <button
-                        onClick={() => setSelected([])}
-                        className="text-white/80 hover:text-white text-sm ml-auto"
-                    >
-                        Annuler
-                    </button>
+
+                    {attribDropdownOpen && (
+                        <div className="absolute z-20 top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-blue-900/15 border border-slate-100 py-1.5 max-h-64 overflow-y-auto">
+                            {gestionnaires.map((g) => (
+                                <button
+                                    key={g.id}
+                                    onClick={() => { setAttributionGestionnaire(g.id); setAttribDropdownOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${
+                                        String(attributionGestionnaire) === String(g.id)
+                                            ? 'text-blue-700 font-semibold bg-blue-50/70'
+                                            : 'text-slate-700 hover:bg-blue-50/70 hover:text-blue-700'
+                                    }`}
+                                >
+                                    {g.name}
+                                    {String(attributionGestionnaire) === String(g.id) && (
+                                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
+
+                <button
+                    onClick={attribuerMasse}
+                    disabled={!attributionGestionnaire || attributionBusy}
+                    className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-40 disabled:hover:bg-blue-700 transition-colors shadow-sm shadow-blue-700/20"
+                >
+                    {attributionBusy ? 'Attribution...' : 'Attribuer'}
+                </button>
+
+                <span className="text-slate-400 text-xs hidden md:inline">À tout moment, via « Affecter » / « Importer ».</span>
+
+                <button
+                    onClick={() => setSelected([])}
+                    className="text-slate-400 hover:text-red-600 text-sm ml-auto inline-flex items-center gap-1 transition-colors"
+                >
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
+                    Annuler
+                </button>
+            </div>
+        )}
 
             {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
@@ -706,7 +749,7 @@ export default function DemandesList() {
                                     return (
                                         <tr
                                             key={d.id}
-                                            className={`group hover:bg-blue-50/30 hover:shadow-sm transition-all duration-150 ${selected.includes(d.id) ? 'bg-blue-50/40' : ''}`}
+                                            className={`group hover:bg-slate-100 hover:shadow-sm transition-all duration-150 ${selected.includes(d.id) ? 'bg-slate-200/70' : ''}`}
                                         >
                                             {estCabinet && (
                                                 <td className="px-4 py-3">
@@ -1577,7 +1620,6 @@ export default function DemandesList() {
                 />
             )}
             </div>
-        </div>
     );
 }
 
