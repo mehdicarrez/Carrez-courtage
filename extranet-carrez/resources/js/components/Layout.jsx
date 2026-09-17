@@ -148,6 +148,22 @@ export default function Layout() {
         : partenaireNav.filter((n) => n.admin === undefined || n.admin === true);
 
     const filteredAutreItems = autreItems.filter((n) => n.admin === undefined || n.admin === estAdmin);
+
+    const [profilOpen, setProfilOpen] = useState(false);
+    const profilRef = useRef(null);
+    const profilBtnRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutsideProfil = (e) => {
+            if (profilRef.current && !profilRef.current.contains(e.target) &&
+                profilBtnRef.current && !profilBtnRef.current.contains(e.target)) {
+                setProfilOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutsideProfil);
+        return () => document.removeEventListener('mousedown', handleClickOutsideProfil);
+    }, []);
+
     const [autreOpen, setAutreOpen] = useState(false);
     const [autrePos, setAutrePos] = useState({ top: 0, left: 0 });
     const autreBtnRef = useRef(null);
@@ -177,7 +193,7 @@ export default function Layout() {
         : '??';
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-[#ebf1fa] flex flex-col">
             {/* HEADER : ligne 1 = logo + icônes, ligne 2 = menu */}
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
                 {/* Ligne 1 : logo + icônes */}
@@ -209,18 +225,56 @@ export default function Layout() {
                             <span className="absolute top-0 right-0 -mt-1 -mr-1 inline-block w-4 h-4 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">99</span>
                         </button>
                         <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
-                        <NavLink
-                            to="/cabinet"
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100"
-                            title={user?.name}
-                        >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-bold text-xs shadow">
-                                {initials}
-                            </div>
-                            <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
-                                {user?.name}
-                            </span>
-                        </NavLink>
+                                                <div className="relative">
+                            <button
+                                ref={profilBtnRef}
+                                onClick={() => setProfilOpen((v) => !v)}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                                title={user?.name}
+                            >
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-bold text-xs shadow transition-transform hover:scale-105">
+                                    {initials}
+                                </div>
+                                <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
+                                    {user?.name}
+                                </span>
+                                <svg className={`hidden md:block w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${profilOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+
+                            {profilOpen && (
+                                <div
+                                    ref={profilRef}
+                                    className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 z-50 origin-top-right animate-[dropdownIn_0.15s_ease-out]"
+                                >
+                                    
+                                    <NavLink
+                                        to="/cabinet"
+                                        onClick={() => setProfilOpen(false)}
+                                        className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium text-slate-700 hover:bg-gray-50 hover:text-blue-700 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                        </svg>
+                                        Mon profil
+                                    </NavLink>
+                                    <button
+                                        onClick={async () => {
+                                            setProfilOpen(false);
+                                            await logout();
+                                            navigate('/login');
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                        </svg>
+                                        Se déconnecter
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -300,21 +354,9 @@ export default function Layout() {
                 <Outlet />
             </main>
 
-            <footer className="bg-white border-t border-gray-200 py-3">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+                        <footer className="bg-white border-t border-gray-200 py-4">
+                <div className="max-w-7xl mx-auto px-4 flex items-center justify-center text-xs text-slate-500">
                     <span>© {new Date().getFullYear()} Carrez Co Courtage — Extranet partenaires</span>
-                    <button
-                        onClick={async () => {
-                            await logout();
-                            navigate('/login');
-                        }}
-                        className="flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-                        </svg>
-                        Se déconnecter
-                    </button>
                 </div>
             </footer>
         </div>

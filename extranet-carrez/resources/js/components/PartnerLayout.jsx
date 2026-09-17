@@ -112,7 +112,7 @@ export default function PartnerLayout() {
         : '??';
 
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col">
+        <div className="min-h-screen bg-[#ebf1fa] flex flex-col">
             {/* HEADER : ligne 1 = logo + icônes, ligne 2 = menu */}
             <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
                 {/* Ligne 1 : logo + icônes */}
