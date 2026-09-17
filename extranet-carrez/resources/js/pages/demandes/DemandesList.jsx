@@ -74,6 +74,8 @@ export default function DemandesList() {
     const [sansGestionnaire, setSansGestionnaire] = useState(false);
     const [q, setQ] = useState('');
     const [sort, setSort] = useState('recent');
+    const [page, setPage] = useState(1);
+    const perPage = 8;
 
     // Référentiels
     const [branches, setBranches] = useState([]);
@@ -82,6 +84,7 @@ export default function DemandesList() {
     // Attribution en masse
     const [selected, setSelected] = useState([]);
     const [attributionGestionnaire, setAttributionGestionnaire] = useState('');
+    const [attribDropdownOpen, setAttribDropdownOpen] = useState(false);
     const [attributionBusy, setAttributionBusy] = useState(false);
 
     // Affecter / importer des clients
@@ -171,6 +174,7 @@ export default function DemandesList() {
 
     // Rechargement quand les filtres changent
     useEffect(() => {
+        setPage(1);
         const params = {};
         if (statut) params.statut = statut;
         if (brancheId) params.branche_id = brancheId;
@@ -527,127 +531,183 @@ export default function DemandesList() {
         setQ('');
         setSort('recent');
     };
+    const totalPages = Math.max(1, Math.ceil(demandes.length / perPage));
+    const demandesPage = demandes.slice((page - 1) * perPage, page * perPage);
 
     return (
         <div>
             {/* En-tête */}
             <div className="mb-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            {sansGestionnaire ? 'File d\'attribution' : 'Demandes de tarification'}
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-0.5">
-                            Suivi des demandes envoyées par vos partenaires au cabinet.
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Link
-                            to={`${base}/demandes/nouvelle`}
-                            className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
-                        >
-                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
-                            Nouvelle demande
-                        </Link>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <div className="flex items-center gap-3">
+
+                        <div>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent tracking-tight">
+                                {sansGestionnaire ? 'File d\'attribution' : 'Demandes de tarification'}
+                            </h1>
+
+                            <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                                Suivi des demandes envoyées par vos partenaires au cabinet.
+                            </p>
+                        </div>
+
                     </div>
                 </div>
+
+                <div className="flex gap-2">
+                    <Link
+                        to={`${base}/demandes/nouvelle`}
+                        className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                        </svg>
+                        Nouvelle demande
+                    </Link>
+                </div>
             </div>
+        </div>
+
 
             {/* Barre de filtres */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center text-sm shadow-sm">
-                <div className="relative flex-1 min-w-[200px]">
-                    <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
-                    </svg>
-                    <input
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        placeholder="Rechercher (référence, client)..."
-                        className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                    />
-                </div>
-                <select value={statut} onChange={(e) => setStatut(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                    <option value="">Tous les statuts</option>
-                    {Object.entries(statutLabels).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
-                    ))}
-                </select>
-                <select value={brancheId} onChange={(e) => setBrancheId(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                    <option value="">Toutes les branches</option>
-                    {branches.map((b) => (
-                        <option key={b.id} value={b.id}>{b.nom}</option>
-                    ))}
-                </select>
-                {estCabinet && (
-                    <select value={gestionnaireId} onChange={(e) => mettreAJourFiltreGestionnaire(e.target.value)}
-                        className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                        <option value="">Tous les gestionnaires</option>
-                        {gestionnaires.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                    </select>
-                )}
-                {estCabinet && (
-                    <button
-                        onClick={() => {
-                            setSansGestionnaire((v) => !v);
-                            if (!sansGestionnaire) setGestionnaireId('');
-                        }}
-                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border font-medium transition-colors ${
-                            sansGestionnaire ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                        }`}
-                    >
-                        <span className={`w-2 h-2 rounded-full ${sansGestionnaire ? 'bg-amber-500' : 'bg-slate-300'}`}></span>
-                        File d'attribution
-                    </button>
-                )}
-                <select value={sort} onChange={(e) => setSort(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                    <option value="recent">Plus récentes</option>
-                    <option value="ancien">Plus anciennes</option>
-                </select>
-                {filterCount > 0 && (
-                    <button onClick={viderFiltres}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2">
-                        Effacer ({filterCount})
-                    </button>
-                )}
+            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center text-sm shadow-sm">
+            <div className="relative flex-1 min-w-[200px]">
+                <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
+                </svg>
+                <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Rechercher (référence, client)..."
+                    className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-600 font-semibold placeholder:text-slate-400 placeholder:font-normal caret-blue-600 selection:bg-blue-100 selection:text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                />
             </div>
+            <select value={statut} onChange={(e) => setStatut(e.target.value)}
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" className="text-slate-600">Tous les statuts</option>
+                {Object.entries(statutLabels).map(([k, v]) => (
+                    <option key={k} value={k} className="text-slate-600">{v}</option>
+                ))}
+            </select>
+            <select value={brancheId} onChange={(e) => setBrancheId(e.target.value)}
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" className="text-slate-600">Toutes les branches</option>
+                {branches.map((b) => (
+                    <option key={b.id} value={b.id} className="text-slate-600">{b.nom}</option>
+                ))}
+            </select>
+            {estCabinet && (
+                <select value={gestionnaireId} onChange={(e) => mettreAJourFiltreGestionnaire(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" className="text-slate-600">Tous les gestionnaires</option>
+                    {gestionnaires.map((g) => (
+                        <option key={g.id} value={g.id} className="text-slate-600">{g.name}</option>
+                    ))}
+                </select>
+            )}
+            {estCabinet && (
+                <button
+                    onClick={() => {
+                        setSansGestionnaire((v) => !v);
+                        if (!sansGestionnaire) setGestionnaireId('');
+                    }}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border font-semibold outline-none transition-colors ${
+                        sansGestionnaire ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                    <span className={`w-2 h-2 rounded-full ${sansGestionnaire ? 'bg-amber-500' : 'bg-slate-300'}`}></span>
+                    File d'attribution
+                </button>
+            )}
+            <select value={sort} onChange={(e) => setSort(e.target.value)}
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="recent" className="text-slate-600">Plus récentes</option>
+                <option value="ancien" className="text-slate-600">Plus anciennes</option>
+            </select>
+            {filterCount > 0 && (
+                <button onClick={viderFiltres}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2">
+                    Effacer ({filterCount})
+                </button>
+            )}
+        </div>
 
             {/* Barre d'action de masse */}
             {estCabinet && selected.length > 0 && (
-                <div className="bg-blue-600 rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-blue-600/20">
-                    <span className="font-semibold text-white">
+            <div className="relative bg-white rounded-2xl p-3.5 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-blue-900/10 border border-blue-100 ring-1 ring-blue-700/5">
+                <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-700 rounded-l-2xl"></span>
+
+                <span className="inline-flex items-center gap-2 pl-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-700 animate-pulse"></span>
+                    <span className="font-semibold text-slate-800">
                         {selected.length} demande{selected.length > 1 ? 's' : ''} sélectionnée{selected.length > 1 ? 's' : ''}
                     </span>
-                    <select
-                        value={attributionGestionnaire}
-                        onChange={(e) => setAttributionGestionnaire(e.target.value)}
-                        className="bg-white border-0 rounded-lg px-3 py-1.5 text-sm"
-                    >
-                        <option value="">Attribuer à...</option>
-                        {gestionnaires.map((g) => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                        ))}
-                    </select>
+                </span>
+
+                {/* Dropdown custom "Attribuer à..." */}
+                <div className="relative">
                     <button
-                        onClick={attribuerMasse}
-                        disabled={!attributionGestionnaire || attributionBusy}
-                        className="bg-white text-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-50 disabled:opacity-50 transition-colors"
+                        type="button"
+                        onClick={() => setAttribDropdownOpen((v) => !v)}
+                        className="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-full pl-4 pr-3 py-1.5 text-sm text-slate-700 font-medium transition-colors"
                     >
-                        {attributionBusy ? 'Attribution...' : 'Attribuer'}
+                        {attributionGestionnaire
+                            ? gestionnaires.find((g) => String(g.id) === String(attributionGestionnaire))?.name
+                            : 'Attribuer à...'}
+                        <svg className={`w-4 h-4 text-slate-400 transition-transform ${attribDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                        </svg>
                     </button>
-                    <span className="text-white/80 text-xs hidden md:inline">À tout moment, via « Affecter » / « Importer ».</span>
-                    <button
-                        onClick={() => setSelected([])}
-                        className="text-white/80 hover:text-white text-sm ml-auto"
-                    >
-                        Annuler
-                    </button>
+
+                    {attribDropdownOpen && (
+                        <div className="absolute z-20 top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-blue-900/15 border border-slate-100 py-1.5 max-h-64 overflow-y-auto">
+                            {gestionnaires.map((g) => (
+                                <button
+                                    key={g.id}
+                                    onClick={() => { setAttributionGestionnaire(g.id); setAttribDropdownOpen(false); }}
+                                    className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${
+                                        String(attributionGestionnaire) === String(g.id)
+                                            ? 'text-blue-700 font-semibold bg-blue-50/70'
+                                            : 'text-slate-700 hover:bg-blue-50/70 hover:text-blue-700'
+                                    }`}
+                                >
+                                    {g.name}
+                                    {String(attributionGestionnaire) === String(g.id) && (
+                                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
+
+                <button
+                    onClick={attribuerMasse}
+                    disabled={!attributionGestionnaire || attributionBusy}
+                    className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-40 disabled:hover:bg-blue-700 transition-colors shadow-sm shadow-blue-700/20"
+                >
+                    {attributionBusy ? 'Attribution...' : 'Attribuer'}
+                </button>
+
+                <span className="text-slate-400 text-xs hidden md:inline">À tout moment, via « Affecter » / « Importer ».</span>
+
+                <button
+                    onClick={() => setSelected([])}
+                    className="text-slate-400 hover:text-red-600 text-sm ml-auto inline-flex items-center gap-1 transition-colors"
+                >
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
+                    Annuler
+                </button>
+            </div>
+        )}
 
             {error && <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
@@ -682,7 +742,7 @@ export default function DemandesList() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200 bg-slate-50">
+                                <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60">
                                     {estCabinet && (
                                         <th className="px-4 py-3 w-10">
                                             <input
@@ -704,13 +764,13 @@ export default function DemandesList() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {demandes.map((d) => {
+                                {demandesPage.map((d) => {
                                     const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
                                     const brancheIdx = (d.branche?.length || d.branche_id?.length || 0) % brancheColor.length;
                                     return (
                                         <tr
                                             key={d.id}
-                                            className={`hover:bg-slate-50/60 transition-colors ${selected.includes(d.id) ? 'bg-blue-50/40' : ''}`}
+                                                className={`group hover:bg-slate-100 hover:shadow-sm transition-all duration-150 ${selected.includes(d.id) ? 'bg-slate-200/70' : ''}`}
                                         >
                                             {estCabinet && (
                                                 <td className="px-4 py-3">
@@ -737,8 +797,8 @@ export default function DemandesList() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap ${sc.cls}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${sc.cls}`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} animate-pulse`}></span>
                                                     {sc.label}
                                                 </span>
                                             </td>
@@ -753,21 +813,21 @@ export default function DemandesList() {
                                                     <button
                                                         onClick={() => navigate(`${base}/demandes/${d.id}`)}
                                                         title="Voir les devis"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clipRule="evenodd" /></svg>
                                                     </button>
                                                     <button
                                                         onClick={() => ouvrirVoir(d.id)}
                                                         title="Voir"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" /></svg>
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteModal({ id: d.id, reference: d.reference })}
                                                         title="Supprimer"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 hover:scale-110 transition-all duration-150"
                                                     >
                                                         <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
                                                     </button>
@@ -779,6 +839,56 @@ export default function DemandesList() {
                             </tbody>
                         </table>
                     </div>
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                            <span className="text-xs text-slate-500">
+                                Page <span className="font-semibold text-slate-700">{page}</span> sur{' '}
+                                <span className="font-semibold text-slate-700">{totalPages}</span>
+                                {' · '}{demandes.length} demande{demandes.length > 1 ? 's' : ''} au total
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                                    .reduce((acc, p, idx, arr) => {
+                                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                                        acc.push(p);
+                                        return acc;
+                                    }, [])
+                                    .map((p, i) =>
+                                        p === '...' ? (
+                                            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">…</span>
+                                        ) : (
+                                            <button
+                                                key={p}
+                                                onClick={() => setPage(p)}
+                                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
+                                                    p === page
+                                                        ? 'bg-blue-600 text-white shadow-sm scale-105'
+                                                        : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
+                                    )}
+                                <button
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

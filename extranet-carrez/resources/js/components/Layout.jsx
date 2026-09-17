@@ -354,11 +354,36 @@ export default function Layout() {
                 <Outlet />
             </main>
 
-                        <footer className="bg-white border-t border-gray-200 py-4">
-                <div className="max-w-7xl mx-auto px-4 flex items-center justify-center text-xs text-slate-500">
-                    <span>© {new Date().getFullYear()} Carrez Co Courtage — Extranet partenaires</span>
+    <footer className="bg-transparent py-4">
+            <div className="max-w-7xl mx-auto px-4">
+                <div className="flex items-center justify-center">
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/60 backdrop-blur-sm border border-slate-200/70 shadow-sm">
+
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100">
+                        <span className="text-[10px] font-bold text-slate-500">
+                            CC
+                        </span>
+                    </div>
+
+                    <div className="h-4 w-px bg-slate-200"></div>
+
+                    <span className="text-[11px] font-medium text-slate-500">
+                        © {new Date().getFullYear()} Carrez Co Courtage
+                    </span>
+
+                    <span className="text-slate-300">•</span>
+
+                    <span className="text-[11px] text-slate-400">
+                        Extranet partenaires
+                    </span>
+
                 </div>
-            </footer>
+            </div>
+        </div>
+
+
+    </footer>
+
         </div>
     );
 }
