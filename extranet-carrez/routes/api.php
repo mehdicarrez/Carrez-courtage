@@ -71,6 +71,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/demandes/{demande}', [DemandeController::class, 'destroy']); // brouillon uniquement
     Route::post('/demandes/{demande}/transitions', [DemandeController::class, 'transition']); // {action, motif}
     Route::post('/demandes/{demande}/signature', [DemandeController::class, 'signer']); // Yousign sandbox
+    Route::post('/demandes/{demande}/dupliquer', [DemandeController::class, 'dupliquer']); // copie en brouillon
+    Route::post('/demandes/{demande}/precision', [DemandeController::class, 'precision']); // précisions libres (motif)
     Route::post('/demandes/{demande}/vehicules/import', [DemandeController::class, 'importParc']);
     Route::post('/demandes/{demande}/demande-pieces', [DemandeController::class, 'demanderPieces']); // F-107
     Route::post('/demandes/{demande}/attribuer', [DemandeController::class, 'attribuer']); // F-106
