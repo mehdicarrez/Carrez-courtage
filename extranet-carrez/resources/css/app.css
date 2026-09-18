@@ -17,6 +17,91 @@
     from { opacity: 0; transform: translateY(-4px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes animIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+}
+.anim-in {
+    animation: animIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: #1d4ed8;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 1px 2px 0 rgb(29 78 216 / 0.25);
+    transition: background-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.btn-primary:hover {
+    background-color: #1e40af;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -4px rgb(29 78 216 / 0.4);
+}
+.btn-primary:active {
+    transform: scale(0.96);
+}
+.btn-primary:disabled {
+    opacity: 0.5;
+    transform: none;
+    cursor: not-allowed;
+}
+@keyframes softPulse {
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.85;
+        transform: scale(1.08);
+    }
+}
+@keyframes animPop {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+.anim-pop {
+    animation: animPop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-blob {
+    animation: softPulse 7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .anim-in {
+        animation: none;
+    }
+    .anim-blob {
+        animation: none;
+    }
+    .anim-pop {
+        animation: none;
+    }
+    .btn-primary {
+        transition: background-color 0.15s ease;
+        transform: none;
+    }
+    .btn-primary:hover {
+        transform: none;
+    }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.anim-in {
+  animation: fadeInUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
 body {
     background-color: #ebf1fa;
 }

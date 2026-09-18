@@ -69,13 +69,13 @@ const modules = [
 ];
 
 const accents = {
-    blue: 'from-blue-600 to-blue-700',
-    red: 'from-red-500 to-red-700',
-    indigo: 'from-indigo-600 to-indigo-700',
-    emerald: 'from-emerald-500 to-emerald-600',
-    amber: 'from-amber-500 to-orange-600',
-    violet: 'from-violet-600 to-purple-700',
-    slate: 'from-slate-700 to-slate-900',
+    blue: 'from-blue-500 to-blue-600',
+    red: 'from-red-400 to-red-500',
+    indigo: 'from-indigo-500 to-indigo-600',
+    emerald: 'from-emerald-400 to-emerald-500',
+    amber: 'from-amber-400 to-orange-400',
+    violet: 'from-violet-500 to-violet-600',
+    slate: 'from-slate-500 to-slate-700',
 };
 
 export default function PartnerHome() {
@@ -83,30 +83,43 @@ export default function PartnerHome() {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
-                <h1 className="text-2xl font-bold text-slate-900">
-                    Bienvenue{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
-                </h1>
-                <p className="text-slate-500 mt-1 text-sm">
-                    Votre espace partenaire — retrouvez ici vos demandes, commissions et échéances.
-                </p>
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-blue-50/60 to-indigo-50/60 p-6 md:p-8 mb-6 shadow-sm">
+                <div className="anim-blob pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-blue-200/50 blur-2xl" />
+                <div className="anim-blob pointer-events-none absolute -bottom-12 left-1/3 h-32 w-32 rounded-full bg-purple-200/50 blur-xl" style={{ animationDelay: '2s' }} />
+                <div className="relative">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 border border-blue-100 text-blue-600 text-[11px] font-semibold uppercase tracking-wider mb-3 shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        Espace partenaire
+                    </span>
+                    <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent tracking-tight">
+                        Bienvenue{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-2 flex items-center gap-1.5">
+                        <svg className="w-4 h-4 text-blue-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                clipRule="evenodd"
+                            />
+                        </svg>
+                        Votre espace partenaire — retrouvez ici vos demandes, commissions et échéances.
+                    </p>
+                </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="anim-in grid gap-4 sm:grid-cols-2 lg:grid-cols-4" style={{ animationDelay: '0.12s' }}>
                 {modules.map((m) => (
                     <Link
                         key={m.to}
                         to={m.to}
-                        className="relative overflow-hidden rounded-2xl bg-gradient-to-br p-px shadow-sm group"
+                        className="group bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm p-5 flex flex-col gap-3 transition-shadow duration-300 hover:shadow-md"
                     >
-                        <div className="rounded-2xl bg-white p-5 h-full flex flex-col gap-3 transition-colors group-hover:bg-slate-50">
-                            <span className={`h-10 w-10 flex items-center justify-center rounded-xl text-white bg-gradient-to-br ${accents[m.accent] || accents.blue}`}>
-                                {m.icon}
-                            </span>
-                            <div>
-                                <div className="font-semibold text-slate-900 group-hover:text-blue-700">{m.label}</div>
-                                <div className="text-xs text-slate-500 mt-1">{m.desc}</div>
-                            </div>
+                        <span className={`h-10 w-10 flex items-center justify-center rounded-xl text-white bg-gradient-to-br ${accents[m.accent] || accents.blue}`}>
+                            {m.icon}
+                        </span>
+                        <div>
+                            <div className="font-semibold text-slate-500 group-hover:text-blue-600 transition-colors">{m.label}</div>
+                            <div className="text-xs text-slate-400 mt-1">{m.desc}</div>
                         </div>
                     </Link>
                 ))}

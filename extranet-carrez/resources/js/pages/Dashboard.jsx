@@ -1,39 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../auth';
 
-function StatCard({ label, value, icon, accent }) {
+function StatCard({ label, value, icon, accent, delay = 0 }) {
     const accents = {
-        blue: 'from-blue-600 to-blue-700 shadow-blue-600/30',
-        red: 'from-red-500 to-red-700 shadow-red-500/30',
-        indigo: 'from-indigo-600 to-indigo-700 shadow-indigo-600/30',
-        emerald: 'from-emerald-500 to-emerald-600 shadow-emerald-500/30',
-        amber: 'from-amber-500 to-orange-600 shadow-amber-500/30',
-        violet: 'from-violet-600 to-purple-700 shadow-violet-600/30',
-        slate: 'from-slate-700 to-slate-900 shadow-slate-700/30',
+        blue: 'bg-blue-200 border border-blue-300 text-blue-900',
+        red: 'bg-rose-200 border border-rose-300 text-rose-900',
+        indigo: 'bg-indigo-200 border border-indigo-300 text-indigo-900',
+        emerald: 'bg-emerald-200 border border-emerald-300 text-emerald-900',
+        amber: 'bg-amber-200 border border-amber-300 text-amber-900',
+        violet: 'bg-violet-200 border border-violet-300 text-violet-900',
+        slate: 'bg-slate-200 border border-slate-300 text-slate-900',
+    };
+
+    const iconAccents = {
+        blue: 'bg-blue-300 text-blue-800',
+        red: 'bg-rose-300 text-rose-800',
+        indigo: 'bg-indigo-300 text-indigo-800',
+        emerald: 'bg-emerald-300 text-emerald-800',
+        amber: 'bg-amber-300 text-amber-800',
+        violet: 'bg-violet-300 text-violet-800',
+        slate: 'bg-slate-300 text-slate-800',
     };
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br p-px shadow-sm">
-            <div className={`rounded-2xl bg-gradient-to-br p-5 text-white ${accents[accent] || accents.blue}`}>
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wider text-white/80">{label}</span>
-                    <span className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/20">{icon}</span>
-                </div>
-                <div className="mt-3 text-3xl font-extrabold">{value}</div>
+        <div
+            className={`anim-in group rounded-2xl p-5 shadow-sm ${accents[accent] || accents.blue} transition-all duration-300 hover:-translate-y-1 hover:shadow-md`}
+            style={{ animationDelay: `${delay}s` }}
+        >
+            <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider opacity-90">{label}</span>
+                <span className={`h-8 w-8 flex items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 ${iconAccents[accent] || iconAccents.blue}`}>{icon}</span>
             </div>
+            <div className="mt-3 text-3xl font-extrabold">{value}</div>
         </div>
     );
 }
 
-function PanelCard({ title, icon, accent, badge, children, footerLink, footerLabel, empty }) {
+const PanelCardTones = {
+    blue: 'bg-blue-50 text-blue-700 border-slate-200',
+    red: 'bg-blue-50 text-rose-700 border-slate-200',
+    amber: 'bg-blue-50 text-amber-700 border-slate-200',
+};
+
+function PanelCard({ title, icon, accent, tone = 'blue', badge, children, footerLink, footerLabel, empty }) {
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col transition-shadow duration-300 hover:shadow-md">
+            <div className={`flex items-center justify-between px-5 py-4 border-b-2 ${PanelCardTones[tone] || PanelCardTones.blue}`}>
                 <div className="flex items-center gap-3">
                     <span className={`h-9 w-9 flex items-center justify-center rounded-xl text-white ${accent}`}>{icon}</span>
                     <div>
-                        <div className="font-semibold text-slate-900">{title}</div>
+                        <div className="font-semibold">{title}</div>
                         {badge != null && (
                             <div className="text-xs text-slate-500">
                                 <span className="inline-flex items-center gap-1">
@@ -129,6 +147,11 @@ const icones = {
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
         </svg>
     ),
+    check: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
+    ),
 };
 
 function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, onSaved }) {
@@ -190,25 +213,25 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
 
     const champField = (label, nom, opts = {}) => (
         <div className={opts.span2 ? 'col-span-2' : ''}>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-blue-800 mb-1">
                 {label}{opts.required && <span className="text-red-500"> *</span>}
             </label>
             <input
                 type={opts.type || 'text'}
                 value={form[nom]}
                 onChange={setF(nom)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
             />
         </div>
     );
 
     const champSel = (label, nom, options, opts = {}) => (
         <div className={opts.span2 ? 'col-span-2' : ''}>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-blue-800 mb-1">
                 {label}{opts.required && <span className="text-red-500"> *</span>}
             </label>
             <select value={form[nom]} onChange={setF(nom)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm">
+                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none">
                 <option value="">Choisir...</option>
                 {options.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -252,7 +275,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
 
     if (!ouvert) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl my-8">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -264,14 +287,14 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                     {erreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{erreur}</div>}
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-sm font-medium text-blue-800 mb-1">
                             Prospect/client <span className="text-red-500">*</span>
                         </label>
                         <select
                             value={clientId}
                             onChange={(e) => selectClient(e.target.value)}
                             disabled={chargementClients}
-                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                         >
                             <option value="">{chargementClients ? 'Chargement des clients...' : 'Sélectionner un client...'}</option>
                             {clients.map((c) => (
@@ -285,7 +308,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                         <form onSubmit={enregistrer} className="space-y-4">
                             <div className="flex gap-2">
                                 <button type="button" onClick={() => setForm({ ...form, type: 'PHYSIQUE' })}
-                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'PHYSIQUE' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
+                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'PHYSIQUE' ? 'bg-blue-700 border-blue-700 text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>
                                     Personne physique
                                 </button>
                                 <button type="button" onClick={() => setForm({ ...form, type: 'MORALE' })}
@@ -369,7 +392,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                                     Annuler
                                 </button>
                                 <button type="submit" disabled={saving}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                    className="px-5 py-2.5 btn-primary">
                                     {saving ? 'Enregistrement...' : 'Valider'}
                                 </button>
                             </div>
@@ -377,15 +400,16 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
 function SimulationsPanel({ simulations }) {
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-slate-900">Simulations</h2>
+        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+            <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
+                <h2 className="font-semibold text-blue-700">Simulations</h2>
             </div>
             {simulations.length === 0 ? (
                 <div className="px-3 py-8 text-center text-sm text-slate-400">Aucune simulation enregistrée.</div>
@@ -477,14 +501,14 @@ function MessagerieOnglet() {
 
     const champInput = (label, nom, obligatoire = false) => (
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-blue-800 mb-1">
                 {label}{obligatoire && <span className="text-red-500"> *</span>}
             </label>
             <input
                 type="text"
                 value={form[nom]}
                 onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
-                className={`w-full border rounded px-3 py-2 text-sm ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                className={`w-full border rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700 ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                 placeholder={label}
             />
             {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
@@ -493,12 +517,12 @@ function MessagerieOnglet() {
 
     return (
         <div className="space-y-5">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-                    <h2 className="font-semibold text-slate-900">Messagerie</h2>
+            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+                <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200 flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-blue-700">Messagerie</h2>
                     <button
                         onClick={ouvrir}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm whitespace-nowrap"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 btn-primary whitespace-nowrap"
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -533,7 +557,7 @@ function MessagerieOnglet() {
                                             target="_blank"
                                             rel="noreferrer"
                                             title={m.lien}
-                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-700"
+                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-800 transition-all duration-300 hover:scale-110 active:scale-90"
                                         >
                                             +
                                         </a>
@@ -547,37 +571,51 @@ function MessagerieOnglet() {
                 </div>
             </div>
 
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md my-12">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-slate-900">Vous souhaitez ajouter une messagerie non référencée</h3>
-                            <button onClick={() => setModalOpen(false)} className="text-2xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-md my-12">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500" />
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-blue-800">Vous souhaitez ajouter une messagerie non référencée</h3>
+                            <button onClick={() => setModalOpen(false)} aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-blue-50 hover:text-blue-700 hover:rotate-90 active:scale-90">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                         <form onSubmit={enregistrer} className="p-5 space-y-4">
                             {modalErreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{modalErreur}</div>}
                             {champInput('Lien de Messagerie', 'lien', true)}
                             {champInput('Nom', 'nom', true)}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Descriptif</label>
                                 <textarea
                                     value={form.descriptif}
                                     maxLength={255}
                                     rows={3}
                                     onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                                 <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setLogo(e.target.files?.[0] || null)}
-                                    className="w-full text-sm"
-                                />
-                                {logo && <p className="mt-1 text-xs text-emerald-600">Logo sélectionné : {logo.name}</p>}
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Logo</label>
+                                {logo ? (
+                                    <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-emerald-300 bg-emerald-50/50 text-sm">
+                                        <span className="flex items-center gap-2 min-w-0 truncate text-emerald-900 font-medium">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M2.25 18V6.75A2.25 2.25 0 0 1 4.5 4.5h15A2.25 2.25 0 0 1 21.75 6.75V18a2.25 2.25 0 0 1-2.25 2.25H4.5A2.25 2.25 0 0 1 2.25 18Z" /></svg>
+                                            {logo.name}
+                                        </span>
+                                        <button type="button" onClick={() => setLogo(null)} className="text-red-600 hover:text-red-700 text-xs font-medium shrink-0">Retirer</button>
+                                    </div>
+                                ) : (
+                                    <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50 text-sm text-blue-700 font-medium cursor-pointer hover:border-blue-500 hover:bg-blue-100/70 transition-colors">
+                                        <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files?.[0] || null)} className="hidden" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                                        Proposer un logo
+                                    </label>
+                                )}
                             </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <button type="button" onClick={() => setModalOpen(false)}
@@ -585,13 +623,14 @@ function MessagerieOnglet() {
                                     Annuler
                                 </button>
                                 <button type="submit" disabled={saving}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                    className="px-5 py-2.5 btn-primary">
                                     {saving ? 'Enregistrement...' : 'Valider'}
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -657,14 +696,14 @@ function ReseauSocialOnglet() {
 
     const champInput = (label, nom, obligatoire = false) => (
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-blue-800 mb-1">
                 {label}{obligatoire && <span className="text-red-500"> *</span>}
             </label>
             <input
                 type="text"
                 value={form[nom]}
                 onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
-                className={`w-full border rounded px-3 py-2 text-sm ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                className={`w-full border rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700 ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
                 placeholder={label}
             />
             {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
@@ -673,12 +712,12 @@ function ReseauSocialOnglet() {
 
     return (
         <div className="space-y-5">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-                    <h2 className="font-semibold text-slate-900">Réseaux sociaux</h2>
+            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+                <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200 flex items-center justify-between gap-3">
+                  <h2 className="font-semibold text-blue-700">Réseaux sociaux</h2>
                     <button
                         onClick={ouvrir}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 shadow-sm whitespace-nowrap"
+                        className="inline-flex items-center gap-2 px-3.5 py-2 btn-primary whitespace-nowrap"
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -699,27 +738,29 @@ function ReseauSocialOnglet() {
                     ) : (
                         <div className="flex flex-wrap gap-3">
                             {reseaux.map((r) => (
-                                <div key={r.id} className="w-[130px] flex flex-col items-center gap-2 p-3 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
+                                <div key={r.id} className="w-[100px] flex items-center justify-center p-3 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-shadow duration-300 hover:shadow-md">
                                     <div className="relative">
                                         {r.logo_url ? (
-                                            <img src={r.logo_url} alt={r.nom} className="h-14 w-14 object-contain rounded-lg bg-white border border-gray-200 p-0.5" />
+                                            <span className="h-16 w-16 rounded-2xl bg-white/70 backdrop-blur-sm border border-slate-100 shadow-md flex items-center justify-center overflow-hidden p-2.5">
+                                                <img src={r.logo_url} alt={r.nom} className="h-10 w-10 object-contain" />
+                                            </span>
                                         ) : (
-                                            <div className="h-14 w-14 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-0.5">
-                                                {r.nom?.slice(0, 2).toUpperCase()}
-                                            </div>
+                                            <span className="h-16 w-16 rounded-2xl bg-white/70 backdrop-blur-sm border border-slate-100 shadow-md flex items-center justify-center overflow-hidden p-2.5">
+                                                <span className="text-slate-400 font-bold text-sm flex items-center justify-center h-10 w-10">
+                                                    {r.nom?.slice(0, 2).toUpperCase()}
+                                                </span>
+                                            </span>
                                         )}
                                         <a
                                             href={r.lien}
                                             target="_blank"
                                             rel="noreferrer"
                                             title={r.lien}
-                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-700"
+                                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-700 text-white flex items-center justify-center text-sm font-bold shadow hover:bg-blue-800 transition-all duration-300 hover:scale-110 active:scale-90"
                                         >
                                             +
                                         </a>
                                     </div>
-                                    <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{r.nom}</span>
-                                    {r.descriptif && <span className="text-[10px] text-slate-400 text-center line-clamp-2">{r.descriptif}</span>}
                                 </div>
                             ))}
                         </div>
@@ -727,37 +768,51 @@ function ReseauSocialOnglet() {
                 </div>
             </div>
 
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md my-12">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-slate-900">Vous souhaitez ajouter un réseau social non référencé</h3>
-                            <button onClick={() => setModalOpen(false)} className="text-2xl leading-none text-slate-400 hover:text-slate-600">&times;</button>
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-md my-12">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500" />
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-blue-800">Vous souhaitez ajouter un réseau social non référencé</h3>
+                            <button onClick={() => setModalOpen(false)} aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-blue-50 hover:text-blue-700 hover:rotate-90 active:scale-90">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                         <form onSubmit={enregistrer} className="p-5 space-y-4">
                             {modalErreur && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{modalErreur}</div>}
                             {champInput('Lien du réseau social', 'lien', true)}
                             {champInput('Nom', 'nom', true)}
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Descriptif</label>
                                 <textarea
                                     value={form.descriptif}
                                     maxLength={255}
                                     rows={3}
                                     onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                                 <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setLogo(e.target.files?.[0] || null)}
-                                    className="w-full text-sm"
-                                />
-                                {logo && <p className="mt-1 text-xs text-emerald-600">Logo sélectionné : {logo.name}</p>}
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Logo</label>
+                                {logo ? (
+                                    <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-emerald-300 bg-emerald-50/50 text-sm">
+                                        <span className="flex items-center gap-2 min-w-0 truncate text-emerald-900 font-medium">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M2.25 18V6.75A2.25 2.25 0 0 1 4.5 4.5h15A2.25 2.25 0 0 1 21.75 6.75V18a2.25 2.25 0 0 1-2.25 2.25H4.5A2.25 2.25 0 0 1 2.25 18Z" /></svg>
+                                            {logo.name}
+                                        </span>
+                                        <button type="button" onClick={() => setLogo(null)} className="text-red-600 hover:text-red-700 text-xs font-medium shrink-0">Retirer</button>
+                                    </div>
+                                ) : (
+                                    <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/50 text-sm text-blue-700 font-medium cursor-pointer hover:border-blue-500 hover:bg-blue-100/70 transition-colors">
+                                        <input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files?.[0] || null)} className="hidden" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
+                                        Proposer un logo
+                                    </label>
+                                )}
                             </div>
                             <div className="flex justify-end gap-2 pt-2">
                                 <button type="button" onClick={() => setModalOpen(false)}
@@ -765,13 +820,14 @@ function ReseauSocialOnglet() {
                                     Annuler
                                 </button>
                                 <button type="submit" disabled={saving}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                                    className="px-5 py-2.5 btn-primary">
                                     {saving ? 'Enregistrement...' : 'Valider'}
                                 </button>
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -812,24 +868,24 @@ function OutilEstimation({ onSimulationSaved }) {
 
     const champ = (label, name, type = 'text', extra = null) => (
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-blue-800 mb-1">{label}</label>
             <input
                 type={type}
                 value={form[name]}
                 onChange={update(name)}
                 {...(extra || {})}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
             />
         </div>
     );
 
     const champSelect = (label, name, options, placeholder = true) => (
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-blue-800 mb-1">{label}</label>
             <select
                 value={form[name]}
                 onChange={update(name)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
             >
                 {placeholder && <option value="">Sélectionner...</option>}
                 {options.map((o) => (
@@ -841,7 +897,7 @@ function OutilEstimation({ onSimulationSaved }) {
 
     const blocGarantie = (
         <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Niveau de garantie</label>
+            <label className="block text-sm font-medium text-blue-800 mb-1">Niveau de garantie</label>
             <div className="flex gap-3">
                 {['Basique', 'Renforcé'].map((g) => (
                     <label key={g} className="flex items-center gap-1.5 text-sm text-slate-700">
@@ -860,17 +916,17 @@ function OutilEstimation({ onSimulationSaved }) {
     );
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
-                <h2 className="font-semibold text-slate-900">Simulateur de primes</h2>
-            </div>
+        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+            <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
+    <h2 className="font-semibold text-blue-700">Simulateur de primes</h2>
+</div>
             <form className="p-4 space-y-3" onSubmit={estimer}>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Produit</label>
+                    <label className="block text-sm font-medium text-blue-800 mb-1">Produit</label>
                     <select
                         value={form.produit}
                         onChange={update('produit')}
-                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
                     >
                         {produits.map((p) => (
                             <option key={p} value={p}>{p}</option>
@@ -930,7 +986,7 @@ function OutilEstimation({ onSimulationSaved }) {
                 <button
                     type="submit"
                     disabled={calculEnCours}
-                    className="w-full py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                    className="w-full py-2.5 btn-primary"
                 >
                     {calculEnCours ? 'Calcul...' : 'Estimer'}
                 </button>
@@ -1199,23 +1255,71 @@ export default function Dashboard() {
 
     const LogoFournisseur = ({ f }) =>
         f.logo_url ? (
-            <img src={f.logo_url} alt={f.nom} className="h-20 w-20 object-contain rounded-lg bg-white border border-gray-200 p-1" />
+            <span className="h-16 w-16 rounded-2xl bg-white/70 backdrop-blur-sm border border-slate-100 shadow-md flex items-center justify-center overflow-hidden p-2.5 transition-shadow duration-300 hover:shadow-lg">
+                <img src={f.logo_url} alt={f.nom} className="h-10 w-10 object-contain" />
+            </span>
         ) : (
-            <div className="h-20 w-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 text-slate-500 flex items-center justify-center font-bold text-sm p-1">
-                {f.nom?.slice(0, 2).toUpperCase()}
-            </div>
+            <span className="h-16 w-16 rounded-2xl bg-white/70 backdrop-blur-sm border border-slate-100 shadow-md flex items-center justify-center overflow-hidden p-2.5 transition-shadow duration-300 hover:shadow-lg">
+                <span className="text-slate-400 font-bold text-sm flex items-center justify-center h-10 w-10">
+                    {f.nom?.slice(0, 2).toUpperCase()}
+                </span>
+            </span>
         );
 
     const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+    const ongletThemes = {
+        simulateur: {
+            actif: 'bg-blue-700 text-white shadow-sm shadow-blue-700/25',
+            inactif: 'text-slate-500 hover:bg-slate-100 hover:text-blue-700',
+        },
+        messagerie: {
+            actif: 'bg-blue-700 text-white shadow-sm shadow-blue-700/25',
+            inactif: 'text-slate-500 hover:bg-slate-100 hover:text-blue-700',
+        },
+        reseaux: {
+            actif: 'bg-blue-700 text-white shadow-sm shadow-blue-700/25',
+            inactif: 'text-slate-500 hover:bg-slate-100 hover:text-blue-700',
+        },
+    };
+
     return (
         <div>
             {/* En-tête */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-extrabold text-slate-900">Bonjour, {user?.name}</h1>
-                <p className="text-sm text-slate-500 capitalize mt-0.5">
-                    {today} — {estCabinet ? 'Vue de gestion' : 'Votre portefeuille'}
-                </p>
+                <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-8 shadow-sm">
+                <div className="relative flex flex-wrap items-center justify-between gap-5">
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 border border-blue-100 text-blue-600 text-[11px] font-semibold uppercase tracking-wider mb-3 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            Extranet partenaires
+                        </span>
+                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                            <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>Bonjour,</span>{' '}
+                            <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>{user?.name}</span>
+                        </h1>
+                        <p className="text-sm text-slate-500 capitalize mt-2 flex items-center gap-1.5">
+                            <svg className="w-4 h-4 text-blue-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
+                            {today} — {estCabinet ? 'Vue de gestion' : 'Votre portefeuille'}
+                        </p>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 rounded-2xl bg-white/70 backdrop-blur border border-slate-200 px-4 py-3 shadow-sm">
+                        <span className={`h-9 w-9 flex items-center justify-center rounded-xl text-white text-sm font-bold shadow ${estCabinet ? 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20' : 'bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-400/20'}`}>
+                            {estCabinet ? '⚙' : '✓'}
+                        </span>
+                        <div className="leading-tight">
+                            <div className="text-xs text-slate-400 font-medium uppercase tracking-wide">{estCabinet ? 'Mode' : 'Statut'}</div>
+                            <div className="text-sm font-semibold text-slate-700">
+                                {estCabinet ? 'Gestion du cabinet' : 'Portefeuille actif'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
@@ -1225,33 +1329,48 @@ export default function Dashboard() {
             {data && (
                 <>
                     {/* Cartes statistiques */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="anim-in grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8" style={{ animationDelay: '0.06s' }}>
                         {!estCabinet ? (
                             <>
-                                <StatCard label="Demandes en cours" value={data.demandes_en_cours} icon={icones.file} accent="blue" />
-                                <StatCard label="Devis en attente" value={data.devis_en_attente} icon={<span>✉</span>} accent="amber" />
-                                <StatCard label="Contrats actifs" value={data.contrats_actifs} icon={<span>☑</span>} accent="emerald" />
-                                <StatCard label="Échéances (120 j)" value={data.echeances} icon={<span>◷</span>} accent="indigo" />
-                                <StatCard label="Commissions du mois" value={`${(data.commissions_mois / 100).toFixed(2)} €`} icon={<span>€</span>} accent="violet" />
-                                <StatCard label="Messages non lus" value={data.messages_non_lus} icon={<span>✉</span>} accent="red" />
+                                <StatCard label="Demandes en cours" value={data.demandes_en_cours} icon={icones.file} accent="blue" delay={0.08} />
+                                <StatCard label="Devis en attente" value={data.devis_en_attente} icon={<span>✉</span>} accent="amber" delay={0.14} />
+                                <StatCard label="Contrats actifs" value={data.contrats_actifs} icon={icones.check} accent="emerald" delay={0.20} />
+                                <StatCard label="Échéances (120 j)" value={data.echeances} icon={<span>◷</span>} accent="indigo" delay={0.26} />
+                                <StatCard label="Commissions du mois" value={`${(data.commissions_mois / 100).toFixed(2)} €`} icon={<span>€</span>} accent="violet" delay={0.32} />
+                                <StatCard label="Messages non lus" value={data.messages_non_lus} icon={<span>✉</span>} accent="red" delay={0.38} />
                             </>
                         ) : (
                             <>
-                                <StatCard label="Demandes en attente" value={data.demandes_en_attente} icon={icones.file} accent="blue" />
-                                <StatCard label="Dossiers en retard" value={data.dossiers_en_retard} icon={icones.retard} accent="red" />
-                                <StatCard label="Contrats en vigueur" value={data.contrats_en_vigueur} icon={<span>☑</span>} accent="emerald" />
-                                <StatCard label="Bordereaux à valider" value={data.bordereaux_a_valider} icon={<span>▤</span>} accent="amber" />
+                                <StatCard label="Demandes en attente" value={data.demandes_en_attente} icon={icones.file} accent="blue" delay={0.08} />
+                                <StatCard label="Dossiers en retard" value={data.dossiers_en_retard} icon={icones.retard} accent="red" delay={0.14} />
+                                <StatCard label="Contrats en vigueur" value={data.contrats_en_vigueur} icon={icones.check} accent="emerald" delay={0.20} />
+                                <StatCard label="Bordereaux à valider" value={data.bordereaux_a_valider} icon={<span>▤</span>} accent="amber" delay={0.26} />
                             </>
                         )}
                     </div>
 
                     {/* Partenaires & fournisseurs (cabinet) */}
                     {estCabinet && (
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-8 items-start">
-                            {/* Colonne latérale droite (col-md-4) */}
-                            <div className="md:col-span-4 md:order-2 space-y-6">
-                                {/* Onglets de la colonne droite */}
-                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-1 flex">
+                        <>
+                            {/* Barre supérieure : filtres + onglets */}
+                            <div className="anim-in bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm p-3 mb-6 flex flex-wrap items-center justify-between gap-3" style={{ animationDelay: '0.12s' }}>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {typesAssurance.map((t) => (
+                                        <button
+                                            key={t}
+                                            onClick={() => setTypeAssurance(t)}
+                                            className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                                                typeAssurance === t
+                                                    ? 'bg-blue-700 text-white border-blue-700 shadow-sm shadow-blue-700/20'
+                                                    : 'bg-white/70 text-slate-500 border-slate-200 hover:bg-white hover:text-blue-700'
+                                            }`}
+                                        >
+                                            {t}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center gap-1 p-1 rounded-xl bg-white/70 border border-slate-200/80">
                                     {[
                                         { id: 'simulateur', label: 'Simulateur de primes', icone: (
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -1272,10 +1391,8 @@ export default function Dashboard() {
                                         <button
                                             key={o.id}
                                             onClick={() => setOngletDroit(o.id)}
-                                            className={`flex-1 flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-medium transition-colors ${
-                                                ongletDroit === o.id
-                                                    ? 'bg-blue-600 text-white shadow'
-                                                    : 'text-slate-600 hover:bg-slate-100'
+                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                                                ongletDroit === o.id ? ongletThemes[o.id].actif : ongletThemes[o.id].inactif
                                             }`}
                                         >
                                             {o.icone}
@@ -1283,127 +1400,122 @@ export default function Dashboard() {
                                         </button>
                                     ))}
                                 </div>
-
-                                {ongletDroit === 'simulateur' && (
-                                    <>
-                                        <OutilEstimation onSimulationSaved={loadSimulations} />
-                                        <SimulationsPanel simulations={simulations} />
-                                    </>
-                                )}
-
-                                {ongletDroit === 'messagerie' && (
-                                    <MessagerieOnglet />
-                                )}
-
-                                {ongletDroit === 'reseaux' && (
-                                    <ReseauSocialOnglet />
-                                )}
                             </div>
 
-                            {/* Partenaires & fournisseurs (col-md-8) */}
-                            <div className="md:col-span-8 space-y-6 md:order-1">
-                                {msgFour && <div className="bg-amber-50 text-amber-700 p-3 rounded text-sm">{msgFour}</div>}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-8 items-stretch">
+                                {/* Colonne gauche (col-md-8) : Partenaires & fournisseurs */}
+                                <div className="anim-in md:col-span-8 flex flex-col gap-5" style={{ animationDelay: '0.18s' }}>
+                                    {msgFour && <div className="bg-amber-50 text-amber-700 p-3 rounded text-sm">{msgFour}</div>}
 
-                                {/* Filtres par type d'assurance */}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {typesAssurance.map((t) => (
-                                        <button
-                                            key={t}
-                                            onClick={() => setTypeAssurance(t)}
-                                            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition ${
-                                                typeAssurance === t
-                                                    ? 'bg-blue-600 text-white border-blue-600'
-                                                    : 'bg-white text-slate-600 border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            {t}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                                    <div className="px-5 py-4 border-b border-gray-100">
-                                        <h2 className="font-semibold text-slate-900">Partenaires</h2>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-3 pb-2 px-2">
-                                        {partenairesAccueil.map((p) => {
-                                            const url = buildUrl(p.url_assurance);
-                                            return (
-                                                <div key={p.id} className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
-                                                    {url ? (
-                                                        <a href={url} target="_blank" rel="noreferrer" title={p.url_assurance} className="flex flex-col items-center gap-2 w-full">
+                                    {/* Partenaires */}
+                                    <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                                        <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
+    <h2 className="font-semibold text-blue-700">Partenaires</h2>
+</div>
+                                        <div className="flex flex-wrap gap-3 p-4">
+                                            {partenairesAccueil.map((p, i) => {
+                                                const url = buildUrl(p.url_assurance);
+                                                return (
+                                                    <div key={p.id} className="anim-in w-[100px] flex items-center justify-center p-2 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
+                                                        {url ? (
+                                                            <a href={url} target="_blank" rel="noreferrer" title={p.url_assurance} className="flex items-center justify-center w-full">
+                                                                <LogoFournisseur f={p} />
+                                                            </a>
+                                                        ) : (
                                                             <LogoFournisseur f={p} />
-                                                        </a>
-                                                    ) : (
-                                                        <LogoFournisseur f={p} />
-                                                    )}
-                                                    <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{p.nom}</span>
-                                                </div>
-                                            );
-                                        })}
-                                        {partenairesAccueil.length === 0 && (
-                                            <div className="col-span-full text-center text-sm text-slate-400 py-6">Aucun partenaire pour le moment.</div>
-                                        )}
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            {partenairesAccueil.length === 0 && (
+                                                <div className="w-full text-center text-sm text-slate-400 py-6">Aucun partenaire pour le moment.</div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                                    <div className="px-5 py-4 border-b border-gray-100">
-                                        <h2 className="font-semibold text-slate-900">Fournisseurs</h2>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 pt-3 pb-2 px-2">
-                                        {fournisseursFiltres.map((f) => {
+                                    {/* Fournisseurs */}
+                                    <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex-1 flex flex-col">
+                                        <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
+    <h2 className="font-semibold text-blue-700">Fournisseurs</h2>
+</div>
+                                        <div className="flex flex-wrap gap-3 p-4 flex-1 content-start">
+                                            {fournisseursFiltres.map((f, i) => {
                                             const url = buildUrl(f.url_assurance);
                                             return (
-                                                <div key={f.id} className="relative flex flex-col items-center gap-1.5 p-1.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition">
-                                                    <button
-                                                        onClick={() => openPlus(f)}
-                                                        title={f.devenir_partenaire ? 'Désactiver le partenaire' : 'Devenir partenaire'}
-                                                        className={`absolute top-1 right-1 w-5 h-5 rounded-full text-white flex items-center justify-center text-xs font-bold shadow ${
-                                                            f.devenir_partenaire ? 'bg-emerald-500' : 'bg-blue-600 hover:bg-blue-700'
-                                                        }`}
-                                                    >
-                                                        {f.devenir_partenaire ? '✓' : '+'}
-                                                    </button>
-                                                    {url ? (
-                                                        <a href={url} target="_blank" rel="noreferrer" title={f.url_assurance} className="flex flex-col items-center gap-2 w-full">
+                                                <div key={f.id} className="anim-in relative w-[100px] flex items-center justify-center p-2 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
+                                                        <button
+                                                            onClick={() => openPlus(f)}
+                                                            title={f.devenir_partenaire ? 'Désactiver le partenaire' : 'Devenir partenaire'}
+                                                            className="absolute top-1 right-1 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors"
+                                                        >
+                                                            {f.devenir_partenaire ? (
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                                                </svg>
+                                                            ) : (
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                                </svg>
+                                                            )}
+                                                        </button>
+                                                        {url ? (
+                                                            <a href={url} target="_blank" rel="noreferrer" title={f.url_assurance} className="flex items-center justify-center w-full">
+                                                                <LogoFournisseur f={f} />
+                                                            </a>
+                                                        ) : (
                                                             <LogoFournisseur f={f} />
-                                                        </a>
-                                                    ) : (
-                                                        <LogoFournisseur f={f} />
-                                                    )}
-                                                    <span className="text-xs font-medium text-slate-700 text-center truncate w-full">{f.nom}</span>
-                                                </div>
-                                            );
-                                        })}
-                                        {fournisseursFiltres.length === 0 && (
-                                            <div className="col-span-full text-center text-sm text-slate-400 py-6">Aucun fournisseur.</div>
-                                        )}
-                                    </div>
-                                    <div className="px-3 pb-3 flex justify-end">
-                                        <button
-                                            onClick={ouvrirAjoutFour}
-                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition shadow-sm"
-                                        >
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                            </svg>
-                                            Ajouter un fournisseur
-                                        </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            {fournisseursFiltres.length === 0 && (
+                                                <div className="col-span-full text-center text-sm text-slate-400 py-6">Aucun fournisseur.</div>
+                                            )}
+                                        </div>
+                                        <div className="px-4 pb-4 pt-1 flex justify-end mt-auto">
+                                            <button
+                                                onClick={ouvrirAjoutFour}
+                                                className="inline-flex items-center gap-2 px-4 py-2 btn-primary"
+                                            >
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                </svg>
+                                                Ajouter un fournisseur
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
+
+                                {/* Colonne droite (col-md-4) : onglet actif */}
+                                <div className="anim-in md:col-span-4 flex flex-col gap-5" style={{ animationDelay: '0.24s' }}>
+                                    {ongletDroit === 'simulateur' && (
+                                        <>
+                                            <OutilEstimation onSimulationSaved={loadSimulations} />
+                                            <SimulationsPanel simulations={simulations} />
+                                        </>
+                                    )}
+
+                                    {ongletDroit === 'messagerie' && (
+                                        <MessagerieOnglet />
+                                    )}
+
+                                    {ongletDroit === 'reseaux' && (
+                                        <ReseauSocialOnglet />
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        </>
                     )}
 
                     {/* Panneaux de gestion (cabinet) */}
                     {estCabinet ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div className="anim-in grid grid-cols-1 lg:grid-cols-3 gap-5" style={{ animationDelay: '0.3s' }}>
                             {/* File d'attribution */}
                             <PanelCard
                                 title="File d'attribution"
                                 icon={icones.file}
-                                accent="bg-gradient-to-br from-blue-600 to-blue-700"
+                                accent="bg-gradient-to-br from-blue-500 to-blue-600"
+                                tone="blue"
                                 badge={data.file_attribution?.length}
                                 footerLink="/demandes"
                             >
@@ -1431,7 +1543,8 @@ export default function Dashboard() {
                             <PanelCard
                                 title="Dossiers en retard"
                                 icon={icones.retard}
-                                accent="bg-gradient-to-br from-red-500 to-red-700"
+                                accent="bg-gradient-to-br from-red-400 to-red-500"
+                                tone="red"
                                 badge={data.dossiers_retard_liste?.length}
                                 footerLink="/demandes"
                             >
@@ -1455,7 +1568,8 @@ export default function Dashboard() {
                             <PanelCard
                                 title="Relances à faire"
                                 icon={icones.relance}
-                                accent="bg-gradient-to-br from-amber-500 to-orange-600"
+                                accent="bg-gradient-to-br from-amber-400 to-orange-500"
+                                tone="amber"
                                 badge={
                                     (data.relances?.impayes?.length || 0) +
                                     (data.relances?.bordereaux?.length || 0) +
@@ -1485,11 +1599,12 @@ export default function Dashboard() {
                         </div>
                     ) : (
                         /* Panneaux partenaire */
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div className="anim-in grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ animationDelay: '0.3s' }}>
                             <PanelCard
                                 title="Échéances proches"
                                 icon={icones.relance}
-                                accent="bg-gradient-to-br from-blue-600 to-blue-700"
+                                accent="bg-gradient-to-br from-blue-500 to-blue-600"
+                                tone="blue"
                                 badge={data.relances?.echeances_proches?.length}
                                 footerLink="/echeances"
                             >
@@ -1498,7 +1613,8 @@ export default function Dashboard() {
                             <PanelCard
                                 title="Pièces demandées"
                                 icon={icones.relance}
-                                accent="bg-gradient-to-br from-amber-500 to-orange-600"
+                                accent="bg-gradient-to-br from-amber-400 to-orange-500"
+                                tone="amber"
                                 badge={data.relances?.pieces_demandees?.length}
                                 footerLink="/demandes"
                             >
@@ -1512,8 +1628,20 @@ export default function Dashboard() {
             {/* Modal de confirmation du toggle partenaire */}
             {estCabinet && confirmToggle && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-                    <div className="bg-white rounded-lg p-5 shadow-xl max-w-sm w-full">
-                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Confirmer l&apos;action</h3>
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-lg p-5 shadow-xl max-w-sm w-full">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500" />
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-blue-800">Confirmer l&apos;action</h3>
+                            <button
+                                onClick={() => setConfirmToggle(null)}
+                                aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-blue-50 hover:text-blue-700 hover:rotate-90 active:scale-90"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                         {confirmToggle.devenir_partenaire ? (
                             <p className="text-sm text-slate-600 mb-6">
                                 Voulez-vous <span className="font-medium">désactiver</span> le partenaire{' '}
@@ -1528,7 +1656,7 @@ export default function Dashboard() {
                                 </p>
                                 <div className="space-y-3 mb-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        <label className="block text-sm font-medium text-blue-800 mb-1">
                                             E-mail de connexion <span className="text-red-500">*</span>
                                         </label>
                                         <input
@@ -1536,11 +1664,11 @@ export default function Dashboard() {
                                             value={toggleEmail}
                                             onChange={(e) => setToggleEmail(e.target.value)}
                                             placeholder="E-mail du partenaire"
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        <label className="block text-sm font-medium text-blue-800 mb-1">
                                             Mot de passe <span className="text-red-500">*</span>
                                         </label>
                                         <input
@@ -1548,7 +1676,7 @@ export default function Dashboard() {
                                             value={togglePasse}
                                             onChange={(e) => setTogglePasse(e.target.value)}
                                             placeholder="Minimum 8 caractères"
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                         />
                                     </div>
                                 </div>
@@ -1563,7 +1691,7 @@ export default function Dashboard() {
                             </button>
                             <button
                                 onClick={confirmerToggle}
-                                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+                                className="px-4 py-2 btn-primary"
                             >
                                 Confirmer
                             </button>
@@ -1575,50 +1703,54 @@ export default function Dashboard() {
             {/* Modal de saisie des infos partenaire (bouton +) */}
             {estCabinet && infosTarget && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
-                    <div className="bg-white rounded-lg p-5 shadow-xl max-w-lg w-full my-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                                Devenir partenaire — <span className="text-slate-600">{infosTarget.nom}</span>
+                    <div className="anim-pop relative bg-white rounded-2xl p-6 shadow-xl max-w-lg w-full my-8 overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500" />
+                        <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-lg font-bold text-blue-800">
+                                Devenir partenaire — <span className="text-blue-600 font-semibold">{infosTarget.nom}</span>
                             </h3>
                             <button
                                 onClick={() => setInfosTarget(null)}
-                                className="text-sm text-slate-500 hover:text-slate-700"
+                                aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-blue-50 hover:text-blue-700 hover:rotate-90 active:scale-90"
                             >
-                                Fermer
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                <label className="block text-sm font-medium text-blue-800 mb-1">
                                     Partenaire <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     value={form2.partenaire}
                                     onChange={(e) => setForm2({ ...form2, partenaire: e.target.value })}
                                     placeholder="Nom du partenaire"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">Téléphone</label>
                                     <input
                                         value={form2.telephone}
                                         onChange={(e) => setForm2({ ...form2, telephone: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">Email</label>
                                     <input
                                         type="email"
                                         value={form2.email}
                                         onChange={(e) => setForm2({ ...form2, email: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">
                                         Mot de passe <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -1626,44 +1758,44 @@ export default function Dashboard() {
                                         value={form2.mot_de_passe}
                                         onChange={(e) => setForm2({ ...form2, mot_de_passe: e.target.value })}
                                         placeholder="Minimum 8 caractères"
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Contrats</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">Contrats</label>
                                     <input
                                         type="number"
                                         min="0"
                                         value={form2.contrats}
                                         onChange={(e) => setForm2({ ...form2, contrats: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Montant primes</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">Montant primes</label>
                                     <input
                                         type="number"
                                         min="0"
                                         step="0.01"
                                         value={form2.montant_primes}
                                         onChange={(e) => setForm2({ ...form2, montant_primes: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Dernier contrat</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Dernier contrat</label>
                                 <input
                                     type="date"
                                     value={form2.dernier_contrat}
                                     onChange={(e) => setForm2({ ...form2, dernier_contrat: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Documents</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Documents</label>
                                 <div className="flex items-center gap-3">
-                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-50">
+                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-700/40 text-sm text-blue-700 hover:bg-blue-50 hover:border-blue-700 transition">
                                         Uploader un document
                                         <input type="file" className="hidden"
                                             onChange={(e) => setDocument(e.target.files?.[0] || null)} />
@@ -1674,7 +1806,7 @@ export default function Dashboard() {
                                     value={form2.nom_document}
                                     onChange={(e) => setForm2({ ...form2, nom_document: e.target.value })}
                                     placeholder="Nom du document (optionnel)"
-                                    className="mt-2 w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="mt-2 w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div className="flex justify-end gap-3 pt-2">
@@ -1687,7 +1819,7 @@ export default function Dashboard() {
                                 <button
                                     onClick={enregistrerInfos}
                                     disabled={savingInfos}
-                                    className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                                    className="px-5 py-2 btn-primary"
                                 >
                                     {savingInfos ? 'Enregistrement...' : 'Enregistrer'}
                                 </button>
@@ -1700,14 +1832,18 @@ export default function Dashboard() {
             {/* Modal : ajouter un fournisseur */}
             {showAjoutFour && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 w-full max-w-xl my-8 shadow-xl">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-lg p-5 w-full max-w-xl my-8 shadow-xl">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500" />
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-lg font-bold text-slate-900">Ajouter un fournisseur</h3>
+                            <h3 className="text-lg font-bold text-blue-800">Ajouter un fournisseur</h3>
                             <button
                                 onClick={() => setShowAjoutFour(false)}
-                                className="text-sm text-slate-500 hover:text-slate-700"
+                                aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-blue-50 hover:text-blue-700 hover:rotate-90 active:scale-90"
                             >
-                                Fermer
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
 
@@ -1715,59 +1851,59 @@ export default function Dashboard() {
 
                         <div className="space-y-4 max-w-lg">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                <label className="block text-sm font-medium text-blue-800 mb-1">
                                     Service du fournisseur <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     value={formAjoutFour.service}
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, service: e.target.value })}
                                     placeholder="Ex : Compagnie, Mutuelle, Grossiste..."
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                <label className="block text-sm font-medium text-blue-800 mb-1">
                                     Nom <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     value={formAjoutFour.nom}
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, nom: e.target.value })}
                                     placeholder="Nom du fournisseur"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Descriptif</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Descriptif</label>
                                 <textarea
                                     value={formAjoutFour.information}
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, information: e.target.value })}
                                     rows={3}
                                     placeholder="Description du fournisseur"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Type d&apos;assurance</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">Type d&apos;assurance</label>
                                     <input
                                         value={formAjoutFour.type_assurance}
                                         onChange={(e) => setFormAjoutFour({ ...formAjoutFour, type_assurance: e.target.value })}
                                         placeholder="Ex : Assurances générales, prévoyance, santé..."
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">URL de l&apos;assurance</label>
+                                    <label className="block text-sm font-medium text-blue-800 mb-1">URL de l&apos;assurance</label>
                                     <input
                                         value={formAjoutFour.url_assurance}
                                         onChange={(e) => setFormAjoutFour({ ...formAjoutFour, url_assurance: e.target.value })}
                                         placeholder="Ex : https://www.axa.com"
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo</label>
+                                <label className="block text-sm font-medium text-blue-800 mb-1">Logo</label>
                                 <div className="flex items-center gap-4">
                                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded border border-slate-300 text-sm text-slate-700 hover:bg-slate-50">
                                         Upload logo
@@ -1784,7 +1920,7 @@ export default function Dashboard() {
                                 <button
                                     onClick={creerFournisseur}
                                     disabled={savingAjoutFour}
-                                    className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                                    className="px-5 py-2 btn-primary"
                                 >
                                     {savingAjoutFour ? 'Enregistrement...' : 'Enregistrer'}
                                 </button>
