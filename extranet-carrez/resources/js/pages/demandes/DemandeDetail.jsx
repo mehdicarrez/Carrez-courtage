@@ -4,6 +4,8 @@ import api from '../../api';
 import { useAuth, estPartenaire } from '../../auth';
 import ModifierDemande from './ModifierDemande';
 import DevisMessagerie from './DevisMessagerie';
+import SignatureDemandeModal from '../../components/SignatureDemandeModal';
+import TacheDemandeModal from '../../components/TacheDemandeModal';
 
 const STATUT_CONFIG = {
     BROUILLON: { label: 'Brouillon', color: 'text-slate-500', bg: 'bg-slate-100', dot: 'bg-slate-400', step: 0 },
@@ -15,11 +17,13 @@ const STATUT_CONFIG = {
     EN_SOUSCRIPTION: { label: 'En souscription', color: 'text-teal-700', bg: 'bg-teal-50', dot: 'bg-teal-500', step: 6 },
     TRANSFORMEE: { label: 'Transformée', color: 'text-green-700', bg: 'bg-green-50', dot: 'bg-green-600', step: 7 },
     NON_ELIGIBLE: { label: 'Non éligible', color: 'text-red-700', bg: 'bg-red-50', dot: 'bg-red-500', step: -1 },
-    SANS_SUITE: { label: 'Sans suite', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-400', step: -1 },
+    SANS_SUITE: { label: 'Clôturé', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-400', step: -1 },
     EXPIREE: { label: 'Expirée', color: 'text-gray-500', bg: 'bg-gray-100', dot: 'bg-gray-300', step: -1 },
 };
 
 const fmt = (cts) => ((cts ?? 0) / 100).toFixed(2) + ' €';
+
+const fmtDate = (v) => (v ? String(v).slice(0, 10) : '—');
 
 export default function DemandeDetail() {
     const { id } = useParams();
@@ -46,6 +50,25 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
     // Projet Co-Courtage
     const [vueProjet, setVueProjet] = useState(false);
 
+    // Produits (id -> nom) pour affichage
+    const [produitsMap, setProduitsMap] = useState({});
+
+    // Détail imprimable (bloc Actions)
+    const [detailOpen, setDetailOpen] = useState(false);
+
+    // Précisions libres (colonne motif)
+    const [precision, setPrecision] = useState('');
+    const [precisionBusy, setPrecisionBusy] = useState(false);
+
+    // Duplication
+    const [dupliquerBusy, setDupliquerBusy] = useState(false);
+
+    // Signature électronique + création de tâche
+    const [sigOpen, setSigOpen] = useState(false);
+    const [sigPre, setSigPre] = useState([]);
+    const [sigAdd, setSigAdd] = useState([]);
+    const [tacheOpen, setTacheOpen] = useState(false);
+
     const load = async () => {
         try {
             const [dRes, devisRes] = await Promise.all([
@@ -62,6 +85,18 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
     };
 
     useEffect(() => { load(); }, [id]);
+
+    useEffect(() => {
+        api.get('/produits')
+            .then((res) => {
+                const map = {};
+                (res.data.data || []).forEach((g) => (g.produits || []).forEach((p) => { map[p.id] = p.nom; }));
+                setProduitsMap(map);
+            })
+            .catch(() => {});
+    }, []);
+
+    useEffect(() => { setPrecision(demande?.motif || ''); }, [demande]);
 
     const telechargerDocument = async (docId) => {
         try {
@@ -110,6 +145,33 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
             setError(err.response?.data?.message || 'Erreur.');
         } finally {
             setBusy(false);
+        }
+    };
+
+    const sauverPrecision = async () => {
+        setPrecisionBusy(true);
+        setError('');
+        try {
+            await api.post(`/demandes/${id}/precision`, { precision });
+            await load();
+        } catch (err) {
+            setError(err.response?.data?.message || "Erreur lors de l'enregistrement des précisions.");
+        } finally {
+            setPrecisionBusy(false);
+        }
+    };
+
+    const dupliquerDemande = async () => {
+        if (!window.confirm('Voulez-vous dupliquer cette demande ? Une copie en brouillon sera créée avec une nouvelle référence.')) return;
+        setDupliquerBusy(true);
+        setError('');
+        try {
+            const res = await api.post(`/demandes/${id}/dupliquer`);
+            navigate(`${basePath}/demandes/${res.data.data.id}`);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur lors de la duplication de la demande.');
+        } finally {
+            setDupliquerBusy(false);
         }
     };
 
@@ -202,7 +264,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                 {t.cible === 'EN_ETUDE' && 'Prendre en charge'}
                                 {t.cible === 'PIECES_MANQUANTES' && 'Demander pièces'}
                                 {t.cible === 'NON_ELIGIBLE' && 'Non éligible'}
-                                {t.cible === 'SANS_SUITE' && 'Sans suite'}
+                                {t.cible === 'SANS_SUITE' && 'Clôturer'}
                                 {t.cible === 'EXPIREE' && 'Expirer'}
                                 {t.cible === 'EN_SOUSCRIPTION' && 'Souscrire'}
                                 {t.cible === 'TRANSFORMEE' && 'Transformer'}
@@ -305,15 +367,9 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Détail du demande</div>
                                         <div className="space-y-3">
                                             {[
-                                                ['Référence', demande.reference],
                                                 ['Statut', sc.label],
-                                                ['Branche', demande.branche],
-                                                ['Client', demande.client],
-                                                ['Partenaire', demande.partenaire],
-                                                ['Gestionnaire', demande.gestionnaire],
-                                                ['Origine', demande.origine === 'PARTENAIRE' ? 'Partenaire' : 'Cabinet'],
-                                                ['Date de soumission', demande.date_soumission ? String(demande.date_soumission).slice(0, 10) : '—'],
-                                                ['Date de prise en charge', demande.date_prise_en_charge ? String(demande.date_prise_en_charge).slice(0, 10) : '—'],
+                                                ['Service', demande.branche || '—'],
+                                                ['Produit', ((demande.donnees_risque?.produit_ids) || []).map((pid) => produitsMap[pid]).filter(Boolean).join(', ') || '—'],
                                             ].map(([k, v]) => (
                                                 <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
@@ -359,6 +415,72 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                         )}
                                     </div>
 
+                                    {/* Bloc 4 — Statut */}
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                        <div className="text-sm font-semibold text-slate-900 mb-4">Statut</div>
+                                        <div className="space-y-3">
+                                            {[
+                                                ['Statut du demande', sc.label],
+                                                ['Mise à jour', fmtDate(demande.date_statut)],
+                                                ['Envoyé le', fmtDate(demande.date_soumission)],
+                                                ['Délai', `${demande.age_jours ?? 0} jour(s)`],
+                                                ['Prise en charge', fmtDate(demande.date_prise_en_charge)],
+                                                ['Devis reçu', `${devis.length} devis`],
+                                                ['Devis présélectionné', devis.find((d) => d.statut === 'DEVIS_SIGNE')?.propose_par?.nom || devis.find((d) => d.statut === 'ACCEPTE')?.propose_par?.nom || '—'],
+                                            ].map(([k, v]) => (
+                                                <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-0.5">{v || '—'}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Bloc 5 — Actions */}
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                        <div className="text-sm font-semibold text-slate-900 mb-4">Actions</div>
+                                        <div className="space-y-3">
+                                            <div className="bg-slate-50 rounded-lg p-3">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Afficher détail</div>
+                                                <p className="text-sm text-slate-600 leading-relaxed mt-1">
+                                                    Affiche l'ensemble des détails de la demande avec possibilité d'impression.
+                                                </p>
+                                                <button onClick={() => setDetailOpen(true)}
+                                                    className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" /></svg>
+                                                    Afficher détail
+                                                </button>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg p-3">
+                                                <label className="block text-[10px] uppercase text-slate-500 font-medium mb-1" htmlFor="precision">Ajouter précision</label>
+                                                <textarea id="precision" value={precision} onChange={(e) => setPrecision(e.target.value)}
+                                                    rows="3" placeholder="Précisions complémentaires sur la demande..."
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                                <button onClick={sauverPrecision} disabled={precisionBusy}
+                                                    className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-white hover:bg-slate-800 shadow-sm disabled:opacity-50 transition-colors">
+                                                    {precisionBusy ? 'Enregistrement...' : 'Enregistrer la précision'}
+                                                </button>
+                                            </div>
+                                            <div className="pt-3 border-t border-slate-100 space-y-2">
+                                                <button onClick={dupliquerDemande} disabled={dupliquerBusy}
+                                                    className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors">
+                                                    <svg className="w-4 h-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M13.887 3.182c.396.037.79.08 1.183.128C16.194 3.45 17 4.414 17 5.517V16.75A2.25 2.25 0 0 1 14.75 19h-9.5A2.25 2.25 0 0 1 3 16.75V5.517c0-1.103.806-2.068 1.93-2.207.393-.048.787-.09 1.183-.128A3.185 3.185 0 0 1 9.25 1h1.5a3.185 3.185 0 0 1 3.137 2.182ZM4.5 5.517c0-.262.202-.453.344-.475a3.4 3.4 0 0 0 1.422-.492A1.685 1.685 0 0 1 9.25 2.5h1.5c.719 0 1.353.463 1.984 1.05.273.253.586.434.891.561.142.023.344.214.344.406v.109a1.5 1.5 0 0 1-1.5 1.5h-6a1.5 1.5 0 0 1-1.5-1.5v-.109Zm8.97 3.783a.75.75 0 0 0-1.06 0l-2.16 2.159-1.07-1.07a.75.75 0 0 0-1.06 1.06l1.6 1.6a.75.75 0 0 0 1.06 0l2.69-2.69a.75.75 0 0 0 0-1.06Z" clipRule="evenodd" /></svg>
+                                                    {dupliquerBusy ? 'Duplication...' : 'Dupliquer la demande'}
+                                                </button>
+                                                <button onClick={() => { setSigPre([]); setSigAdd([]); setSigOpen(true); }}
+                                                    className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition-colors">
+                                                    <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="m10.577 1.332 3.811 1.132-.415 1.017-3.393-1.008V10.35L13.68 8.88l-.41-2.05 1.42-.071.716 3.579c.022.112.022.226 0 .338l-.429 2.143c-.08.403-.3.77-.62 1.032l-3.472 2.88a1.75 1.75 0 0 1-2.4 0l-3.472-2.88a1.75 1.75 0 0 1-.62-1.032l-.429-2.143a1.75 1.75 0 0 1 0-.338l.716-3.579 1.42.071-.41 2.05 3.894 1.47V2.473L8.2 3.481l-.415-1.017 3.792-1.132Z" clipRule="evenodd" /></svg>
+                                                    Signature électronique
+                                                </button>
+                                                <button onClick={() => setTacheOpen(true)}
+                                                    className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-white border border-slate-300 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 transition-colors">
+                                                    <svg className="w-4 h-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 5.5A3.5 3.5 0 0 1 9.5 2h1A3.5 3.5 0 0 1 14 5.5v.55c1.7.39 3 1.93 3 3.8v3.4A3.25 3.25 0 0 1 13.75 16H6.25A3.25 3.25 0 0 1 3 12.75v-3.4c0-1.87 1.3-3.41 3-3.8V5.5Zm4 3.5a.75.75 0 0 1 .75.75v2.1l.95.5a.75.75 0 1 1-.75 1.3l-1.5-.8A.75.75 0 0 1 9 12.25v-3A.75.75 0 0 1 9.75 8.5Zm1.75-4.5v.53c.42 0 .83.08 1.2.23A2 2 0 0 0 11.25 4h-.75Z" clipRule="evenodd" /></svg>
+                                                    Créer une tâche
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         )}
@@ -374,7 +496,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                 {/* 3 GRANDS BLOCS HORIZONTAUX                                */}
                                 {/* ========================================================= */}
 
-                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
 
                                     {/* ===================================================== */}
                                     {/* GRAND BLOC 1 — PARTENAIRE                             */}
@@ -471,193 +593,141 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
 
                                     {/* ===================================================== */}
-                                    {/* GRAND BLOC 2 — DEVIS / STATUT / ACTIONS              */}
+                                    {/* GRAND BLOC 2 — DEVIS (finition + infos financières)   */}
                                     {/* ===================================================== */}
 
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4 lg:col-span-2">
 
                                         {/* Header du devis */}
-                                        <div className="mb-4">
+                                        <div className="flex items-center justify-between gap-3 mb-5">
 
-                                            <div className="flex items-center gap-3 mb-3">
-
-                                                <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
                                                     {d.version || '1'}
                                                 </div>
-
                                                 <div>
+                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">Devis</div>
                                                     <h3 className="font-semibold text-slate-900">
                                                         Devis {d.version ? `v${d.version}` : ''}
                                                     </h3>
+                                                </div>
+                                            </div>
 
-                                                    <span
-                                                        className={`inline-block mt-1 text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
-                                                            d.statut === 'DEVIS_SIGNE'
-                                                                ? 'bg-teal-50 text-teal-700'
-                                                                : d.statut === 'ACCEPTE'
-                                                                ? 'bg-emerald-50 text-emerald-700'
-                                                                : d.statut === 'ENVOYE'
-                                                                ? 'bg-blue-50 text-blue-700'
-                                                                : d.statut === 'EXPIRE'
-                                                                ? 'bg-red-50 text-red-700'
-                                                                : d.statut === 'REFUSE'
-                                                                ? 'bg-slate-100 text-slate-500'
-                                                                : 'bg-slate-100 text-slate-600'
-                                                        }`}
+                                            <span
+                                                className={`inline-block text-[10px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                                                    d.statut === 'DEVIS_SIGNE'
+                                                        ? 'bg-teal-50 text-teal-700'
+                                                        : d.statut === 'ACCEPTE'
+                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                        : d.statut === 'ENVOYE'
+                                                        ? 'bg-blue-50 text-blue-700'
+                                                        : d.statut === 'EXPIRE'
+                                                        ? 'bg-red-50 text-red-700'
+                                                        : d.statut === 'REFUSE'
+                                                        ? 'bg-slate-100 text-slate-500'
+                                                        : 'bg-slate-100 text-slate-600'
+                                                }`}
+                                            >
+                                                {d.statut === 'DEVIS_SIGNE' ? 'Devis signé' : d.statut}
+                                            </span>
+                                        </div>
+
+                                        {/* Informations financières — grille interne */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Prime HT</div>
+                                                <div className="text-lg font-bold text-slate-900 mt-1">{fmt(d.prime_ht_cts)}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Taxes</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.taxes_cts)}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Prime TTC</div>
+                                                <div className="text-lg font-bold text-slate-900 mt-1">{fmt(d.prime_ttc_cts)}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Frais courtage</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.frais_courtage_cts)}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Première échéance</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.premiere_echeance_cts)}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Fractionnement</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{d.fractionnement || '—'}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Effet possible</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{d.date_effet_possible || '—'}</div>
+                                            </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Valide jusqu'au</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">{d.date_validite || '—'}</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        {d.statut === 'ENVOYE' && !d.est_expire && estCabinet && (
+                                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+                                                <div className="text-[10px] uppercase text-blue-700 font-semibold">Actions</div>
+                                                <div className="flex gap-2 flex-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            refuserDevis(d.id);
+                                                        }}
+                                                        disabled={busy}
+                                                        className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-white text-red-600 hover:bg-red-50 border border-red-300 shadow-sm disabled:opacity-50 transition-all hover:shadow"
                                                     >
-                                                        {d.statut === 'DEVIS_SIGNE' ? 'Devis signé' : d.statut}
-                                                    </span>
-                                                </div>
-
-                                            </div>
-
-                                        </div>
-
-                                        {/* Informations du devis — verticales */}
-                                        <div className="space-y-3">
-
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Fractionnement
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {d.fractionnement || '—'}
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Valide jusqu'au
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {d.date_validite || '—'}
+                                                        <span className="flex items-center justify-center gap-1.5">
+                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" /></svg>
+                                                            Refuser
+                                                        </span>
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            accepterDevis(d.id);
+                                                        }}
+                                                        disabled={busy}
+                                                        className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md disabled:opacity-50 transition-all hover:shadow-lg"
+                                                    >
+                                                        <span className="flex items-center justify-center gap-1.5">
+                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                                                            Accepter
+                                                        </span>
+                                                    </button>
                                                 </div>
                                             </div>
-
-                                            {d.statut === 'ENVOYE' && !d.est_expire && estCabinet && (
-                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg px-3 py-3">
-                                                    <div className="text-[10px] uppercase text-blue-700 font-semibold mb-2">
-                                                        Actions
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                refuserDevis(d.id);
-                                                            }}
-                                                            disabled={busy}
-                                                            className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-white text-red-600 hover:bg-red-50 border border-red-300 shadow-sm disabled:opacity-50 transition-all hover:shadow"
-                                                        >
-                                                            <span className="flex items-center justify-center gap-1.5">
-                                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z" clipRule="evenodd" /></svg>
-                                                                Refuser
-                                                            </span>
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                accepterDevis(d.id);
-                                                            }}
-                                                            disabled={busy}
-                                                            className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-md disabled:opacity-50 transition-all hover:shadow-lg"
-                                                        >
-                                                            <span className="flex items-center justify-center gap-1.5">
-                                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
-                                                                Accepter
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                        </div>
+                                        )}
 
                                     </div>
 
 
                                     {/* ===================================================== */}
-                                    {/* GRAND BLOC 3 — INFORMATIONS FINANCIÈRES              */}
+                                    {/* GRAND BLOC 3 — STATUT DU DEVIS                       */}
                                     {/* ===================================================== */}
 
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-
-                                        <div className="text-sm font-semibold text-slate-900 mb-4">
-                                            Informations financières
-                                        </div>
-
-                                        {/* Tous les champs dans UNE SEULE grande div */}
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                        <div className="text-sm font-semibold text-slate-900 mb-4">Statut</div>
                                         <div className="space-y-3">
-
-                                            {/* Prime HT */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Prime HT
-                                                </div>
-
-                                                <div className="text-lg font-bold text-slate-900 mt-1">
-                                                    {fmt(d.prime_ht_cts)}
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Statut du devis</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-0.5">
+                                                    {d.statut === 'DEVIS_SIGNE' ? 'Devis signé' : d.statut}
                                                 </div>
                                             </div>
-
-                                            {/* Prime TTC */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Prime TTC
-                                                </div>
-
-                                                <div className="text-lg font-bold text-slate-900 mt-1">
-                                                    {fmt(d.prime_ttc_cts)}
-                                                </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Devis envoyé le</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-0.5">{fmtDate(d.date_envoye)}</div>
                                             </div>
-
-                                            {/* Frais courtage */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Frais courtage
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {fmt(d.frais_courtage_cts)}
-                                                </div>
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium">Mis à jour le</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-0.5">{fmtDate(d.maj_le)}</div>
                                             </div>
-
-                                            {/* Première échéance */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    1ère échéance
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {fmt(d.premiere_echeance_cts)}
-                                                </div>
-                                            </div>
-
-                                            {/* Fractionnement */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Fractionnement
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {d.fractionnement || '—'}
-                                                </div>
-                                            </div>
-
-                                            {/* Date de validité */}
-                                            <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                                                <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                    Valide jusqu'au
-                                                </div>
-
-                                                <div className="text-sm font-semibold text-slate-900 mt-1">
-                                                    {d.date_validite || '—'}
-                                                </div>
-                                            </div>
-
                                         </div>
-
                                     </div>
 
 
@@ -666,8 +736,9 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {/* ===================================================== */}
 
                                     <div className="bg-white border border-slate-200 rounded-lg p-4">
-                                        <div className="text-sm font-semibold text-slate-900 mb-4">
-                                            Documents
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="text-sm font-semibold text-slate-900">Documents</div>
+                                            <span className="text-[10px] text-slate-400">{d.documents?.length || 0}</span>
                                         </div>
 
                                         {!d.documents || d.documents.length === 0 ? (
@@ -689,19 +760,62 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                                     {doc.taille ? ` · ${(doc.taille / 1024).toFixed(0)} Ko` : ''}
                                                                 </div>
                                                             </div>
-                                                            <button
-                                                                onClick={() => telechargerDocument(doc.id)}
-                                                                className="text-[10px] font-semibold text-blue-700 hover:text-blue-900 hover:underline flex-shrink-0 mt-0.5"
-                                                            >
-                                                                <span className="flex items-center gap-1">
+                                                            <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+                                                                <button
+                                                                    onClick={() => telechargerDocument(doc.id)}
+                                                                    title="Télécharger"
+                                                                    className="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 flex items-center justify-center transition-colors"
+                                                                >
                                                                     <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
-                                                                    Télécharger
-                                                                </span>
-                                                            </button>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setSigPre([doc.id]); setSigAdd(d.documents || []); setSigOpen(true); }}
+                                                                    title="Envoyer pour signature"
+                                                                    className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center justify-center transition-colors"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="m10.577 1.332 3.811 1.132-.415 1.017-3.393-1.008V10.35L13.68 8.88l-.41-2.05 1.42-.071.716 3.579c.022.112.022.226 0 .338l-.429 2.143c-.08.403-.3.77-.62 1.032l-3.472 2.88a1.75 1.75 0 0 1-2.4 0l-3.472-2.88a1.75 1.75 0 0 1-.62-1.032l-.429-2.143a1.75 1.75 0 0 1 0-.338l.716-3.579 1.42.071-.41 2.05 3.894 1.47V2.473L8.2 3.481l-.415-1.017 3.792-1.132Z" clipRule="evenodd" /></svg>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
+                                        )}
+                                    </div>
+
+
+                                    {/* ===================================================== */}
+                                    {/* GRAND BLOC 5 — INFORMATIONS SUPPLÉMENTAIRES           */}
+                                    {/* ===================================================== */}
+
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4 min-h-[120px]">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                            </div>
+                                            <div className="text-sm font-semibold text-slate-900">Informations supplémentaires</div>
+                                        </div>
+
+                                        {d.garanties && d.garanties.length > 0 ? (
+                                            <div>
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">
+                                                    Garanties proposées par le partenaire
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {d.garanties.map((g, i) => (
+                                                        <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                                                            {g.intitule}
+                                                            {g.plafond_cts && <span className="text-slate-400">· {fmt(g.plafond_cts)}</span>}
+                                                            {g.franchise_cts && <span className="text-slate-400">· fran. {fmt(g.franchise_cts)}</span>}
+                                                            <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                                {g.optionnelle ? 'opt.' : 'incl.'}
+                                                            </span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-slate-400">Aucune information pour le moment.</div>
                                         )}
                                     </div>
 
@@ -725,23 +839,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
                                 )}
 
-
-                                    {d.garanties && d.garanties.length > 0 && (
-                                        <div className="mb-3">
-                                            <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">Garanties</div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {d.garanties.map((g, i) => (
-                                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
-                                                        {g.intitule}
-                                                        {g.plafond_cts && <span className="text-slate-400">· {fmt(g.plafond_cts)}</span>}
-                                                        <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                                            {g.optionnelle ? 'opt.' : 'incl.'}
-                                                        </span>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Messagerie cabinet / partenaire */}
                                     <DevisMessagerie devis={d} onSigne={() => load()} />
@@ -773,7 +870,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {modal.cible === 'EN_ETUDE' && 'Prendre en charge'}
                                     {modal.cible === 'PIECES_MANQUANTES' && 'Demander des pièces'}
                                     {modal.cible === 'NON_ELIGIBLE' && 'Marquer non éligible'}
-                                    {modal.cible === 'SANS_SUITE' && 'Marquer sans suite'}
+                                    {modal.cible === 'SANS_SUITE' && 'Clôturer la demande'}
                                     {modal.cible === 'EXPIREE' && 'Marquer expirée'}
                                     {modal.cible === 'EN_SOUSCRIPTION' && 'Lancer la souscription'}
                                     {modal.cible === 'TRANSFORMEE' && 'Transformer la demande'}
@@ -801,6 +898,131 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modal détail imprimable */}
+            {detailOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[80] backdrop-blur-sm">
+                    <style>{`
+                        @media print {
+                            body * { visibility: hidden; }
+                            #zone-impression, #zone-impression * { visibility: visible; }
+                            #zone-impression { position: absolute; left: 0; top: 0; width: 100%; }
+                        }
+                    `}</style>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
+                        <div id="zone-impression" className="p-6">
+                            <div className="flex items-start justify-between gap-3 mb-6">
+                                <div>
+                                    <div className="text-xs text-slate-400 uppercase tracking-wide font-medium">Détail de la demande</div>
+                                    <h2 className="text-xl font-bold text-slate-900">{demande.reference}</h2>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.color}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                                    {sc.label}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                {[
+                                    ['Service', demande.branche || '—'],
+                                    ['Produit', ((demande.donnees_risque?.produit_ids) || []).map((pid) => produitsMap[pid]).filter(Boolean).join(', ') || '—'],
+                                    ['Client', demande.client || '—'],
+                                    ['Partenaire', demande.partenaire || '—'],
+                                    ['Gestionnaire', demande.gestionnaire || '—'],
+                                    ['Origine', demande.origine === 'PARTENAIRE' ? 'Partenaire' : 'Cabinet'],
+                                    ['Envoyé le', fmtDate(demande.date_soumission)],
+                                    ['Mise à jour', fmtDate(demande.date_statut)],
+                                    ['Prise en charge', fmtDate(demande.date_prise_en_charge)],
+                                    ['Délai', `${demande.age_jours ?? 0} jour(s)`],
+                                ].map(([k, v]) => (
+                                    <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
+                                        <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
+                                        <div className="text-sm font-semibold text-slate-900 mt-0.5">{v || '—'}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="bg-slate-50 rounded-lg px-3 py-2 mb-4">
+                                <div className="text-[10px] uppercase text-slate-500 font-medium">Précisions</div>
+                                <div className="text-sm font-semibold text-slate-900 mt-0.5 whitespace-pre-wrap">{demande.motif || '—'}</div>
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Devis reçus ({devis.length})</div>
+                                {devis.length === 0 ? (
+                                    <p className="text-sm text-slate-400">Aucun devis.</p>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {devis.map((d) => (
+                                            <div key={d.id} className="flex items-center justify-between gap-2 bg-slate-50 rounded-lg px-3 py-2 text-sm">
+                                                <span className="font-medium text-slate-900">{d.propose_par?.nom || '—'} {d.version ? `(v${d.version})` : ''}</span>
+                                                <span className="text-slate-500">{d.statut}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Données de risque</div>
+                                {Object.entries(demande.donnees_risque || {})
+                                    .filter(([k]) => !['produit_ids', 'fournisseurs_plateforme', 'mes_fournisseurs'].includes(k))
+                                    .length === 0 ? (
+                                    <p className="text-sm text-slate-400">Aucune donnée.</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {Object.entries(demande.donnees_risque || {})
+                                            .filter(([k]) => !['produit_ids', 'fournisseurs_plateforme', 'mes_fournisseurs'].includes(k))
+                                            .map(([k, v]) => (
+                                                <div key={k} className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
+                                                    <span className="text-[10px] uppercase text-slate-500 font-medium block">{k.replace(/_/g, ' ')}</span>
+                                                    <span className="font-semibold text-slate-900">{typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v ?? '') || '—'}</span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Documents ({demande.documents?.length || 0})</div>
+                                {!demande.documents || demande.documents.length === 0 ? (
+                                    <p className="text-sm text-slate-400">Aucun document.</p>
+                                ) : (
+                                    <div className="space-y-1.5">
+                                        {demande.documents.map((doc) => (
+                                            <div key={doc.id} className="bg-slate-50 rounded-lg px-3 py-2 text-sm">
+                                                <span className="font-semibold text-slate-900">{doc.nom_origine || doc.type_document || 'Document'}</span>
+                                                <span className="text-slate-500"> · {doc.type_document || 'Document'}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-between gap-2 px-6 pb-6">
+                            <button onClick={() => window.print()}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                                <span className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M3.5 6A1.5 1.5 0 0 0 2 7.5v6A1.5 1.5 0 0 0 3.5 15h.75v-2.5a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 .75.75V15h.75a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 17.5 6H15V3.25a.75.75 0 0 0-.75-.75h-9a.75.75 0 0 0-.75.75V6h-1Zm2.75 3.5h7.5a1 1 0 0 1 1 1v5.25H5.25v-5.25a1 1 0 0 1 1-1Zm5-5h2.5v4.5h-2.5v-4.5Z" /></svg>
+                                    Imprimer
+                                </span>
+                            </button>
+                            <button onClick={() => setDetailOpen(false)}
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal signature électronique */}
+            {sigOpen && (
+                <SignatureDemandeModal demande={demande} onClose={() => setSigOpen(false)} documentsPreselectionnes={sigPre} documentsAdditionnels={sigAdd} />
+            )}
+
+            {/* Modal création de tâche */}
+            {tacheOpen && (
+                <TacheDemandeModal demande={demande} onClose={() => setTacheOpen(false)} />
             )}
 
             {/* Modal modification (brouillon uniquement) */}

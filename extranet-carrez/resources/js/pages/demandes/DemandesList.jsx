@@ -14,7 +14,7 @@ const statutLabels = {
     EN_SOUSCRIPTION: 'En souscription',
     TRANSFORMEE: 'Transformée',
     NON_ELIGIBLE: 'Non éligible',
-    SANS_SUITE: 'Sans suite',
+    SANS_SUITE: 'Clôturé',
     EXPIREE: 'Expirée',
 };
 
@@ -28,7 +28,7 @@ const statutConfig = {
     EN_SOUSCRIPTION: { label: 'En souscription', cls: 'bg-teal-50 text-teal-700 ring-teal-200', dot: 'bg-teal-500' },
     TRANSFORMEE: { label: 'Transformée', cls: 'bg-green-50 text-green-700 ring-green-200', dot: 'bg-green-600' },
     NON_ELIGIBLE: { label: 'Non éligible', cls: 'bg-gray-100 text-gray-500 ring-gray-200', dot: 'bg-gray-400' },
-    SANS_SUITE: { label: 'Sans suite', cls: 'bg-gray-100 text-gray-500 ring-gray-200', dot: 'bg-gray-400' },
+    SANS_SUITE: { label: 'Clôturé', cls: 'bg-gray-100 text-gray-500 ring-gray-200', dot: 'bg-gray-400' },
     EXPIREE: { label: 'Expirée', cls: 'bg-gray-100 text-gray-500 ring-gray-200', dot: 'bg-gray-300' },
 };
 

@@ -109,7 +109,7 @@ export default function Layout() {
     const estAdmin = user?.role === 'ADMIN';
 
     const partenaireNav = [
-        { to: '/', label: 'Accueil', end: true, icon: 'accueil' },
+        { to: '/', label: 'Dashboard', end: true, icon: 'accueil' },
         { to: '/demandes', label: 'Demandes', icon: 'demandes' },
         { to: '/clients', label: 'Clients', icon: 'clients' },
         { to: '/echeances', label: 'Échéancier', icon: 'echeances' },
@@ -122,7 +122,7 @@ export default function Layout() {
     ];
 
     const cabinetNav = [
-        { to: '/', label: 'Accueil', end: true, icon: 'accueil' },
+        { to: '/', label: 'Dashboard', end: true, icon: 'accueil' },
         { to: '/demandes', label: 'Demandes', icon: 'demandes' },
         { to: '/clients', label: 'Clients', icon: 'clients' },
         { to: '/devis', label: 'Devis', icon: 'devis' },

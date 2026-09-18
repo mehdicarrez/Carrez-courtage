@@ -194,6 +194,8 @@ class DemandeController extends Controller
                 'plafond_cts' => $g->plafond_cts,
                 'franchise_cts' => $g->franchise_cts,
                 'incluse' => $g->incluse,
+                'optionnelle' => $g->optionnelle,
+                'prix_option_cts' => $g->prix_option_cts,
             ])->values() ?? [],
         ])->values();
 
@@ -345,8 +347,20 @@ class DemandeController extends Controller
             'document_ids.*' => 'integer|exists:documents,id',
         ]);
 
-        $documents = $demande->documents()
+        // Documents autorisés : ceux rattachés à la demande OU à l'un de ses devis
+        $idsDemande = $demande->documents()
             ->where('supprime_logiquement', false)
+            ->pluck('documents.id');
+
+        $idsDevis = \App\Models\Document::where('supprime_logiquement', false)
+            ->whereIn('objet_id', $demande->devis()->pluck('devis.id'))
+            ->where('objet_type', 'devis')
+            ->pluck('id');
+
+        $idsAutorises = $idsDemande->merge($idsDevis)->unique();
+
+        $documents = \App\Models\Document::where('supprime_logiquement', false)
+            ->whereIn('id', $idsAutorises)
             ->whereIn('id', $data['document_ids'])
             ->get();
 
@@ -372,6 +386,55 @@ class DemandeController extends Controller
         ]);
 
         return response()->json(['data' => $resultat]);
+    }
+
+    /**
+     * Duplication d'une demande : copie en statut BROUILLON avec une nouvelle référence.
+     */
+    public function dupliquer($id, Request $request)
+    {
+        abort_unless($request->user()->estCabinet(), 403, 'Seul le cabinet peut dupliquer une demande.');
+
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
+
+        $nouvelle = DemandeTarification::create([
+            'id' => (string) Str::uuid(),
+            'reference' => $this->refs->demande(),
+            'organisation_id' => $demande->organisation_id,
+            'branche_id' => $demande->branche_id,
+            'schema_formulaire_version' => $demande->schema_formulaire_version,
+            'client_id' => $demande->client_id,
+            'donnees_risque' => $demande->donnees_risque,
+            'statut' => 'BROUILLON',
+            'date_statut' => now(),
+            'origine' => $demande->origine,
+        ]);
+
+        $this->audit->log('demande.dupliquee', 'demande_tarification', (string) $nouvelle->id, null, ['source' => $demande->reference]);
+
+        return response()->json(['data' => $this->present($nouvelle)], 201);
+    }
+
+    /**
+     * Enregistrement de précisions libres sur la demande (colonne motif).
+     */
+    public function precision($id, Request $request)
+    {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
+        $this->autoriserEcriture($request->user(), $demande);
+
+        $data = $request->validate([
+            'precision' => 'nullable|string|max:5000',
+        ]);
+
+        $demande->motif = trim($data['precision'] ?? '');
+        $demande->save();
+
+        $this->audit->log('demande.precision', 'demande_tarification', (string) $demande->id, null, [
+            'precision' => Str::limit($demande->motif, 200),
+        ]);
+
+        return response()->json(['data' => $this->present($demande)]);
     }
 
     /**
