@@ -194,6 +194,8 @@ class DemandeController extends Controller
                 'plafond_cts' => $g->plafond_cts,
                 'franchise_cts' => $g->franchise_cts,
                 'incluse' => $g->incluse,
+                'optionnelle' => $g->optionnelle,
+                'prix_option_cts' => $g->prix_option_cts,
             ])->values() ?? [],
         ])->values();
 
@@ -345,8 +347,20 @@ class DemandeController extends Controller
             'document_ids.*' => 'integer|exists:documents,id',
         ]);
 
-        $documents = $demande->documents()
+        // Documents autorisés : ceux rattachés à la demande OU à l'un de ses devis
+        $idsDemande = $demande->documents()
             ->where('supprime_logiquement', false)
+            ->pluck('documents.id');
+
+        $idsDevis = \App\Models\Document::where('supprime_logiquement', false)
+            ->whereIn('objet_id', $demande->devis()->pluck('devis.id'))
+            ->where('objet_type', 'devis')
+            ->pluck('id');
+
+        $idsAutorises = $idsDemande->merge($idsDevis)->unique();
+
+        $documents = \App\Models\Document::where('supprime_logiquement', false)
+            ->whereIn('id', $idsAutorises)
             ->whereIn('id', $data['document_ids'])
             ->get();
 

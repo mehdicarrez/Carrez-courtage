@@ -13,6 +13,7 @@ class Devis extends Model
         'demande_id', 'user_id', 'version_label', 'version', 'porteur_risque_id', 'grossiste_id', 'produit_id',
         'reference_amont', 'prime_ht_cts', 'taxes_cts', 'prime_ttc_cts', 'frais_courtage_cts',
         'fractionnement', 'premiere_echeance_cts', 'date_effet_possible', 'date_validite',
+        'date_envoye',
         'conditions_particulieres', 'reserves', 'taux_commission_percue', 'montant_retrocession_cts',
         'statut', 'motif', 'devis_parent_id',
     ];
@@ -20,6 +21,7 @@ class Devis extends Model
     protected $casts = [
         'date_effet_possible' => 'date',
         'date_validite' => 'date',
+        'date_envoye' => 'datetime',
         'prime_ht_cts' => 'integer',
         'taxes_cts' => 'integer',
         'prime_ttc_cts' => 'integer',
@@ -63,6 +65,11 @@ class Devis extends Model
     public function garanties()
     {
         return $this->morphMany(LigneGarantie::class, 'garantissable');
+    }
+
+    public function garantiesCatalogue()
+    {
+        return $this->belongsToMany(Garantie::class, 'devis_garanties')->withPivot('incluse')->withTimestamps();
     }
 
     public function documents()
