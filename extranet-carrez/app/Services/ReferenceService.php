@@ -30,6 +30,11 @@ class ReferenceService
         return $this->generer('FAC', date('Y'));
     }
 
+    public function reglement(): string
+    {
+        return $this->generer('REG', date('Y'));
+    }
+
     public function sinistre(): string
     {
         return $this->generer('SIN', date('Y'));

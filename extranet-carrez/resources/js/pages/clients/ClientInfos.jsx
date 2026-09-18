@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
 
@@ -36,6 +36,26 @@ const factureStatutConfig = {
     IMPAYEE: { label: 'Impayée', cls: 'bg-red-50 text-red-700' },
     ANNULEE: { label: 'Annulée', cls: 'bg-gray-100 text-gray-500' },
 };
+
+const reglementStatutConfig = {
+    ENCAISSE: { label: 'Encaissé', cls: 'bg-emerald-50 text-emerald-700' },
+    EN_ATTENTE: { label: 'En attente', cls: 'bg-amber-50 text-amber-700' },
+    REJETE: { label: 'Rejeté', cls: 'bg-red-50 text-red-700' },
+};
+
+const MODES_REGLEMENT_DEFAUT = ['Carte bancaire', 'Virement'];
+
+const CATEGORIES_MODELE = [
+    'Administration',
+    'Contract',
+    'Legaux',
+    'Finaux',
+    'Nouvelle tech',
+    'Plan affaire',
+    'Production',
+    'Ressource',
+    'Vente',
+];
 
 const sinistreStatutConfig = {
     DECLARE: { label: 'Déclaré', cls: 'bg-blue-50 text-blue-700' },
@@ -89,6 +109,16 @@ export default function ClientInfos() {
     const [factureLignes, setFactureLignes] = useState([{ type: '', designation: '', quantite: 1, prix_unitaire_ht_cts: '', taxe: 20 }]);
     const [savingFacture, setSavingFacture] = useState(false);
     const [selFactures, setSelFactures] = useState([]);
+    const [reglements, setReglements] = useState([]);
+    const [reglementOpen, setReglementOpen] = useState(false);
+    const [reglementForm, setReglementForm] = useState({ facture_id: '', mode_reglement: '', montant_euros: '', details: '', mentions: '', date_reglement: '' });
+    const [savingReglement, setSavingReglement] = useState(false);
+    const [bibliotheque, setBibliotheque] = useState([]);
+    const [modeleOpen, setModeleOpen] = useState(false);
+    const [modeleForm, setModeleForm] = useState({ categorie: CATEGORIES_MODELE[0], titre: '' });
+    const [modeleFile, setModeleFile] = useState(null);
+    const [savingModele, setSavingModele] = useState(false);
+    const [bibliothequeOpen, setBibliothequeOpen] = useState(false);
     const [clientDocs, setClientDocs] = useState([]);
     const [docsLoading, setDocsLoading] = useState(false);
     const [taches, setTaches] = useState([]);
@@ -112,6 +142,9 @@ export default function ClientInfos() {
     const [deleting, setDeleting] = useState(false);
     const [notesDraft, setNotesDraft] = useState('');
     const [savingNotes, setSavingNotes] = useState(false);
+    const [expandedProjetId, setExpandedProjetId] = useState(null);
+    const [projetData, setProjetData] = useState(null);
+    const [projetBusy, setProjetBusy] = useState(false);
 
     const load = () => {
         setLoading(true);
@@ -121,19 +154,23 @@ export default function ClientInfos() {
             api.get(`/clients/${id}/demandes`),
             api.get(`/clients/${id}/contrats`),
             api.get(`/clients/${id}/factures`),
+            api.get(`/clients/${id}/reglements`),
             api.get(`/clients/${id}/sinistres`),
             api.get(`/clients/${id}/taches`),
             api.get('/documents').catch(() => ({ data: { data: [] } })),
+            api.get('/bibliotheque').catch(() => ({ data: { data: [] } })),
         ])
-            .then(([cRes, dRes, coRes, fRes, sRes, tRes, dcRes]) => {
+            .then(([cRes, dRes, coRes, fRes, rRes, sRes, tRes, dcRes, bRes]) => {
                 setClient(cRes.data.data);
                 setNotesDraft(cRes.data.data.notes || '');
                 setDemandes(dRes.data.data);
                 setContrats(coRes.data.data);
                 setFactures(fRes.data.data);
+                setReglements(rRes.data.data);
                 setSinistres(sRes.data.data);
                 setTaches(tRes.data.data);
                 setClientDocs(dcRes.data.data || []);
+                setBibliotheque(bRes.data.data || []);
             })
             .catch(() => setError('Erreur de chargement.'))
             .finally(() => setLoading(false));
@@ -322,6 +359,152 @@ export default function ClientInfos() {
         }
     };
 
+    const openReglement = () => {
+        setReglementForm({
+            facture_id: '',
+            mode_reglement: '',
+            montant_euros: '',
+            details: '',
+            mentions: '',
+            date_reglement: new Date().toISOString().slice(0, 10),
+        });
+        setError('');
+        setReglementOpen(true);
+    };
+
+    const modesReglementPourFacture = (factureId) => {
+        const f = factures.find((x) => String(x.id) === String(factureId));
+        return f?.moyens_reglement?.length ? f.moyens_reglement : MODES_REGLEMENT_DEFAUT;
+    };
+
+    const choisirFactureReglement = (factureId) => {
+        const modes = modesReglementPourFacture(factureId);
+        setReglementForm((prev) => ({ ...prev, facture_id: factureId, mode_reglement: modes[0] || '' }));
+    };
+
+    const saveReglement = async (e) => {
+        e.preventDefault();
+        setSavingReglement(true);
+        setError('');
+        try {
+            await api.post(`/clients/${client.id}/reglements`, {
+                facture_id: Number(reglementForm.facture_id),
+                mode_reglement: reglementForm.mode_reglement,
+                montant_cts: Math.round((parseFloat(reglementForm.montant_euros) || 0) * 100),
+                details: reglementForm.details || null,
+                mentions: reglementForm.mentions || null,
+                date_reglement: reglementForm.date_reglement,
+            });
+            setReglementOpen(false);
+            setTab('reglements');
+            const [rRes, fRes] = await Promise.all([
+                api.get(`/clients/${client.id}/reglements`),
+                api.get(`/clients/${client.id}/factures`),
+            ]);
+            setReglements(rRes.data.data);
+            setFactures(fRes.data.data);
+        } catch (err) {
+            setError(err.response?.data?.message || "Erreur d'enregistrement.");
+        } finally {
+            setSavingReglement(false);
+        }
+    };
+
+    const supprimerReglement = async (r) => {
+        if (!window.confirm(`Supprimer le règlement « ${r.reference || r.id} » ?`)) return;
+        setError('');
+        try {
+            await api.delete(`/reglements/${r.id}`);
+            const [rRes, fRes] = await Promise.all([
+                api.get(`/clients/${client.id}/reglements`),
+                api.get(`/clients/${client.id}/factures`),
+            ]);
+            setReglements(rRes.data.data);
+            setFactures(fRes.data.data);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de suppression.');
+        }
+    };
+
+    const supprimerFacture = async (f) => {
+        if (!window.confirm(`Supprimer la facture « ${f.reference || f.id} » ?`)) return;
+        setError('');
+        try {
+            await api.delete(`/factures/${f.id}`);
+            const [fRes, rRes] = await Promise.all([
+                api.get(`/clients/${client.id}/factures`),
+                api.get(`/clients/${client.id}/reglements`),
+            ]);
+            setFactures(fRes.data.data);
+            setReglements(rRes.data.data);
+            setSelFactures((prev) => prev.filter((x) => x !== f.id));
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de suppression.');
+        }
+    };
+
+    const openModele = () => {
+        setModeleForm({ categorie: CATEGORIES_MODELE[0], titre: '' });
+        setModeleFile(null);
+        setError('');
+        setModeleOpen(true);
+    };
+
+    const saveModele = async (e) => {
+        e.preventDefault();
+        if (!modeleFile) {
+            setError('Veuillez joindre un document.');
+            return;
+        }
+        setSavingModele(true);
+        setError('');
+        try {
+            const fd = new FormData();
+            fd.append('categorie', modeleForm.categorie);
+            fd.append('titre', modeleForm.titre);
+            fd.append('file', modeleFile);
+            await api.post('/bibliotheque', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setModeleOpen(false);
+            const res = await api.get('/bibliotheque');
+            setBibliotheque(res.data.data || []);
+        } catch (err) {
+            setError(err.response?.data?.message || "Erreur d'ajout du document.");
+        } finally {
+            setSavingModele(false);
+        }
+    };
+
+    const ouvrirBibliotheque = async () => {
+        setBibliothequeOpen(true);
+        setError('');
+        try {
+            const res = await api.get('/bibliotheque');
+            setBibliotheque(res.data.data || []);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de chargement de la bibliothèque.');
+        }
+    };
+
+    const telechargerModele = async (m) => {
+        try {
+            const res = await api.get(`/bibliotheque/${m.id}/url`);
+            window.open(res.data.url, '_blank');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de téléchargement.');
+        }
+    };
+
+    const supprimerModele = async (m) => {
+        if (!window.confirm(`Supprimer « ${m.titre} » ?`)) return;
+        setError('');
+        try {
+            await api.delete(`/bibliotheque/${m.id}`);
+            setBibliotheque(bibliotheque.filter((x) => x.id !== m.id));
+        } catch (err) {
+            setError(err.response?.data?.message || 'Erreur de suppression.');
+        }
+    };
+
     const openTache = async () => {
         setTacheForm({
             titre: '', type: 'SINISTRE', objet: 'Ouvrir sinistre', description: '',
@@ -488,6 +671,26 @@ export default function ClientInfos() {
         }
     };
 
+    const toggleProjet = async (id) => {
+        if (expandedProjetId === id) {
+            setExpandedProjetId(null);
+            setProjetData(null);
+            return;
+        }
+        setExpandedProjetId(id);
+        setProjetData(null);
+        setProjetBusy(true);
+        setError('');
+        try {
+            const res = await api.get(`/demandes/${id}`);
+            setProjetData(res.data.data);
+        } catch {
+            setError('Erreur de chargement des détails.');
+        } finally {
+            setProjetBusy(false);
+        }
+    };
+
     if (loading) return <div className="text-slate-500">Chargement...</div>;
 
     if (!client) {
@@ -545,6 +748,11 @@ export default function ClientInfos() {
                     Factures
                     <span className={`text-xs px-1.5 rounded-full ${tab === 'factures' ? 'bg-white/20' : 'bg-slate-100'}`}>{factures.length}</span>
                 </button>
+                <button onClick={() => setTab('reglements')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'reglements' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    Règlements
+                    <span className={`text-xs px-1.5 rounded-full ${tab === 'reglements' ? 'bg-white/20' : 'bg-slate-100'}`}>{reglements.length}</span>
+                </button>
                 <button onClick={() => setTab('sinistres')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'sinistres' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
                     Sinistres
@@ -563,7 +771,7 @@ export default function ClientInfos() {
             </div>
 
             {tab === 'documents' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {['Documents', 'Édition'].map((titre) => (
                         <div key={titre} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                             <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
@@ -598,6 +806,22 @@ export default function ClientInfos() {
                             )}
                         </div>
                     ))}
+
+                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
+                        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                            <h3 className="font-semibold text-slate-900">Action</h3>
+                        </div>
+                        <div className="p-5 flex flex-col gap-3">
+                            <button onClick={openModele}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                                + Ajouter modèle
+                            </button>
+                            <button onClick={ouvrirBibliotheque}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors">
+                                Bibliothèque
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -673,27 +897,6 @@ export default function ClientInfos() {
                         </div>
 
                         <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" /></svg>
-                                </div>
-                                <h3 className="font-semibold text-slate-900">Conseillers affectés</h3>
-                            </div>
-                            <dl className="space-y-2 text-sm">
-                                {(!client.utilisateurs || client.utilisateurs.length === 0) ? (
-                                    <dt className="text-slate-400">Aucun conseiller affecté</dt>
-                                ) : (
-                                    client.utilisateurs.map((u) => (
-                                        <div key={u.id} className="flex justify-between gap-3">
-                                            <dt className="text-slate-500">{u.name}</dt>
-                                            <dd className="font-medium text-slate-800 text-right">{u.email}</dd>
-                                        </div>
-                                    ))
-                                )}
-                            </dl>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /></svg>
@@ -752,16 +955,197 @@ export default function ClientInfos() {
                             <tbody>
                                 {demandes.map((d) => {
                                     const sc = statutConfig[d.statut] || { label: d.statut, cls: 'bg-slate-100 text-slate-600' };
+                                    const estOuvert = expandedProjetId === d.id;
                                     return (
-                                        <tr key={d.id} onClick={() => navigate(`/demandes/${d.id}`)}
-                                            className="border-b border-slate-100 hover:bg-slate-50/60 cursor-pointer transition-colors">
-                                            <td className="px-4 py-3 font-medium text-slate-900">{d.reference}</td>
-                                            <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                            <td className="px-4 py-3 text-slate-600">{d.branche || '—'}</td>
-                                            <td className="px-4 py-3 text-slate-600">{d.gestionnaire || '—'}</td>
-                                            <td className="px-4 py-3 text-slate-600">{fmtDate(d.date_soumission)}</td>
-                                            <td className="px-4 py-3 text-right text-blue-600">Ouvrir →</td>
-                                        </tr>
+                                        <Fragment key={d.id}>
+                                            <tr onClick={() => toggleProjet(d.id)}
+                                                className={`border-b border-slate-100 cursor-pointer transition-colors ${estOuvert ? 'bg-blue-50/60' : 'hover:bg-slate-50/60'}`}>
+                                                <td className="px-4 py-3 font-medium text-slate-900">{d.reference}</td>
+                                                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                                <td className="px-4 py-3 text-slate-600">{d.branche || '—'}</td>
+                                                <td className="px-4 py-3 text-slate-600">{d.gestionnaire || '—'}</td>
+                                                <td className="px-4 py-3 text-slate-600">{fmtDate(d.date_soumission)}</td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <button type="button"
+                                                        onClick={(e) => { e.stopPropagation(); toggleProjet(d.id); }}
+                                                        title={estOuvert ? 'Masquer' : 'Voir'}
+                                                        className={`inline-flex p-2 rounded-lg transition-all duration-200 ${estOuvert ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}>
+                                                        <svg className={`w-5 h-5 transition-transform duration-300 ${estOuvert ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td colSpan={6} className="p-0 border-0">
+                                                    <div className={`grid transition-all duration-300 ease-in-out ${estOuvert ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                                        <div className="overflow-hidden">
+                                                            <div className="w-[80%] mx-auto bg-transparent border-0 p-4 my-3">
+                                                                {estOuvert && (
+                                                                    projetBusy || !projetData ? (
+                                                                        <div className="flex items-center justify-center h-32">
+                                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+                                                                            {/* Identité */}
+                                                                            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                                <div className="px-4 py-2.5 bg-slate-200 border-b-2 border-slate-400 text-xs font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-2">
+                                                                                    <svg className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                                        <circle cx="12" cy="8" r="4" />
+                                                                                        <path d="M4 21a8 8 0 0 1 16 0" />
+                                                                                    </svg>
+                                                                                    Identité
+                                                                                </div>
+                                                                                <div className="p-4 space-y-2.5 text-sm">
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">Nom et prénom</div>
+                                                                                        {(() => {
+                                                                                            const cd = projetData.client_detail;
+                                                                                            const nom = cd
+                                                                                                ? (cd.type === 'MORALE'
+                                                                                                    ? (cd.raison_sociale || '—')
+                                                                                                    : `${cd.civilite ? cd.civilite + ' ' : ''}${cd.prenom || ''} ${cd.nom || ''}`.trim() || cd.nom_complet)
+                                                                                                : (projetData.client || '—');
+                                                                                            return <div className="font-semibold text-slate-900">{nom}</div>;
+                                                                                        })()}
+                                                                                    </div>
+                                                                                    {projetData.client_detail?.date_naissance && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Date de naissance</div>
+                                                                                            <div className="text-slate-700">{projetData.client_detail.date_naissance}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.client_detail?.siren && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">SIREN</div>
+                                                                                            <div className="text-slate-700">{projetData.client_detail.siren}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.client_detail?.adresse && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Adresse</div>
+                                                                                            <div className="text-slate-700">{projetData.client_detail.adresse}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {(projetData.client_detail?.code_postal || projetData.client_detail?.ville) && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Code postal / Ville</div>
+                                                                                            <div className="text-slate-700">{[projetData.client_detail.code_postal, projetData.client_detail.ville].filter(Boolean).join(' ') || '—'}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.client_detail?.telephone && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Tél</div>
+                                                                                            <div className="text-slate-700">{projetData.client_detail.telephone}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.client_detail?.email && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Email</div>
+                                                                                            <div className="text-slate-700 break-all">{projetData.client_detail.email}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Projet */}
+                                                                            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                                <div className="px-4 py-2.5 bg-indigo-100 border-b-2 border-indigo-400 text-xs font-extrabold uppercase tracking-wide text-indigo-800 flex items-center gap-2">
+                                                                                    <svg className="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                                        <path d="M3 21h18" />
+                                                                                        <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+                                                                                        <path d="M9 7h2" />
+                                                                                        <path d="M13 7h2" />
+                                                                                        <path d="M9 11h2" />
+                                                                                        <path d="M13 11h2" />
+                                                                                    </svg>
+                                                                                    Projet
+                                                                                </div>
+                                                                                <div className="p-4 space-y-2.5 text-sm">
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">Nature</div>
+                                                                                        <div className="font-medium text-slate-900">{projetData.branche || '—'}</div>
+                                                                                    </div>
+                                                                                    {projetData.origine && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Origine</div>
+                                                                                            <div className="text-slate-700">{projetData.origine === 'PARTENAIRE' ? 'Partenaire' : 'Cabinet'}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.gestionnaire && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Gestionnaire</div>
+                                                                                            <div className="text-slate-700">{projetData.gestionnaire}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {projetData.donnees_risque && Object.keys(projetData.donnees_risque).length > 0 && (
+                                                                                        <div className="pt-2 border-t border-slate-100">
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium mb-1.5">Données du risque</div>
+                                                                                            <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
+                                                                                                {Object.entries(projetData.donnees_risque).map(([k, v]) => {
+                                                                                                    if (v === null || v === '' || v === undefined) return null;
+                                                                                                    const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+                                                                                                    const label = k.replace(/_/g, ' ');
+                                                                                                    return (
+                                                                                                        <div key={k} className="flex justify-between gap-2 text-xs">
+                                                                                                            <span className="text-slate-500 capitalize">{label}</span>
+                                                                                                            <span className="text-slate-800 font-medium text-right break-words">{val}</span>
+                                                                                                        </div>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Statut */}
+                                                                            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                                <div className="px-4 py-2.5 bg-amber-100 border-b-2 border-amber-400 text-xs font-extrabold uppercase tracking-wide text-amber-800 flex items-center gap-2">
+                                                                                    <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                                        <circle cx="12" cy="12" r="9" />
+                                                                                        <path d="M12 7v5l3 2" />
+                                                                                    </svg>
+                                                                                    Statut
+                                                                                </div>
+                                                                                <div className="p-4 space-y-2.5 text-sm">
+                                                                                    {projetData.client && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Client</div>
+                                                                                            <div className="font-medium text-slate-900">{projetData.client}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">Mis à jour le</div>
+                                                                                        <div className="text-slate-700">{projetData.date_statut ? new Date(projetData.date_statut).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">Créé le</div>
+                                                                                        <div className="text-slate-700">{projetData.created_at ? new Date(projetData.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">Devis</div>
+                                                                                        <div className="text-slate-700">{projetData.nb_devis > 0 ? `${projetData.nb_devis} devis` : 'Aucun devis'}</div>
+                                                                                    </div>
+                                                                                    {projetData.motif && (
+                                                                                        <div>
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium">Motif</div>
+                                                                                            <div className="text-slate-700">{projetData.motif}</div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </Fragment>
                                     );
                                 })}
                             </tbody>
@@ -865,7 +1249,14 @@ export default function ClientInfos() {
                                         <td className="px-4 py-3 text-slate-600">{fmtDate(f.date_echeance)}</td>
                                         <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
                                         <td className="px-4 py-3 text-right font-medium text-slate-900">{soldeCts > 0 ? `${(soldeCts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
-                                        <td className="px-4 py-3 text-right text-slate-400 hover:text-blue-600 cursor-pointer">⋯</td>
+                                        <td className="px-4 py-3 text-right">
+                                            <button type="button" onClick={() => supprimerFacture(f)} title="Supprimer"
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                </svg>
+                                            </button>
+                                        </td>
                                     </tr>
                                 );
                             })
@@ -877,6 +1268,63 @@ export default function ClientInfos() {
                         {selFactures.length} sélectionné{selFactures.length > 1 ? 's' : ''} / {factures.length} total
                     </div>
                 </div>
+                </div>
+            )}
+
+            {tab === 'reglements' && (
+                <div>
+                    <div className="flex justify-end mb-3">
+                        <button onClick={openReglement}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                            + Ajouter un règlement
+                        </button>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th className="px-4 py-3">Facture</th>
+                                        <th className="px-4 py-3">Mode de règlement</th>
+                                        <th className="px-4 py-3">Référence du règlement</th>
+                                        <th className="px-4 py-3">Date</th>
+                                        <th className="px-4 py-3 text-right">Montant</th>
+                                        <th className="px-4 py-3">Statut</th>
+                                        <th className="px-4 py-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {reglements.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-6 text-center text-slate-500">Aucune donnée à afficher</td>
+                                        </tr>
+                                    ) : (
+                                        reglements.map((r) => {
+                                            const sc = reglementStatutConfig[r.statut] || { label: r.statut, cls: 'bg-slate-100 text-slate-600' };
+                                            return (
+                                                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-slate-900">{r.facture_reference || `#${r.facture_id}`}</td>
+                                                    <td className="px-4 py-3 text-slate-600">{r.mode_reglement || '—'}</td>
+                                                    <td className="px-4 py-3 text-slate-600">{r.reference || '—'}</td>
+                                                    <td className="px-4 py-3 text-slate-600">{fmtDate(r.date_reglement)}</td>
+                                                    <td className="px-4 py-3 text-right font-medium text-slate-900">{r.montant_cts != null ? `${(r.montant_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <button type="button" onClick={() => supprimerReglement(r)} title="Supprimer"
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                            </svg>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -1158,6 +1606,167 @@ export default function ClientInfos() {
                                 </div>
                             </form>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {modeleOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-white rounded-2xl p-5 w-full max-w-lg shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">Ajouter un modèle</h2>
+                            <button onClick={() => setModeleOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                        </div>
+                        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+                        <form onSubmit={saveModele}>
+                            <div className="space-y-3">
+                                <label className="block">
+                                    <span className="block text-sm font-medium text-slate-700 mb-1">Catégorie *</span>
+                                    <select value={modeleForm.categorie} onChange={(e) => setModeleForm({ ...modeleForm, categorie: e.target.value })}
+                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                        {CATEGORIES_MODELE.map((c) => (
+                                            <option key={c} value={c}>{c}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <Field label="Titre *" value={modeleForm.titre} onChange={(e) => setModeleForm({ ...modeleForm, titre: e.target.value })} required />
+                                <div>
+                                    <label className="block">
+                                        <span className="block text-sm font-medium text-slate-700 mb-1">Joindre document *</span>
+                                        <input type="file" onChange={(e) => setModeleFile(e.target.files[0] || null)}
+                                            className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
+                                        {modeleFile && <span className="block mt-1 text-xs text-slate-400">{modeleFile.name}</span>}
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button type="button" onClick={() => setModeleOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
+                                <button type="submit" disabled={savingModele} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                    {savingModele ? 'Enregistrement...' : 'Ajouter'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {bibliothequeOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-white rounded-2xl p-5 w-full max-w-3xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">Bibliothèque</h2>
+                            <button onClick={() => setBibliothequeOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                        </div>
+                        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+                        <div className="space-y-4">
+                            {CATEGORIES_MODELE.map((categorie) => {
+                                const docs = bibliotheque.filter((d) => d.categorie === categorie);
+                                return (
+                                    <div key={categorie} className="rounded-xl border border-slate-200 overflow-hidden">
+                                        <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-slate-800">{categorie}</span>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{docs.length}</span>
+                                        </div>
+                                        {docs.length === 0 ? (
+                                            <p className="px-4 py-3 text-sm text-slate-400">Aucun document.</p>
+                                        ) : (
+                                            <ul className="divide-y divide-slate-100">
+                                                {docs.map((d) => (
+                                                    <li key={d.id} className="px-4 py-3 flex items-center gap-3">
+                                                        <span className="flex-1 min-w-0">
+                                                            <span className="block text-sm font-medium text-slate-900 truncate">{d.titre}</span>
+                                                            <span className="block text-xs text-slate-400">{d.nom_origine}{d.taille ? ` • ${fmtTaille(d.taille)}` : ''}</span>
+                                                        </span>
+                                                        <button onClick={() => telechargerModele(d)} title="Télécharger"
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                            </svg>
+                                                        </button>
+                                                        <button onClick={() => supprimerModele(d)} title="Supprimer"
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                            </svg>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {reglementOpen && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-white rounded-2xl p-5 w-full max-w-2xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">Ajouter un règlement</h2>
+                            <button onClick={() => setReglementOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                        </div>
+                        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+                        <form onSubmit={saveReglement}>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="col-span-2">
+                                    <div className="text-sm font-medium text-slate-700 mb-1">Référence du règlement</div>
+                                    <div className="text-sm text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                                        La référence sera générée après l'ajout du règlement
+                                    </div>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block">
+                                        <span className="block text-sm font-medium text-slate-700 mb-1">Facture *</span>
+                                        <select value={reglementForm.facture_id} onChange={(e) => choisirFactureReglement(e.target.value)}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            <option value="">— Sélectionnez une facture —</option>
+                                            {factures.map((f) => (
+                                                <option key={f.id} value={f.id}>
+                                                    {f.reference || `#${f.id}`}{f.montant_ttc_cts != null ? ` — ${(f.montant_ttc_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label className="block">
+                                        <span className="block text-sm font-medium text-slate-700 mb-1">Mode de règlement *</span>
+                                        <select value={reglementForm.mode_reglement} onChange={(e) => setReglementForm({ ...reglementForm, mode_reglement: e.target.value })}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required disabled={!reglementForm.facture_id}>
+                                            <option value="">— Sélectionnez un mode —</option>
+                                            {modesReglementPourFacture(reglementForm.facture_id).map((m) => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                </div>
+                                <Field label="Montant reçu *" type="number" min="0" step="0.01" value={reglementForm.montant_euros} onChange={(e) => setReglementForm({ ...reglementForm, montant_euros: e.target.value })} required />
+                                <div className="col-span-2">
+                                    <label className="block">
+                                        <span className="block text-sm font-medium text-slate-700 mb-1">Détails</span>
+                                        <textarea value={reglementForm.details} onChange={(e) => setReglementForm({ ...reglementForm, details: e.target.value })} rows={2}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                    </label>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="block">
+                                        <span className="block text-sm font-medium text-slate-700 mb-1">Mention(s)</span>
+                                        <textarea value={reglementForm.mentions} onChange={(e) => setReglementForm({ ...reglementForm, mentions: e.target.value })} rows={2}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                    </label>
+                                </div>
+                                <Field label="Date de règlement *" type="date" value={reglementForm.date_reglement} onChange={(e) => setReglementForm({ ...reglementForm, date_reglement: e.target.value })} required />
+                            </div>
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button type="button" onClick={() => setReglementOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
+                                <button type="submit" disabled={savingReglement} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                    {savingReglement ? 'Enregistrement...' : 'Ajouter le règlement'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

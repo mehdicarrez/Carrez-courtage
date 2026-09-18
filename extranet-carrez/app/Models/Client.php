@@ -60,6 +60,11 @@ class Client extends Model
         return $this->hasMany(Facture::class, 'client_id');
     }
 
+    public function reglements()
+    {
+        return $this->hasMany(Reglement::class, 'client_id');
+    }
+
     public function utilisateurs()
     {
         return $this->belongsToMany(User::class, 'client_user', 'client_id', 'user_id')
