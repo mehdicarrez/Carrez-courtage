@@ -375,6 +375,55 @@ class DemandeController extends Controller
     }
 
     /**
+     * Duplication d'une demande : copie en statut BROUILLON avec une nouvelle référence.
+     */
+    public function dupliquer($id, Request $request)
+    {
+        abort_unless($request->user()->estCabinet(), 403, 'Seul le cabinet peut dupliquer une demande.');
+
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
+
+        $nouvelle = DemandeTarification::create([
+            'id' => (string) Str::uuid(),
+            'reference' => $this->refs->demande(),
+            'organisation_id' => $demande->organisation_id,
+            'branche_id' => $demande->branche_id,
+            'schema_formulaire_version' => $demande->schema_formulaire_version,
+            'client_id' => $demande->client_id,
+            'donnees_risque' => $demande->donnees_risque,
+            'statut' => 'BROUILLON',
+            'date_statut' => now(),
+            'origine' => $demande->origine,
+        ]);
+
+        $this->audit->log('demande.dupliquee', 'demande_tarification', (string) $nouvelle->id, null, ['source' => $demande->reference]);
+
+        return response()->json(['data' => $this->present($nouvelle)], 201);
+    }
+
+    /**
+     * Enregistrement de précisions libres sur la demande (colonne motif).
+     */
+    public function precision($id, Request $request)
+    {
+        $demande = DemandeTarification::withoutGlobalScope('organisation')->findOrFail($id);
+        $this->autoriserEcriture($request->user(), $demande);
+
+        $data = $request->validate([
+            'precision' => 'nullable|string|max:5000',
+        ]);
+
+        $demande->motif = trim($data['precision'] ?? '');
+        $demande->save();
+
+        $this->audit->log('demande.precision', 'demande_tarification', (string) $demande->id, null, [
+            'precision' => Str::limit($demande->motif, 200),
+        ]);
+
+        return response()->json(['data' => $this->present($demande)]);
+    }
+
+    /**
      * F-104 : import de parc véhicules (flottes) avec rapport d'erreurs.
      */
     public function importParc($id, Request $request)
