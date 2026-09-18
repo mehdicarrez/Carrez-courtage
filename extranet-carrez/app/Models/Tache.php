@@ -22,9 +22,9 @@ class Tache extends Model
         'terminee_le' => 'datetime',
     ];
 
-    public const PRIORITES = ['FAIBLE', 'BASSE', 'MOYENNE', 'HAUTE', 'URGENTE'];
-    public const STATUTS = ['A_FAIRE', 'EN_COURS', 'TERMINEE'];
-    public const TYPES = ['SINISTRE'];
+    public const PRIORITES = ['FAIBLE', 'BASSE', 'MOYENNE', 'HAUTE', 'URGENTE', 'CRITIQUE'];
+    public const STATUTS = ['A_FAIRE', 'EN_COURS', 'EN_ATTENTE', 'TERMINEE', 'ANNULEE'];
+    public const TYPES = ['SINISTRE', 'TELEPHONE', 'EMAIL', 'COURRIER', 'RENDEZ_VOUS', 'RELANCE', 'AUTRE'];
     public const OBJETS = [
         'Ouvrir sinistre',
         'Suivi sinistre',

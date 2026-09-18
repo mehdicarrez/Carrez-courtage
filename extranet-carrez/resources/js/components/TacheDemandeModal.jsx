@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 
-export default function TacheDemandeModal({ demande, onClose }) {
+export default function TacheDemandeModal({ demande, onClose, onCreee }) {
     const [gestionnaires, setGestionnaires] = useState([]);
+    const [typesDocs, setTypesDocs] = useState([]);
 
     const [taskRef, setTaskRef] = useState('');
     const [taskSuivi, setTaskSuivi] = useState('');
@@ -17,12 +18,21 @@ export default function TacheDemandeModal({ demande, onClose }) {
     const [taskDescription, setTaskDescription] = useState('');
     const [taskStatut, setTaskStatut] = useState('A_FAIRE');
     const [taskFiles, setTaskFiles] = useState([]);
+    const [taskDocTypeId, setTaskDocTypeId] = useState('');
     const [noteBusy, setNoteBusy] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
         api.get('/demandes/gestionnaires')
             .then((res) => setGestionnaires(res.data.data))
+            .catch(() => {});
+        api.get('/referentiels/actifs')
+            .then((res) => {
+                const types = res.data.types_documents || [];
+                setTypesDocs(types);
+                const t = types.find((x) => x.code === 'DOC_SINISTRE') || types[0];
+                if (t) setTaskDocTypeId(String(t.id));
+            })
             .catch(() => {});
         setTaskRef(demande?.reference || '');
     }, [demande]);
@@ -38,36 +48,54 @@ export default function TacheDemandeModal({ demande, onClose }) {
     };
 
     const submitNote = async () => {
+        const clientId = demande?.client_detail?.id;
         if (!taskSuivi || !taskDateDebut || !taskDateFin || !taskType || !taskObjet || !taskDescription || !taskStatut) {
             setError('Veuillez renseigner tous les champs obligatoires (*).');
+            return;
+        }
+        if (!clientId) {
+            setError('Aucun client associé à cette demande.');
             return;
         }
         if (taskDateFin && taskDateDebut && taskDateFin < taskDateDebut) {
             setError('La date de fin doit être postérieure à la date de début.');
             return;
         }
+        if (taskFiles.length > 0 && !taskDocTypeId) {
+            setError('Sélectionnez un type de document pour les fichiers joints.');
+            return;
+        }
         setNoteBusy(true);
         setError('');
         try {
-            const suiviNom = gestionnaires.find((g) => String(g.id) === String(taskSuivi))?.name || taskSuivi;
-            const docNoms = taskFiles.map((f) => f.name).join(', ');
-            const lignes = [
-                `TÂCHE — ${taskRef || demande.reference}`,
-                `Suivi par: ${suiviNom}`,
-                `Type: ${taskType} | Objet: ${taskObjet}`,
-                `Priorité: ${taskPriorite} | Statut: ${taskStatut}`,
-                `Début: ${taskDateDebut} | Fin: ${taskDateFin}`,
-                `Avancement: ${taskAvancement}% | Temps passé: ${taskTemps}h`,
-                taskMontant ? `Montant: ${taskMontant}` : null,
-                `Description: ${taskDescription}`,
-                docNoms ? `Documents: ${docNoms}` : null,
-            ].filter(Boolean);
-            const conv = await api.get(`/conversations/demande/${demande.id}`);
-            await api.post(`/conversations/${conv.data.conversation_id}/messages`, {
-                contenu: lignes.join('\n'),
-                visibilite: 'INTERNE',
+            const res = await api.post(`/clients/${clientId}/taches`, {
+                titre: taskObjet,
+                type: taskType,
+                objet: taskRef || taskObjet,
+                description: taskDescription,
+                priorite: taskPriorite,
+                statut: taskStatut,
+                date_echeance: taskDateFin || null,
+                date_debut: taskDateDebut || null,
+                date_fin: taskDateFin || null,
+                montant: taskMontant !== '' ? taskMontant : null,
+                avancement: taskAvancement ?? 0,
+                temps_passe_h: taskTemps !== '' ? taskTemps : null,
+                assignee_id: taskSuivi || null,
             });
+
+            const tacheId = res.data.data.id;
+            for (const file of taskFiles) {
+                const fd = new FormData();
+                fd.append('type_document_id', taskDocTypeId);
+                fd.append('objet_type', 'tache');
+                fd.append('objet_id', String(tacheId));
+                fd.append('file', file);
+                await api.post('/documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            }
+
             onClose();
+            onCreee?.();
         } catch (err) {
             setError(err.response?.data?.message || "Erreur lors de l'enregistrement.");
         } finally {
@@ -195,14 +223,25 @@ export default function TacheDemandeModal({ demande, onClose }) {
                                 <input type="file" multiple className="hidden" onChange={(e) => addTaskFiles(e.target.files)} />
                             </label>
                             {taskFiles.length > 0 && (
-                                <ul className="mt-3 text-left space-y-1">
-                                    {taskFiles.map((f, i) => (
-                                        <li key={i} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded px-2 py-1">
-                                            <span className="truncate">{f.name}</span>
-                                            <button onClick={() => removeTaskFile(i)} className="text-red-500 hover:text-red-700 ml-2">Retirer</button>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <>
+                                    <div className="mt-3 text-left">
+                                        <select value={taskDocTypeId} onChange={(e) => setTaskDocTypeId(e.target.value)}
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                                            <option value="">— Type de document —</option>
+                                            {typesDocs.map((t) => (
+                                                <option key={t.id} value={t.id}>{t.libelle}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <ul className="mt-3 text-left space-y-1">
+                                        {taskFiles.map((f, i) => (
+                                            <li key={i} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded px-2 py-1">
+                                                <span className="truncate">{f.name}</span>
+                                                <button onClick={() => removeTaskFile(i)} className="text-red-500 hover:text-red-700 ml-2">Retirer</button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
                             )}
                         </div>
                     </div>

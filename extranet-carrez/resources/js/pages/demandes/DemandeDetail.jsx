@@ -368,13 +368,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 ['Statut', sc.label],
                                                 ['Service', demande.branche || '—'],
                                                 ['Produit', ((demande.donnees_risque?.produit_ids) || []).map((pid) => produitsMap[pid]).filter(Boolean).join(', ') || '—'],
-                                                ['Référence', demande.reference],
-                                                ['Client', demande.client],
-                                                ['Partenaire', demande.partenaire],
-                                                ['Gestionnaire', demande.gestionnaire],
-                                                ['Origine', demande.origine === 'PARTENAIRE' ? 'Partenaire' : 'Cabinet'],
-                                                ['Date de soumission', fmtDate(demande.date_soumission)],
-                                                ['Date de prise en charge', fmtDate(demande.date_prise_en_charge)],
                                             ].map(([k, v]) => (
                                                 <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
@@ -1052,7 +1045,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
             {/* Modal création de tâche */}
             {tacheOpen && (
-                <TacheDemandeModal demande={demande} onClose={() => setTacheOpen(false)} />
+                <TacheDemandeModal demande={demande} onClose={() => setTacheOpen(false)} onCreee={() => load()} />
             )}
 
             {/* Modal modification (brouillon uniquement) */}
