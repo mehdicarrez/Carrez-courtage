@@ -102,6 +102,7 @@ class DevisController extends Controller
             'reserves' => 'nullable|string',
             'taux_commission_percue' => 'nullable|numeric',
             'garanties' => 'nullable|array',
+            'garanties_catalogue' => 'nullable|array', // ids du catalogue garanties (RG-21)
         ]);
 
         // RG-22 : masquage des commissions perçues côté partenaire (RG-03)
@@ -113,6 +114,7 @@ class DevisController extends Controller
         $devis = DB::transaction(function () use ($demande, $data, $request) {
             $d = $demande->devis()->create($data + ['user_id' => $request->user()->id]);
             $this->enregistrerGaranties($d, $data['garanties'] ?? []);
+            $this->syncGarantiesCatalogue($d, $data['garanties_catalogue'] ?? []);
 
             // À la première saisie, la demande passe en DEVIS_EMIS
             if ($demande->statut === 'EN_ETUDE') {
@@ -224,6 +226,12 @@ class DevisController extends Controller
             abort(403, 'Seul le cabinet peut refuser un devis.');
         }
 
+        if (in_array($data['action'], ['envoyer', 'prolonger'], true)) {
+            if (!$devis->date_envoye) {
+                $devis->date_envoye = now();
+            }
+        }
+
         $devis->motif = $data['motif'] ?? null;
         StateMachine::pour($devis)->appliquer($devis, $nouvelEtat);
         $devis->save();
@@ -305,6 +313,8 @@ class DevisController extends Controller
             'motif' => $d->motif,
             'version' => $d->version,
             'est_expire' => $d->estExpire(),
+            'date_envoye' => $d->date_envoye?->toDateTimeString(),
+            'maj_le' => $d->updated_at?->toDateTimeString(),
             'contrat' => $d->relationLoaded('contrat') && $d->contrat ? [
                 'id' => $d->contrat->id,
                 'reference' => $d->contrat->reference,

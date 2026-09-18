@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branche;
+use App\Models\Garantie;
 use App\Models\Grossiste;
 use App\Models\ModeleDocument;
 use App\Models\Motif;
@@ -48,6 +49,17 @@ class ReferentielController extends Controller
                     'schema' => 'nullable|array',
                     'pieces_attendues' => 'nullable|array',
                     'courant' => 'nullable|boolean',
+                ],
+            ],
+            'garanties' => [
+                'model' => Garantie::class,
+                'label' => 'Garanties (souscription)',
+                'rules' => [
+                    'branche_id' => 'nullable|exists:branches,id',
+                    'code' => 'required|string|max:50',
+                    'intitule' => 'required|string|max:255',
+                    'famille' => 'nullable|string|max:150',
+                    'actif' => 'nullable|boolean',
                 ],
             ],
             'produits' => [
@@ -165,6 +177,7 @@ class ReferentielController extends Controller
             'types_documents' => TypeDocument::orderBy('libelle')->get(),
             'motifs' => Motif::all()->groupBy('categorie'),
             'branches' => Branche::where('actif', true)->with('schemaCourant')->orderBy('nom')->get(),
+            'garanties' => Garantie::with('branche')->where('actif', true)->orderBy('famille')->orderBy('intitule')->get(),
         ]);
     }
 

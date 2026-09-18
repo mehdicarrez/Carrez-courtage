@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 
-export default function SignatureDemandeModal({ demande, onClose, onEnvoye }) {
+export default function SignatureDemandeModal({ demande, onClose, onEnvoye, documentsPreselectionnes = [], documentsAdditionnels = [] }) {
     const [sigEmail, setSigEmail] = useState('');
     const [sigMobile, setSigMobile] = useState('');
     const [sigMessage, setSigMessage] = useState('');
@@ -20,9 +20,25 @@ export default function SignatureDemandeModal({ demande, onClose, onEnvoye }) {
             .catch(() => {});
     }, [demande]);
 
-    const toggleSigDoc = (id) => {
+    const docsDisponibles = [
+        ...(demande?.documents || []),
+        ...documentsAdditionnels,
+    ].filter((d, i, arr) => d && arr.findIndex((x) => x.id === d.id) === i);
+
+    const toggler = (id) => {
         setSigSelected((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
     };
+
+    useEffect(() => {
+        const dispo = new Set(docsDisponibles.map((d) => String(d.id)));
+        documentsPreselectionnes.forEach((id) => {
+            if (dispo.has(String(id))) {
+                const idNum = Number(id);
+                setSigSelected((prev) => prev.includes(idNum) ? prev : [...prev, idNum]);
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [demande.id]);
 
     const addSigFiles = (files) => {
         const arr = Array.from(files);
@@ -43,7 +59,7 @@ export default function SignatureDemandeModal({ demande, onClose, onEnvoye }) {
             setError('Sélectionnez un type de document pour les fichiers téléversés.');
             return;
         }
-        const docIds = (demande?.documents || []).filter((d) => sigSelected.includes(d.id)).map((d) => d.id);
+        const docIds = docsDisponibles.filter((d) => sigSelected.includes(d.id)).map((d) => d.id);
         if (sigNewFiles.length === 0 && docIds.length === 0) {
             setError('Sélectionnez ou téléversez au moins un document à signer.');
             return;
@@ -153,13 +169,13 @@ export default function SignatureDemandeModal({ demande, onClose, onEnvoye }) {
                                 </button>
                             </div>
                         ))}
-                        {(demande?.documents || []).filter((d) => sigSelected.includes(d.id)).map((d) => (
+                        {docsDisponibles.filter((d) => sigSelected.includes(d.id)).map((d) => (
                             <div key={d.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
                                 <span className="flex items-center gap-2 text-sm text-slate-700 min-w-0">
                                     <svg className="w-4 h-4 text-blue-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
                                     <span className="truncate">{d.nom_origine || d.type_document || 'Document'}</span>
                                 </span>
-                                <button type="button" onClick={() => toggleSigDoc(d.id)}
+                                <button type="button" onClick={() => toggler(d.id)}
                                     className="text-slate-400 hover:text-red-500 flex-shrink-0">
                                     <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
                                 </button>
@@ -169,15 +185,15 @@ export default function SignatureDemandeModal({ demande, onClose, onEnvoye }) {
                 )}
 
                 <label className="block text-sm font-medium text-slate-700 mb-1">Documents <span className="text-red-500">*</span></label>
-                {(!demande?.documents || demande.documents.length === 0) ? (
+                {docsDisponibles.length === 0 ? (
                     <p className="text-sm text-slate-400 mb-4">Aucun document disponible à joindre.</p>
                 ) : (
                     <div className="space-y-1.5 mb-4 max-h-40 overflow-y-auto border border-slate-200 rounded-lg p-2">
-                        {demande.documents.map((d) => (
+                        {docsDisponibles.map((d) => (
                             <label key={d.id}
                                 className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
                                 <input type="checkbox" checked={sigSelected.includes(d.id)}
-                                    onChange={() => toggleSigDoc(d.id)} className="w-4 h-4 accent-blue-600 flex-shrink-0" />
+                                    onChange={() => toggler(d.id)} className="w-4 h-4 accent-blue-600 flex-shrink-0" />
                                 <svg className="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
                                 <span className="text-sm text-slate-700 truncate">{d.nom_origine || d.type_document || 'Document'}</span>
                             </label>
