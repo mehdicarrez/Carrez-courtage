@@ -17,7 +17,6 @@ use App\Models\Devis;
 use App\Models\Document;
 use App\Models\Grossiste;
 use App\Models\LigneCommission;
-use App\Models\LigneGarantie;
 use App\Models\Message;
 use App\Models\Motif;
 use App\Models\Notification;
@@ -354,9 +353,7 @@ class DemoDataSeeder extends Seeder
             ]);
 
             // Garantie du devis (relation morph sur devis)
-            LigneGarantie::create([
-                'garantissable_type' => Devis::class,
-                'garantissable_id' => $devis->id,
+            $devis->garanties()->create([
                 'intitule' => 'Garantie de base',
                 'plafond_cts' => $primTtc,
                 'franchise_cts' => 0,

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Devis;
-use App\Models\LigneGarantie;
 use App\Services\AuditLogger;
 use App\Services\PremiumCalculator;
 use App\Services\ReferenceService;
@@ -261,9 +260,7 @@ class DevisController extends Controller
     private function enregistrerGaranties(Devis $devis, array $garanties): void
     {
         foreach ($garanties as $g) {
-            LigneGarantie::create([
-                'garantissable_type' => Devis::class,
-                'garantissable_id' => $devis->id,
+            $devis->garanties()->create([
                 'intitule' => $g['intitule'],
                 'plafond_cts' => $g['plafond_cts'] ?? null,
                 'franchise_cts' => $g['franchise_cts'] ?? null,
@@ -271,6 +268,33 @@ class DevisController extends Controller
                 'optionnelle' => $g['optionnelle'] ?? false,
                 'prix_option_cts' => $g['prix_option_cts'] ?? null,
             ]);
+        }
+    }
+
+    /**
+     * RG-21 : rattache au devis les garanties du catalogue sélectionnées
+     * par le partenaire (« souscription garanties incluses »).
+     */
+    private function syncGarantiesCatalogue(Devis $devis, array $garanties): void
+    {
+        if (empty($garanties)) {
+            return;
+        }
+
+        $sync = [];
+        foreach ($garanties as $g) {
+            if (is_array($g)) {
+                $id = $g['garantie_id'] ?? $g['id'] ?? null;
+                if ($id) {
+                    $sync[$id] = ['incluse' => $g['incluse'] ?? true];
+                }
+            } elseif ($g) {
+                $sync[$g] = ['incluse' => true];
+            }
+        }
+
+        if ($sync) {
+            $devis->garantiesCatalogue()->sync($sync);
         }
     }
 

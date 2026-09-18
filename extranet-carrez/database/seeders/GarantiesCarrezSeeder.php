@@ -13,7 +13,7 @@ use Illuminate\Database\Seeder;
  *
  * Idempotent par code ; rattaché à la branche concernée (RG-21 branche_id).
  */
-class GarantiesCarрезSeeder extends Seeder
+class GarantiesCarrezSeeder extends Seeder
 {
     public function run(): void
     {

@@ -7,7 +7,6 @@ use App\Models\Avenant;
 use App\Models\Contrat;
 use App\Models\Devis;
 use App\Models\Document;
-use App\Models\LigneGarantie;
 use App\Models\Quittance;
 use App\Models\Sinistre;
 use App\Models\TypeDocument;
@@ -137,9 +136,7 @@ class ContratController extends Controller
 
         // Copie des garanties du devis vers le contrat
         foreach ($devis->garanties as $g) {
-            LigneGarantie::create([
-                'garantissable_type' => Contrat::class,
-                'garantissable_id' => $contrat->id,
+            $contrat->garanties()->create([
                 'intitule' => $g->intitule,
                 'plafond_cts' => $g->plafond_cts,
                 'franchise_cts' => $g->franchise_cts,

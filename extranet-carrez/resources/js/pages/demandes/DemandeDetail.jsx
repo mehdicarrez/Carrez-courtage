@@ -788,12 +788,35 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {/* GRAND BLOC 5 — INFORMATIONS SUPPLÉMENTAIRES           */}
                                     {/* ===================================================== */}
 
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col items-center justify-center text-center min-h-[120px]">
-                                        <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
-                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                    <div className="bg-white border border-slate-200 rounded-lg p-4 min-h-[120px]">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
+                                            </div>
+                                            <div className="text-sm font-semibold text-slate-900">Informations supplémentaires</div>
                                         </div>
-                                        <div className="text-sm font-semibold text-slate-900 mb-1">Informations supplémentaires</div>
-                                        <div className="text-xs text-slate-400">Aucune information pour le moment.</div>
+
+                                        {d.garanties && d.garanties.length > 0 ? (
+                                            <div>
+                                                <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">
+                                                    Garanties proposées par le partenaire
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {d.garanties.map((g, i) => (
+                                                        <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
+                                                            {g.intitule}
+                                                            {g.plafond_cts && <span className="text-slate-400">· {fmt(g.plafond_cts)}</span>}
+                                                            {g.franchise_cts && <span className="text-slate-400">· fran. {fmt(g.franchise_cts)}</span>}
+                                                            <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                                {g.optionnelle ? 'opt.' : 'incl.'}
+                                                            </span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-slate-400">Aucune information pour le moment.</div>
+                                        )}
                                     </div>
 
                                 </div>
@@ -816,23 +839,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
                                 )}
 
-
-                                    {d.garanties && d.garanties.length > 0 && (
-                                        <div className="mb-3">
-                                            <div className="text-[10px] uppercase text-slate-500 font-medium mb-2">Garanties</div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {d.garanties.map((g, i) => (
-                                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
-                                                        {g.intitule}
-                                                        {g.plafond_cts && <span className="text-slate-400">· {fmt(g.plafond_cts)}</span>}
-                                                        <span className={`text-[10px] px-1 rounded ${g.optionnelle ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                                            {g.optionnelle ? 'opt.' : 'incl.'}
-                                                        </span>
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Messagerie cabinet / partenaire */}
                                     <DevisMessagerie devis={d} onSigne={() => load()} />

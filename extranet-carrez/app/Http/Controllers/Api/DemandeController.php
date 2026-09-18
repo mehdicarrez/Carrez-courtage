@@ -194,6 +194,8 @@ class DemandeController extends Controller
                 'plafond_cts' => $g->plafond_cts,
                 'franchise_cts' => $g->franchise_cts,
                 'incluse' => $g->incluse,
+                'optionnelle' => $g->optionnelle,
+                'prix_option_cts' => $g->prix_option_cts,
             ])->values() ?? [],
         ])->values();
 

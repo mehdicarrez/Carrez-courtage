@@ -32,4 +32,3 @@ class Garantie extends Model
         return $this->belongsToMany(Devis::class, 'devis_garanties')->withPivot('incluse')->withTimestamps();
     }
 }
-}
