@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api';
 import { useAuth, estPartenaire } from '../../auth';
@@ -103,7 +103,7 @@ export default function DemandesList() {
     const [deleteBusy, setDeleteBusy] = useState(false);
 
     // Visualisation rapide
-    const [voirOpen, setVoirOpen] = useState(false);
+    const [expandedId, setExpandedId] = useState(null);
     const [voirData, setVoirData] = useState(null);
     const [voirBusy, setVoirBusy] = useState(false);
 
@@ -287,8 +287,13 @@ export default function DemandesList() {
         }
     };
 
-    const ouvrirVoir = async (id) => {
-        setVoirOpen(true);
+    const toggleVoir = async (id) => {
+        if (expandedId === id) {
+            setExpandedId(null);
+            setVoirData(null);
+            return;
+        }
+        setExpandedId(id);
         setVoirData(null);
         setVoirBusy(true);
         setDocTypeId('');
@@ -563,16 +568,34 @@ export default function DemandesList() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Link
-                        to={`${base}/demandes/nouvelle`}
-                        className="inline-flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow-sm shadow-blue-700/20 transition-all"
+                <Link
+                    to={`${base}/demandes/nouvelle`}
+                    className="
+                        group
+                        inline-flex items-center gap-2
+                        bg-blue-600
+                        hover:bg-blue-700
+                        text-white
+                        text-sm font-medium
+                        px-4 py-2.5
+                        rounded-lg
+                        shadow-sm shadow-blue-600/20
+                        hover:shadow-md hover:shadow-blue-600/25
+                        hover:-translate-y-0.5
+                        transition-all duration-200
+                    "
+                >
+                    <svg
+                        className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
                     >
-                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                        </svg>
-                        Nouvelle demande
-                    </Link>
-                </div>
+                        <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                    </svg>
+
+                    <span>Nouvelle demande</span>
+                </Link>
+            </div>
             </div>
         </div>
 
@@ -765,12 +788,20 @@ export default function DemandesList() {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {demandesPage.map((d) => {
-                                    const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
-                                    const brancheIdx = (d.branche?.length || d.branche_id?.length || 0) % brancheColor.length;
-                                    return (
+                                const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
+                                const brancheIdx = (d.branche?.length || d.branche_id?.length || 0) % brancheColor.length;
+                                const estOuvert = expandedId === d.id;
+
+                                return (
+                                    <Fragment key={d.id}>
                                         <tr
-                                            key={d.id}
-                                                className={`group hover:bg-slate-100 hover:shadow-sm transition-all duration-150 ${selected.includes(d.id) ? 'bg-slate-200/70' : ''}`}
+                                            className={`group hover:bg-slate-100 hover:shadow-sm transition-all duration-150 ${
+                                                selected.includes(d.id)
+                                                    ? 'bg-slate-200/70'
+                                                    : estOuvert
+                                                        ? 'bg-blue-50/60'
+                                                        : ''
+                                            }`}
                                         >
                                             {estCabinet && (
                                                 <td className="px-4 py-3">
@@ -782,32 +813,64 @@ export default function DemandesList() {
                                                     />
                                                 </td>
                                             )}
+
                                             <td className="px-4 py-3 font-semibold text-blue-700 whitespace-nowrap">
-                                                <Link to={`${base}/demandes/${d.id}`}>{d.reference}</Link>
+                                                <Link to={`${base}/demandes/${d.id}`}>
+                                                    {d.reference}
+                                                </Link>
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                                                {d.created_at ? new Date(d.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                {d.created_at
+                                                    ? new Date(d.created_at).toLocaleString('fr-FR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })
+                                                    : '—'}
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-800 font-medium">
                                                 {d.client || 'Client non précisé'}
                                             </td>
+
                                             <td className="px-4 py-3">
-                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${brancheColor[brancheIdx]}`}>
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${brancheColor[brancheIdx]}`}
+                                                >
                                                     {d.branche || '—'}
                                                 </span>
                                             </td>
+
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${sc.cls}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} animate-pulse`}></span>
+                                                <span
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${sc.cls}`}
+                                                >
+                                                    <span
+                                                        className={`w-1.5 h-1.5 rounded-full ${sc.dot} animate-pulse`}
+                                                    ></span>
                                                     {sc.label}
                                                 </span>
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-600">
                                                 {d.nb_devis > 0 ? `${d.nb_devis} devis` : '—'}
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                                                {d.date_statut ? new Date(d.date_statut).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                {d.date_statut
+                                                    ? new Date(d.date_statut).toLocaleString('fr-FR', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })
+                                                    : '—'}
                                             </td>
+
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center gap-1 justify-end">
                                                     <button
@@ -815,27 +878,804 @@ export default function DemandesList() {
                                                         title="Voir les devis"
                                                         className="p-2 rounded-lg text-slate-400 hover:text-purple-600 hover:bg-purple-50 hover:scale-110 transition-all duration-150"
                                                     >
-                                                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z" clipRule="evenodd" /></svg>
+                                                        <svg
+                                                            className="w-5 h-5"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                        >
+                                                            <path
+                                                                fillRule="evenodd"
+                                                                d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.25a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5Z"
+                                                                clipRule="evenodd"
+                                                            />
+                                                        </svg>
                                                     </button>
+
                                                     <button
-                                                        onClick={() => ouvrirVoir(d.id)}
-                                                        title="Voir"
-                                                        className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:scale-110 transition-all duration-150"
+                                                        onClick={() => toggleVoir(d.id)}
+                                                        title={estOuvert ? 'Masquer' : 'Voir'}
+                                                        className={`p-2 rounded-lg transition-all duration-200 ${
+                                                            estOuvert ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:scale-110'
+                                                        }`}
                                                     >
-                                                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" /></svg>
+                                                        <svg className={`w-5 h-5 transition-transform duration-300 ${estOuvert ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
+                                                        </svg>
                                                     </button>
+
                                                     <button
-                                                        onClick={() => setDeleteModal({ id: d.id, reference: d.reference })}
+                                                        onClick={() =>
+                                                            setDeleteModal({
+                                                                id: d.id,
+                                                                reference: d.reference
+                                                            })
+                                                        }
                                                         title="Supprimer"
                                                         className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 hover:scale-110 transition-all duration-150"
                                                     >
-                                                        <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
+                                                        <svg
+                                                            className="w-4 h-4"
+                                                            viewBox="0 0 20 20"
+                                                            fill="currentColor"
+                                                        >
+                                                            <path
+                                                                fillRule="evenodd"
+                                                                d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a41.03 41.03 0 0 0-2.365-.298V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l-.3-7.5Z"
+                                                                clipRule="evenodd"
+                                                            />
+                                                        </svg>
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    );
-                                })}
+
+                                        {/* Ligne d'expansion */}
+                                        <tr>
+                                            <td
+                                                colSpan={estCabinet ? 9 : 8}
+                                                className="p-0 border-0"
+                                            >
+                                                <div
+                                                    className={`grid transition-all duration-300 ease-in-out ${
+                                                        estOuvert
+                                                            ? 'grid-rows-[1fr] opacity-100'
+                                                            : 'grid-rows-[0fr] opacity-0'
+                                                    }`}
+                                                >
+                                                    <div className="overflow-hidden">
+                                                        <div className="w-[80%] mx-auto bg-transparent border-0 p-4 my-3">
+                                                            {estOuvert && (
+                                                                voirBusy || !voirData ? (
+                                                                    <div className="flex items-center justify-center h-32">
+                                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                    {/* Identité / Projet / Statut */}
+                                                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
+
+                                                                        {/* Identité */}
+                                                                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                            <div className="px-4 py-2.5 bg-slate-200 border-b-2 border-slate-400 text-xs font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-2">
+
+                                                                            <svg
+                                                                                className="w-4 h-4 text-slate-500"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                strokeWidth="2"
+                                                                            >
+                                                                                <circle cx="12" cy="8" r="4" />
+                                                                                <path d="M4 21a8 8 0 0 1 16 0" />
+                                                                            </svg>
+                                                                            Identité
+                                                                        </div>
+
+                                                                            <div className="p-4 space-y-2.5 text-sm">
+                                                                                <div>
+                                                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                        Nom et prénom
+                                                                                    </div>
+
+                                                                                    {(() => {
+                                                                                        const cd = voirData.client_detail;
+
+                                                                                        const nom = cd
+                                                                                            ? (
+                                                                                                cd.type === 'MORALE'
+                                                                                                    ? (cd.raison_sociale || '—')
+                                                                                                    : `${cd.civilite ? cd.civilite + ' ' : ''}${cd.prenom || ''} ${cd.nom || ''}`.trim() || cd.nom_complet
+                                                                                            )
+                                                                                            : (voirData.client || '—');
+
+                                                                                        return (
+                                                                                            <div className="font-semibold text-slate-900">
+                                                                                                {nom}
+                                                                                            </div>
+                                                                                        );
+                                                                                    })()}
+                                                                                </div>
+
+                                                                                {voirData.client_detail?.date_naissance && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Date de naissance
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.client_detail.date_naissance}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.client_detail?.siren && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            SIREN
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.client_detail.siren}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.client_detail?.adresse && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Adresse
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.client_detail.adresse}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {(voirData.client_detail?.code_postal || voirData.client_detail?.ville) && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Code postal / Ville
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {[
+                                                                                                voirData.client_detail.code_postal,
+                                                                                                voirData.client_detail.ville
+                                                                                            ].filter(Boolean).join(' ') || '—'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.client_detail?.telephone && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Tél
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.client_detail.telephone}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.client_detail?.email && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Email
+                                                                                        </div>
+                                                                                        <div className="text-slate-700 break-all">
+                                                                                            {voirData.client_detail.email}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+
+                                                                        {/* Projet / Produit */}
+                                                                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                            <div className="px-4 py-2.5 bg-indigo-100 border-b-2 border-indigo-400 text-xs font-extrabold uppercase tracking-wide text-indigo-800 flex items-center gap-2">
+
+                                                                            <svg
+                                                                                className="w-4 h-4 text-indigo-500"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                strokeWidth="2"
+                                                                            >
+                                                                                <path d="M3 21h18" />
+                                                                                <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16" />
+                                                                                <path d="M9 7h2" />
+                                                                                <path d="M13 7h2" />
+                                                                                <path d="M9 11h2" />
+                                                                                <path d="M13 11h2" />
+                                                                            </svg>
+                                                                            Projet
+                                                                        </div>
+
+                                                                            <div className="p-4 space-y-2.5 text-sm">
+                                                                                <div>
+                                                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                        Nature
+                                                                                    </div>
+                                                                                    <div className="font-medium text-slate-900">
+                                                                                        {voirData.branche || '—'}
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {voirData.origine && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Origine
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.origine === 'PARTENAIRE'
+                                                                                                ? 'Partenaire'
+                                                                                                : 'Cabinet'}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.gestionnaire && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Gestionnaire
+                                                                                        </div>
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.gestionnaire}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {voirData.donnees_risque &&
+                                                                                    Object.keys(voirData.donnees_risque).length > 0 && (
+                                                                                        <div className="pt-2 border-t border-slate-100">
+                                                                                            <div className="text-[11px] uppercase text-slate-400 font-medium mb-1.5">
+                                                                                                Données du risque
+                                                                                            </div>
+
+                                                                                            <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
+                                                                                                {Object.entries(voirData.donnees_risque).map(([k, v]) => {
+                                                                                                    if (
+                                                                                                        v === null ||
+                                                                                                        v === '' ||
+                                                                                                        v === undefined
+                                                                                                    ) {
+                                                                                                        return null;
+                                                                                                    }
+
+                                                                                                    const val =
+                                                                                                        typeof v === 'object'
+                                                                                                            ? JSON.stringify(v)
+                                                                                                            : String(v);
+
+                                                                                                    const label = k.replace(/_/g, ' ');
+
+                                                                                                    return (
+                                                                                                        <div
+                                                                                                            key={k}
+                                                                                                            className="flex justify-between gap-2 text-xs"
+                                                                                                        >
+                                                                                                            <span className="text-slate-500 capitalize">
+                                                                                                                {label}
+                                                                                                            </span>
+
+                                                                                                            <span className="text-slate-800 font-medium text-right break-words">
+                                                                                                                {val}
+                                                                                                            </span>
+                                                                                                        </div>
+                                                                                                    );
+                                                                                                })}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                            </div>
+                                                                        </div>
+
+
+                                                                        {/* Statut */}
+                                                                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                                                            <div className="px-4 py-2.5 bg-amber-100 border-b-2 border-amber-400 text-xs font-extrabold uppercase tracking-wide text-amber-800 flex items-center gap-2">
+                                                                            <svg
+                                                                                className="w-4 h-4 text-amber-500"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                strokeWidth="2"
+                                                                            >
+                                                                                <circle cx="12" cy="12" r="9" />
+                                                                                <path d="M12 7v5l3 2" />
+                                                                            </svg>
+                                                                            Statut
+                                                                        </div>
+
+                                                                            <div className="p-4 space-y-2.5 text-sm">
+
+                                                                                {voirData.client && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Client
+                                                                                        </div>
+                                                                                        <div className="font-medium text-slate-900">
+                                                                                            {voirData.client}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                <div>
+                                                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                        Mis à jour le
+                                                                                    </div>
+
+                                                                                    <div className="text-slate-700">
+                                                                                        {voirData.date_statut
+                                                                                            ? new Date(voirData.date_statut).toLocaleString(
+                                                                                                'fr-FR',
+                                                                                                {
+                                                                                                    day: '2-digit',
+                                                                                                    month: '2-digit',
+                                                                                                    year: 'numeric',
+                                                                                                    hour: '2-digit',
+                                                                                                    minute: '2-digit'
+                                                                                                }
+                                                                                            )
+                                                                                            : '—'}
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div>
+                                                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                        Créé le
+                                                                                    </div>
+
+                                                                                    <div className="text-slate-700">
+                                                                                        {voirData.created_at
+                                                                                            ? new Date(voirData.created_at).toLocaleString(
+                                                                                                'fr-FR',
+                                                                                                {
+                                                                                                    day: '2-digit',
+                                                                                                    month: '2-digit',
+                                                                                                    year: 'numeric',
+                                                                                                    hour: '2-digit',
+                                                                                                    minute: '2-digit'
+                                                                                                }
+                                                                                            )
+                                                                                            : '—'}
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div>
+                                                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                        Devis
+                                                                                    </div>
+
+                                                                                    <div className="text-slate-700">
+                                                                                        {voirData.nb_devis > 0
+                                                                                            ? `${voirData.nb_devis} devis`
+                                                                                            : 'Aucun devis'}
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                {voirData.motif && (
+                                                                                    <div>
+                                                                                        <div className="text-[11px] uppercase text-slate-400 font-medium">
+                                                                                            Motif
+                                                                                        </div>
+
+                                                                                        <div className="text-slate-700">
+                                                                                            {voirData.motif}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+
+                                                                    {/* Devis */}
+                                                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-8">
+
+                                                                        <div className="px-4 py-2.5 bg-violet-100 border-b-2 border-violet-400 text-xs font-extrabold uppercase tracking-wide text-violet-800 flex items-center gap-2">
+
+                                                                        <svg
+                                                                            className="w-4 h-4 text-violet-500"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                        >
+                                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                                            <path d="M14 2v6h6" />
+                                                                            <path d="M8 13h8" />
+                                                                            <path d="M8 17h5" />
+                                                                        </svg>
+
+                                                                        Devis de la demande
+                                                                    </div>
+
+                                                                        <div className="p-4">
+                                                                            {!voirData.devis || voirData.devis.length === 0 ? (
+                                                                                <p className="text-sm text-slate-400">
+                                                                                    Aucun devis créé pour cette demande.
+                                                                                </p>
+                                                                            ) : (
+                                                                                <div className="space-y-2">
+                                                                                    {voirData.devis.map((d) => {
+                                                                                        const dsc =
+                                                                                            devisStatutConfig[d.statut] ||
+                                                                                            devisStatutConfig.BROUILLON;
+
+                                                                                        return (
+                                                                                            <div
+                                                                                                key={d.id}
+                                                                                                className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50"
+                                                                                            >
+                                                                                                {d.propose_par?.logo_url ? (
+                                                                                                    <img
+                                                                                                        src={d.propose_par.logo_url}
+                                                                                                        alt=""
+                                                                                                        className="w-8 h-8 rounded-lg object-cover bg-white border border-slate-200 flex-shrink-0"
+                                                                                                    />
+                                                                                                ) : (
+                                                                                                    <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold uppercase flex-shrink-0">
+                                                                                                        {(d.propose_par?.nom || '?').slice(0, 2)}
+                                                                                                    </div>
+                                                                                                )}
+
+                                                                                                <div className="min-w-0 flex-1">
+                                                                                                    <div className="text-sm font-medium text-slate-900 truncate">
+                                                                                                        {d.propose_par?.nom || '—'}
+                                                                                                    </div>
+
+                                                                                                    <div className="text-xs text-slate-500">
+                                                                                                        {d.version ? `V${d.version} · ` : ''}
+                                                                                                        {d.created_at
+                                                                                                            ? new Date(
+                                                                                                                d.created_at
+                                                                                                            ).toLocaleDateString('fr-FR')
+                                                                                                            : '—'}
+                                                                                                        {d.date_validite
+                                                                                                            ? ` · valable au ${d.date_validite}`
+                                                                                                            : ''}
+                                                                                                    </div>
+                                                                                                </div>
+
+                                                                                                <div className="text-sm font-semibold text-slate-900 tabular-nums">
+                                                                                                    {fmtCts(d.prime_ttc_cts)}
+                                                                                                </div>
+
+                                                                                                <span
+                                                                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${dsc.cls}`}
+                                                                                                >
+                                                                                                    <span
+                                                                                                        className={`w-1.5 h-1.5 rounded-full ${dsc.dot}`}
+                                                                                                    ></span>
+
+                                                                                                    {devisStatutLabels[d.statut] || d.statut}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+
+                                                                    {/* Documents */}
+                                                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-8">
+
+                                                                        <div className="px-4 py-2.5 bg-emerald-100 border-b-2 border-emerald-400 text-xs font-extrabold uppercase tracking-wide text-emerald-800 flex items-center gap-2">
+
+                                                                        <svg
+                                                                            className="w-4 h-4 text-emerald-500"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                        >
+                                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                                            <path d="M14 2v6h6" />
+                                                                            <path d="M8 13h8" />
+                                                                            <path d="M8 17h6" />
+                                                                        </svg>
+                                                                        Documents
+                                                                    </div>
+
+                                                                        {/* Ajout document */}
+                                                                        <div className="p-4 border-b border-slate-100">
+                                                                            <form
+                                                                                onSubmit={uploaderDocument}
+                                                                                className="flex flex-col sm:flex-row gap-2 items-end"
+                                                                            >
+                                                                                <div className="flex-1 w-full">
+                                                                                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                                                                                        Type de document{' '}
+                                                                                        <span className="text-red-500">*</span>
+                                                                                    </label>
+
+                                                                                    <select
+                                                                                        value={docTypeId}
+                                                                                        onChange={(e) => setDocTypeId(e.target.value)}
+                                                                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm"
+                                                                                    >
+                                                                                        <option value="">— Choisir un type —</option>
+
+                                                                                        {typesDocs.map((t) => (
+                                                                                            <option key={t.id} value={t.id}>
+                                                                                                {t.libelle}
+                                                                                            </option>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                </div>
+
+                                                                                <div className="flex-1 w-full">
+                                                                                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                                                                                        Fichier <span className="text-red-500">*</span>
+                                                                                    </label>
+
+                                                                                    <input
+                                                                                        type="file"
+                                                                                        onChange={(e) =>
+                                                                                            setDocFile(e.target.files[0])
+                                                                                        }
+                                                                                        className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 file:mr-2"
+                                                                                    />
+                                                                                </div>
+
+                                                                                <button
+                                                                                    type="submit"
+                                                                                    disabled={docUploading}
+                                                                                    className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm disabled:opacity-50 transition-colors flex-shrink-0"
+                                                                                >
+                                                                                    {docUploading ? 'Envoi...' : 'Ajouter'}
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
+
+
+                                                                        {/* Liste documents */}
+                                                                        <div className="p-4">
+                                                                            {!voirData.documents ||
+                                                                            voirData.documents.length === 0 ? (
+                                                                                <p className="text-sm text-slate-400">
+                                                                                    Aucun document rattaché.
+                                                                                </p>
+                                                                            ) : (
+                                                                                <div className="space-y-2">
+                                                                                    {voirData.documents.map((doc) => (
+                                                                                        <div
+                                                                                            key={doc.id}
+                                                                                            className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors"
+                                                                                        >
+                                                                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                                                                                <svg
+                                                                                                    className="w-4 h-4"
+                                                                                                    viewBox="0 0 20 20"
+                                                                                                    fill="currentColor"
+                                                                                                >
+                                                                                                    <path
+                                                                                                        fillRule="evenodd"
+                                                                                                        d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"
+                                                                                                        clipRule="evenodd"
+                                                                                                    />
+                                                                                                </svg>
+                                                                                            </div>
+
+                                                                                            <div className="min-w-0 flex-1">
+                                                                                                <div className="text-sm font-medium text-slate-900 truncate">
+                                                                                                    {doc.nom_origine ||
+                                                                                                        doc.type_document ||
+                                                                                                        'Document'}
+                                                                                                </div>
+
+                                                                                                <div className="text-xs text-slate-500">
+                                                                                                    {doc.type_document || 'Document'}
+                                                                                                    {doc.creation
+                                                                                                        ? ` · ${new Date(
+                                                                                                            doc.creation
+                                                                                                        ).toLocaleDateString('fr-FR')}`
+                                                                                                        : ''}
+                                                                                                </div>
+                                                                                            </div>
+
+                                                                                            {doc.statut_validation && (
+                                                                                                <span
+                                                                                                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                                                                                                        doc.statut_validation === 'VALIDE'
+                                                                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                                                                            : 'bg-slate-100 text-slate-500'
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {doc.statut_validation}
+                                                                                                </span>
+                                                                                            )}
+
+                                                                                            <button
+                                                                                                onClick={() =>
+                                                                                                    telechargerDocument(doc.id)
+                                                                                                }
+                                                                                                title="Télécharger"
+                                                                                                className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex-shrink-0"
+                                                                                            >
+                                                                                                ↓
+                                                                                            </button>
+
+                                                                                            <button
+                                                                                                onClick={() =>
+                                                                                                    supprimerDocument(doc.id)
+                                                                                                }
+                                                                                                title="Supprimer"
+                                                                                                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                                                                                            >
+                                                                                                ×
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+
+                                                                    {/* Actions */}
+                                                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-8">
+
+                                                                        <div className="px-4 py-2.5 bg-slate-300 border-b-2 border-slate-500 text-xs font-extrabold uppercase tracking-wide text-slate-800 flex items-center gap-2">
+
+                                                                        <svg
+                                                                            className="w-4 h-4 text-slate-500"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                        >
+                                                                            <path d="M12 6V3" />
+                                                                            <path d="M12 21v-3" />
+                                                                            <path d="M6 12H3" />
+                                                                            <path d="M21 12h-3" />
+                                                                            <circle cx="12" cy="12" r="3" />
+                                                                            <path d="M19.07 4.93l-2.12 2.12" />
+                                                                            <path d="M7.05 16.95l-2.12 2.12" />
+                                                                            <path d="M19.07 19.07l-2.12-2.12" />
+                                                                            <path d="M7.05 7.05L4.93 4.93" />
+                                                                        </svg>
+                                                                        Actions
+                                                                    </div>
+
+                                                                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                                                                            <button
+                                                                                onClick={() => setModifierData(voirData)}
+                                                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                            >
+                                                                                <svg
+                                                                                    className="w-4 h-4 text-blue-600"
+                                                                                    viewBox="0 0 20 20"
+                                                                                    fill="currentColor"
+                                                                                >
+                                                                                    <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
+                                                                                    <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" />
+                                                                                </svg>
+                                                                                Modifier la demande
+                                                                            </button>
+
+                                                                            <button
+                                                                                onClick={() =>
+                                                                                    setDeleteModal({
+                                                                                        id: voirData.id,
+                                                                                        reference: voirData.reference
+                                                                                    })
+                                                                                }
+                                                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                                                                            >
+                                                                                <svg
+                                                                                    className="w-4 h-4 text-red-500"
+                                                                                    viewBox="0 0 24 24"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    strokeWidth="2"
+                                                                                >
+                                                                                    <path d="M3 6h18" />
+                                                                                    <path d="M8 6V4h8v2" />
+                                                                                    <path d="M19 6l-1 14H6L5 6" />
+                                                                                    <path d="M10 11v5" />
+                                                                                    <path d="M14 11v5" />
+                                                                                </svg>
+                                                                                Supprimer
+                                                                            </button>
+
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setClotureModal({
+                                                                                        id: voirData.id,
+                                                                                        reference: voirData.reference
+                                                                                    });
+                                                                                    setClotureMotif('');
+                                                                                    setCloturePrecisions('');
+                                                                                }}
+                                                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors"
+                                                                            >
+                                                                                <svg
+                                                                                    className="w-4 h-4 text-amber-500"
+                                                                                    viewBox="0 0 24 24"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    strokeWidth="2"
+                                                                                >
+                                                                                    <rect x="5" y="10" width="14" height="10" rx="2" />
+                                                                                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                                                                                </svg>
+                                                                                Clôturer la demande
+                                                                            </button>
+
+                                                                            <button
+                                                                                onClick={ouvrirTache}
+                                                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                            >
+                                                                                <svg
+                                                                                    className="w-4 h-4 text-slate-500"
+                                                                                    viewBox="0 0 24 24"
+                                                                                    fill="none"
+                                                                                    stroke="currentColor"
+                                                                                    strokeWidth="2"
+                                                                                >
+                                                                                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                                                                                    <path d="M8 9h8" />
+                                                                                    <path d="M8 13h5" />
+                                                                                    <path d="M8 17h3" />
+                                                                                </svg>
+                                                                                Créer une tâche
+                                                                            </button>
+
+                                                                            {estPartenaire(user) && (
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        navigate(`${base}/demandes/${voirData.id}/devis`)
+                                                                                    }
+                                                                                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition-colors"
+                                                                                >
+                                                                                    <svg
+                                                                                        className="w-4 h-4 text-violet-500"
+                                                                                        viewBox="0 0 24 24"
+                                                                                        fill="none"
+                                                                                        stroke="currentColor"
+                                                                                        strokeWidth="2"
+                                                                                    >
+                                                                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                                                        <path d="M14 2v6h6" />
+                                                                                        <path d="M8 13h8" />
+                                                                                        <path d="M8 17h5" />
+                                                                                    </svg>
+                                                                                      Ajouter un devis
+                                                                                </button>
+                                                                            )}
+
+                                                                            <button
+                                                                                onClick={ouvrirSignature}
+                                                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                            >
+                                                                                <svg
+                                                                                className="w-4 h-4 text-emerald-500"
+                                                                                viewBox="0 0 24 24"
+                                                                                fill="none"
+                                                                                stroke="currentColor"
+                                                                                strokeWidth="2"
+                                                                            >
+                                                                                <path d="M3 17c2-4 4-6 6-6 1.5 0 1.5 2 0 4s-1 3 1 3c2.5 0 4-5 6-5 1.5 0 1.5 2 0 3" />
+                                                                                <path d="M16 19c2 0 3-1 5-3" />
+                                                                            </svg>
+                                                                            Signature électronique
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </Fragment>
+                                );
+                            })}
                             </tbody>
                         </table>
                     </div>
@@ -996,330 +1836,7 @@ export default function DemandesList() {
                 </div>
             )}
 
-            {/* Modal visualisation rapide */}
-            {voirOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto shadow-2xl">
-                        {voirBusy || !voirData ? (
-                            <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                            </div>
-                        ) : (
-                            <div className="p-6">
-                                <div className="flex items-start justify-between mb-5">
-                                    <div>
-                                        <div className="flex items-center gap-3 mb-1">
-                                            <h2 className="text-xl font-bold text-slate-900">{voirData.reference}</h2>
-                                            {(() => { const sc = statutConfig[voirData.statut] || statutConfig.BROUILLON; return (
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${sc.cls}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
-                                                    {sc.label}
-                                                </span>
-                                            ); })()}
-                                        </div>
-                                        <p className="text-sm text-slate-500">{voirData.branche || '—'}</p>
-                                    </div>
-                                    <button onClick={() => setVoirOpen(false)}
-                                        className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
-                                        <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" /></svg>
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                    {/* Identité */}
-                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm col-span-1">
-                                        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">Identité</div>
-                                        <div className="p-4 space-y-2.5 text-sm">
-                                            <div>
-                                                <div className="text-[11px] uppercase text-slate-400 font-medium">Nom et prénom</div>
-                                                {(() => {
-                                                    const cd = voirData.client_detail;
-                                                    const nom = cd
-                                                        ? (cd.type === 'MORALE' ? (cd.raison_sociale || '—') : `${cd.civilite ? cd.civilite + ' ' : ''}${cd.prenom || ''} ${cd.nom || ''}`.trim() || cd.nom_complet)
-                                                        : (voirData.client || '—');
-                                                    return <div className="font-semibold text-slate-900">{nom}</div>;
-                                                })()}
-                                            </div>
-                                            {(voirData.client_detail?.date_naissance) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Date de naissance</div>
-                                                    <div className="text-slate-700">{voirData.client_detail.date_naissance}</div>
-                                                </div>
-                                            )}
-                                            {(voirData.client_detail?.siren) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">SIREN</div>
-                                                    <div className="text-slate-700">{voirData.client_detail.siren}</div>
-                                                </div>
-                                            )}
-                                            {(voirData.client_detail?.adresse) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Adresse</div>
-                                                    <div className="text-slate-700">{voirData.client_detail.adresse}</div>
-                                                </div>
-                                            )}
-                                            {(voirData.client_detail?.code_postal || voirData.client_detail?.ville) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Code postal / Ville</div>
-                                                    <div className="text-slate-700">{[voirData.client_detail.code_postal, voirData.client_detail.ville].filter(Boolean).join(' ') || '—'}</div>
-                                                </div>
-                                            )}
-                                            {(voirData.client_detail?.telephone) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Tél</div>
-                                                    <div className="text-slate-700">{voirData.client_detail.telephone}</div>
-                                                </div>
-                                            )}
-                                            {(voirData.client_detail?.email) && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Email</div>
-                                                    <div className="text-slate-700 break-all">{voirData.client_detail.email}</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Projet / Produit */}
-                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm col-span-1">
-                                        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">Projet</div>
-                                        <div className="p-4 space-y-2.5 text-sm">
-                                            <div>
-                                                <div className="text-[11px] uppercase text-slate-400 font-medium">Nature</div>
-                                                <div className="font-medium text-slate-900">{voirData.branche || '—'}</div>
-                                            </div>
-                                            {voirData.origine && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Origine</div>
-                                                    <div className="text-slate-700">{voirData.origine === 'PARTENAIRE' ? 'Partenaire' : 'Cabinet'}</div>
-                                                </div>
-                                            )}
-                                            {voirData.gestionnaire && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Gestionnaire</div>
-                                                    <div className="text-slate-700">{voirData.gestionnaire}</div>
-                                                </div>
-                                            )}
-                                            {voirData.donnees_risque && Object.keys(voirData.donnees_risque).length > 0 && (
-                                                <>
-                                                    <div className="pt-2 border-t border-slate-100">
-                                                        <div className="text-[11px] uppercase text-slate-400 font-medium mb-1.5">Données du risque</div>
-                                                        <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
-                                                            {Object.entries(voirData.donnees_risque).map(([k, v]) => {
-                                                                if (v === null || v === '' || v === undefined) return null;
-                                                                const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
-                                                                const label = k.replace(/_/g, ' ');
-                                                                return (
-                                                                    <div key={k} className="flex justify-between gap-2 text-xs">
-                                                                        <span className="text-slate-500 capitalize">{label}</span>
-                                                                        <span className="text-slate-800 font-medium text-right break-words">{val}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Statut */}
-                                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm col-span-1">
-                                        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">Statut</div>
-                                        <div className="p-4 space-y-2.5 text-sm">
-                                            {voirData.client && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Client</div>
-                                                    <div className="font-medium text-slate-900">{voirData.client}</div>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <div className="text-[11px] uppercase text-slate-400 font-medium">Mis à jour le</div>
-                                                <div className="text-slate-700">
-                                                    {voirData.date_statut ? new Date(voirData.date_statut).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-[11px] uppercase text-slate-400 font-medium">Créé le</div>
-                                                <div className="text-slate-700">
-                                                    {voirData.created_at ? new Date(voirData.created_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="text-[11px] uppercase text-slate-400 font-medium">Devis</div>
-                                                <div className="text-slate-700">{voirData.nb_devis > 0 ? `${voirData.nb_devis} devis` : 'Aucun devis'}</div>
-                                            </div>
-                                            {voirData.motif && (
-                                                <div>
-                                                    <div className="text-[11px] uppercase text-slate-400 font-medium">Motif</div>
-                                                    <div className="text-slate-700">{voirData.motif}</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Devis de la demande */}
-                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-4">
-                                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Devis de la demande ({voirData.devis?.length || 0})
-                                    </div>
-                                    <div className="p-4">
-                                        {!voirData.devis || voirData.devis.length === 0 ? (
-                                            <p className="text-sm text-slate-400">Aucun devis créé pour cette demande.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {voirData.devis.map((d) => {
-                                                    const dsc = devisStatutConfig[d.statut] || devisStatutConfig.BROUILLON;
-                                                    return (
-                                                        <div key={d.id} className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
-                                                            {d.propose_par?.logo_url ? (
-                                                                <img src={d.propose_par.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover bg-white border border-slate-200 flex-shrink-0" />
-                                                            ) : (
-                                                                <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs font-bold uppercase flex-shrink-0">
-                                                                    {(d.propose_par?.nom || '?').slice(0, 2)}
-                                                                </div>
-                                                            )}
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="text-sm font-medium text-slate-900 truncate">{d.propose_par?.nom || '—'}</div>
-                                                                <div className="text-xs text-slate-500">
-                                                                    {d.version ? `V${d.version} · ` : ''}
-                                                                    {d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '—'}
-                                                                    {d.date_validite ? ` · valable au ${d.date_validite}` : ''}
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-sm font-semibold text-slate-900 tabular-nums">{fmtCts(d.prime_ttc_cts)}</div>
-                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${dsc.cls}`}>
-                                                                <span className={`w-1.5 h-1.5 rounded-full ${dsc.dot}`}></span>
-                                                                {devisStatutLabels[d.statut] || d.statut}
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Documents */}
-                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-4">
-                                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Documents ({voirData.documents?.length || 0})
-                                    </div>
-
-                                    {/* Formulaire d'ajout de fichier */}
-                                    <div className="p-4 border-b border-slate-100">
-                                        <form onSubmit={uploaderDocument} className="flex flex-col sm:flex-row gap-2 items-end">
-                                            <div className="flex-1 w-full">
-                                                <label className="block text-[11px] font-medium text-slate-500 mb-1">Type de document <span className="text-red-500">*</span></label>
-                                                <select value={docTypeId} onChange={(e) => setDocTypeId(e.target.value)}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm">
-                                                    <option value="">— Choisir un type —</option>
-                                                    {typesDocs.map((t) => (
-                                                        <option key={t.id} value={t.id}>{t.libelle}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="flex-1 w-full">
-                                                <label className="block text-[11px] font-medium text-slate-500 mb-1">Fichier <span className="text-red-500">*</span></label>
-                                                <input type="file" onChange={(e) => setDocFile(e.target.files[0])}
-                                                    className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 file:mr-2" />
-                                            </div>
-                                            <button type="submit" disabled={docUploading}
-                                                className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm disabled:opacity-50 transition-colors flex-shrink-0">
-                                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" /></svg>
-                                                {docUploading ? 'Envoi...' : 'Ajouter'}
-                                            </button>
-                                        </form>
-                                    </div>
-
-                                    <div className="p-4">
-                                        {!voirData.documents || voirData.documents.length === 0 ? (
-                                            <p className="text-sm text-slate-400">Aucun document rattaché.</p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {voirData.documents.map((doc) => (
-                                                    <div key={doc.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                                                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <div className="text-sm font-medium text-slate-900 truncate">{doc.nom_origine || doc.type_document || 'Document'}</div>
-                                                            <div className="text-xs text-slate-500">
-                                                                {doc.type_document || 'Document'}
-                                                                {doc.creation ? ` · ${new Date(doc.creation).toLocaleDateString('fr-FR')}` : ''}
-                                                            </div>
-                                                        </div>
-                                                        {doc.statut_validation && (
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${doc.statut_validation === 'VALIDE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                                {doc.statut_validation}
-                                                            </span>
-                                                        )}
-                                                        <button onClick={() => telechargerDocument(doc.id)} title="Télécharger"
-                                                            className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex-shrink-0">
-                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
-                                                        </button>
-                                                        <button onClick={() => supprimerDocument(doc.id)} title="Supprimer"
-                                                            className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0">
-                                                            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-4">
-                                    <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-slate-500">
-                                        Actions
-                                    </div>
-                                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <button onClick={() => { setVoirOpen(false); setModifierData(voirData); }}
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                            <svg className="w-4 h-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5Z" /></svg>
-                                            Modifier la demande
-                                        </button>
-                                        <button onClick={() => { setVoirOpen(false); setDeleteModal({ id: voirData.id, reference: voirData.reference }); }}
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors">
-                                            <svg className="w-4 h-4 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" /></svg>
-                                            Supprimer
-                                        </button>
-                                        <button onClick={() => { setClotureModal({ id: voirData.id, reference: voirData.reference }); setClotureMotif(''); setCloturePrecisions(''); }}
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">
-                                            <svg className="w-4 h-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z" clipRule="evenodd" /></svg>
-                                            Clôturer la demande
-                                        </button>
-                                        <button onClick={ouvrirTache}
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                            <svg className="w-4 h-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 5.5A3.5 3.5 0 0 1 9.5 2h1A3.5 3.5 0 0 1 14 5.5v.55c1.7.39 3 1.93 3 3.8v3.4A3.25 3.25 0 0 1 13.75 16H6.25A3.25 3.25 0 0 1 3 12.75v-3.4c0-1.87 1.3-3.41 3-3.8V5.5Zm4 3.5a.75.75 0 0 1 .75.75v2.1l.95.5a.75.75 0 1 1-.75 1.3l-1.5-.8A.75.75 0 0 1 9 12.25v-3A.75.75 0 0 1 9.75 8.5Zm1.75-4.5v.53c.42 0 .83.08 1.2.23A2 2 0 0 0 11.25 4h-.75Z" clipRule="evenodd" /></svg>
-                                            Créer une tâche
-                                        </button>
-                                        {estPartenaire(user) && (
-                                            <button onClick={() => { setVoirOpen(false); navigate(`${base}/demandes/${voirData.id}/devis`); }}
-                                                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 transition-colors">
-                                                <svg className="w-4 h-4 text-purple-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 10.378 2H4.5Zm2.25 8.5a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Zm0 3a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Zm0-6a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H6.75Z" clipRule="evenodd" /></svg>
-                                                Ajouter un devis
-                                            </button>
-                                        )}
-                                        <button onClick={ouvrirSignature}
-                                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                                            <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="m10.577 1.332 3.811 1.132-.415 1.017-3.393-1.008V10.35L13.68 8.88l-.41-2.05 1.42-.071.716 3.579c.022.112.022.226 0 .338l-.429 2.143c-.08.403-.3.77-.62 1.032l-3.472 2.88a1.75 1.75 0 0 1-2.4 0l-3.472-2.88a1.75 1.75 0 0 1-.62-1.032l-.429-2.143a1.75 1.75 0 0 1 0-.338l.716-3.579 1.42.071-.41 2.05 3.894 1.47V2.473L8.2 3.481l-.415-1.017 3.792-1.132Z" clipRule="evenodd" /></svg>
-                                            Signature électronique
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Actions bas */}
-                                <div className="flex justify-end gap-2 mt-5">
-                                    <button onClick={() => setVoirOpen(false)}
-                                        className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Fermer</button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            
 
             {/* Modal clôture de demande */}
             {clotureModal && (
