@@ -632,6 +632,126 @@ class ClientController extends Controller
         return response()->json(['data' => $this->presentFacture($facture->load('lignes'))]);
     }
 
+    public function supprimerFacture(\App\Models\Facture $facture, Request $request)
+    {
+        $user = $request->user();
+        if ($user->estPartenaire() && $facture->organisation_id !== $user->organisation_id) {
+            abort(404);
+        }
+
+        $this->audit->log('facture.supprimee', 'facture', (string) $facture->id);
+        $facture->delete();
+
+        return response()->json(['data' => ['id' => $facture->id]]);
+    }
+
+    public function reglements(Client $client)
+    {
+        $reglements = $client->reglements()
+            ->with('facture')
+            ->orderByDesc('date_reglement')
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'data' => $reglements->map(fn (\App\Models\Reglement $r) => $this->presentReglement($r)),
+            'meta' => ['total' => $reglements->count()],
+        ]);
+    }
+
+    private function presentReglement(\App\Models\Reglement $r): array
+    {
+        return [
+            'id' => $r->id,
+            'reference' => $r->reference,
+            'facture_id' => $r->facture_id,
+            'facture_reference' => $r->facture?->reference,
+            'facture_montant_ttc_cts' => $r->facture?->montant_ttc_cts,
+            'mode_reglement' => $r->mode_reglement,
+            'montant_cts' => $r->montant_cts,
+            'details' => $r->details,
+            'mentions' => $r->mentions,
+            'date_reglement' => $r->date_reglement?->toDateString(),
+            'statut' => $r->statut,
+            'created_at' => $r->created_at,
+        ];
+    }
+
+    public function creerReglement(Client $client, Request $request)
+    {
+        $data = $request->validate([
+            'facture_id' => 'required|exists:factures,id',
+            'mode_reglement' => 'required|string|max:100',
+            'montant_cts' => 'required|integer|min:1',
+            'details' => 'nullable|string|max:2000',
+            'mentions' => 'nullable|string|max:2000',
+            'date_reglement' => 'required|date',
+            'statut' => 'nullable|in:ENCAISSE,EN_ATTENTE,REJETE',
+        ]);
+
+        $facture = $client->factures()->find($data['facture_id']);
+
+        if (! $facture) {
+            throw ValidationException::withMessages([
+                'facture_id' => 'La facture sélectionnée n’appartient pas à ce client.',
+            ]);
+        }
+
+        $refs = app(\App\Services\ReferenceService::class);
+
+        $reglement = \App\Models\Reglement::create([
+            'organisation_id' => $request->user()->organisation_id,
+            'client_id' => $client->id,
+            'facture_id' => $facture->id,
+            'reference' => $refs->reglement(),
+            'mode_reglement' => $data['mode_reglement'],
+            'montant_cts' => $data['montant_cts'],
+            'details' => $data['details'] ?? null,
+            'mentions' => $data['mentions'] ?? null,
+            'date_reglement' => $data['date_reglement'],
+            'statut' => $data['statut'] ?? 'ENCAISSE',
+        ]);
+
+        $this->majStatutFacture($facture, $data['date_reglement']);
+
+        $this->audit->log('reglement.cree', 'reglement', (string) $reglement->id);
+
+        return response()->json(['data' => $this->presentReglement($reglement->load('facture'))], 201);
+    }
+
+    public function supprimerReglement(\App\Models\Reglement $reglement)
+    {
+        $facture = $reglement->facture;
+        $this->audit->log('reglement.supprime', 'reglement', (string) $reglement->id);
+        $reglement->delete();
+
+        if ($facture) {
+            $this->majStatutFacture($facture, null);
+        }
+
+        return response()->json(['data' => ['id' => $reglement->id]]);
+    }
+
+    private function majStatutFacture(\App\Models\Facture $facture, ?string $dateReglement): void
+    {
+        $totalEncaisse = (int) $facture->reglements()
+            ->where('statut', 'ENCAISSE')
+            ->sum('montant_cts');
+
+        if ($facture->montant_ttc_cts > 0 && $totalEncaisse >= $facture->montant_ttc_cts) {
+            $facture->statut = 'PAYEE';
+            $facture->date_encaissee = $facture->date_encaissee
+                ?? ($dateReglement ? \Illuminate\Support\Carbon::parse($dateReglement) : now());
+        } else {
+            if ($facture->statut === 'PAYEE') {
+                $facture->statut = 'EMISE';
+                $facture->date_encaissee = null;
+            }
+        }
+
+        $facture->save();
+    }
+
     public function creerSinistre(Client $client, Request $request)
     {
         $data = $request->validate([

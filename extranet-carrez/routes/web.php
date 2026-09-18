@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\BibliothequeController;
 use App\Http\Controllers\Api\ConversationController;
 use App\Http\Controllers\Api\FournisseurController;
 use App\Http\Controllers\Api\MessagerieController;
@@ -16,6 +17,11 @@ Route::get('/', fn () => view('app'));
 // (CA-51 — l'URL rejouée après expiration est refusée par Laravel)
 Route::get('/documents/{document}/secure', [DocumentController::class, 'telechargement'])
     ->name('documents.telechargement')
+    ->middleware('signed');
+
+// Téléchargement d'un document de la bibliothèque via URL signée
+Route::get('/bibliotheque/{document}/secure', [BibliothequeController::class, 'telechargement'])
+    ->name('bibliotheque.telechargement')
     ->middleware('signed');
 
 // Pièce jointe d'un message via URL signée à durée de vie courte (RG-51)

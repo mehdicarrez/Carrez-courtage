@@ -199,13 +199,12 @@ export default function Layout() {
                 {/* Ligne 1 : logo + icônes */}
                 <div className="h-16 max-w-full px-4 xl:px-10 flex items-center gap-4">
                     <NavLink to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-black text-sm shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform">
-                            CC
-                        </div>
-                        <div className="leading-tight hidden sm:block">
-                            <div className="font-extrabold text-slate-900 tracking-tight">Carrez Co</div>
-                            <div className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">Courtage</div>
-                        </div>
+                        <img
+                            src="/images/logo-carrez.png"
+                            alt="Logo"
+                            className="w-40 h-15 object-contain"
+                        />
+                        
                     </NavLink>
 
                     {/* Icônes à droite */}
