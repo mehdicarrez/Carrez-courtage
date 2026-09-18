@@ -105,3 +105,102 @@
 body {
     background-color: #ebf1fa;
 }
+
+.field-line {
+    width: 100%;
+    border: none;
+    border-bottom: 1.5px solid #cbd5e1;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.5rem 0.125rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #0f172a;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    outline: none;
+}
+.field-line::placeholder {
+    color: #94a3b8;
+}
+.field-line:focus {
+    border-bottom-color: #1d4ed8;
+    box-shadow: 0 2px 0 0 rgb(29 78 216 / 0.4);
+}
+.field-line:disabled {
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+.field-line-error {
+    border-bottom-color: #f87171 !important;
+}
+.field-line-error:focus {
+    border-bottom-color: #dc2626 !important;
+    box-shadow: 0 2px 0 0 rgb(220 38 38 / 0.4);
+}
+
+@keyframes cardSheen {
+    0% { transform: translateX(-140%) skewX(-12deg); }
+    55%, 100% { transform: translateX(220%) skewX(-12deg); }
+}
+.card-sheen {
+    position: relative;
+    overflow: hidden;
+}
+.card-sheen::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.55), transparent);
+    transform: translateX(-140%) skewX(-12deg);
+    pointer-events: none;
+}
+.card-sheen:hover::after {
+    animation: cardSheen 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.anim-float {
+    animation: floaty 5.5s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+    0% { box-shadow: 0 0 0 0 rgb(29 78 216 / 0.35); }
+    70% { box-shadow: 0 0 0 7px rgb(29 78 216 / 0); }
+    100% { box-shadow: 0 0 0 0 rgb(29 78 216 / 0); }
+}
+.anim-ring {
+    animation: ringPulse 2.4s ease-out infinite;
+}
+
+@keyframes tiltIn {
+    from { opacity: 0; transform: rotate(-4deg) translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: rotate(0) translateY(0) scale(1); }
+}
+.anim-tilt {
+    animation: tiltIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes barGlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+.anim-bar {
+    background-size: 200% 200%;
+    animation: barGlow 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .anim-float,
+    .anim-ring,
+    .anim-bar,
+    .card-sheen::after {
+        animation: none !important;
+    }
+}

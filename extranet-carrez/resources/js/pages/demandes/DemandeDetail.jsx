@@ -189,20 +189,30 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
     const nbDevis = devis.length;
     const nbPartenaires = new Set(devis.map((d) => d.propose_par?.organisation_id)).size;
 
+    const refPieces = (() => {
+        const r = demande.reference || '';
+        const i = r.indexOf('-');
+        return i > 0 ? [r.slice(0, i), r.slice(i + 1)] : [r];
+    })();
+
     return (
         <div>
             {/* Back + header */}
-            <button onClick={() => navigate(estCabinet ? '/demandes' : '/espace-partenaire/demandes')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
+            <button onClick={() => navigate(estCabinet ? '/demandes' : '/espace-partenaire/demandes')} className="anim-in flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
                 Retour aux demandes
             </button>
 
-            <div className="flex items-start justify-between mb-6">
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-6 shadow-sm">
+                <div className="flex items-start justify-between gap-5">
                 <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-2xl font-bold text-slate-900">{demande.reference}</h1>
+                    <div className="flex items-center gap-3 mb-1.5">
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>{refPieces[0]}</span>
+                            {refPieces[1] && <>{' '}<span style={{ color: 'oklch(0.39 0.21 263.59)' }}>{refPieces[1]}</span></>}
+                        </h1>
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${sc.bg} ${sc.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot} anim-ring`}></span>
                             {sc.label}
                         </span>
                         {nbDevis > 0 && (
@@ -219,6 +229,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                         {demande.age_jours > 0 && <><span>·</span><span>{demande.age_jours}j</span></>}
                     </div>
                 </div>
+                <div className="flex items-center gap-2 shrink-0">
                 {estCabinet && demande.statut === 'BROUILLON' && (
                     <button onClick={() => { setError(''); setModifierOpen(true); }}
                         className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
@@ -233,6 +244,8 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                         Saisir un devis
                     </button>
                 )}
+                </div>
+                </div>
             </div>
 
             {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm flex items-center gap-2">
@@ -242,12 +255,12 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
             {/* Actions transition */}
             {estCabinet && demande.transitions?.length > 0 && (
-                <div className="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
+                <div className="anim-in bg-white border border-slate-100 rounded-2xl p-4 mb-6 shadow-sm">
                     <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Actions disponibles</div>
                     <div className="flex flex-wrap gap-2">
                         {demande.transitions.map((t) => (
                             <button key={t.action} onClick={() => setModal(t)}
-                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow ${
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium shadow-sm ${
                                     t.cible === 'NON_ELIGIBLE' ? 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200' :
                                     t.cible === 'SANS_SUITE' ? 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200' :
                                     t.cible === 'PIECES_MANQUANTES' ? 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200' :
@@ -276,7 +289,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
             {/* Devis */}
             {devis.length === 0 ? (
-                    <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+                    <div className="anim-in bg-white border border-slate-200 rounded-xl p-12 text-center">
                         <svg className="w-12 h-12 text-slate-300 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                         </svg>
@@ -289,7 +302,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                 ) : (
                     <div>
                         {/* Barre horizontale de devis */}
-                        <div className="flex gap-2 overflow-x-auto pb-2 border-b border-slate-200 mb-4">
+                        <div className="anim-in flex gap-2 overflow-x-auto pb-2 border-b border-slate-100 mb-4">
                             {estCabinet && (
                                 <button type="button" onClick={() => { setVueProjet(true); setDevisExpanded(null); }}
                                     className={`flex-shrink-0 inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors ${
@@ -310,13 +323,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 ? 'border-blue-600 bg-blue-600 text-white shadow-sm'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:text-blue-700'
                                         }`}>
-                                        <span className={`w-2 h-2 rounded-full ${
-                                            d.statut === 'DEVIS_SIGNE' ? 'bg-teal-400' :
-                                            d.statut === 'ACCEPTE' ? 'bg-emerald-400' :
-                                            d.statut === 'ENVOYE' ? 'bg-blue-400' :
-                                            d.statut === 'EXPIRE' ? 'bg-red-400' :
-                                           'bg-slate-300'
-                                        }`}></span>
                                          {d.propose_par.logo_url ? (
                                                     <img
                                                         src={d.propose_par.logo_url}
@@ -333,7 +339,6 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                             || '??'}
                                                     </div>
                                                 )}
-                                                <p>{d.propose_par.nom}</p>
                                     </button>
                                 );
                             })}
@@ -348,13 +353,14 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
                         {/* Projet Co-Courtage */}
                         {vueProjet && (
-                            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                            <div className="anim-in relative overflow-hidden bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                <span className="anim-bar absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
 
                                 {/* 3 blocs horizontaux */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
                                     {/* Bloc 1 — Fournisseur */}
-                                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <h3 className="text-sm font-semibold text-slate-900 mb-1">Fournisseur</h3>
                                         <div className="text-[10px] uppercase text-slate-500 font-medium mb-3">Tous fournisseurs</div>
                                         <p className="text-sm text-slate-600 leading-relaxed">
@@ -363,7 +369,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
 
                                     {/* Bloc 2 — Détail du demande */}
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Détail du demande</div>
                                         <div className="space-y-3">
                                             {[
@@ -371,7 +377,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 ['Service', demande.branche || '—'],
                                                 ['Produit', ((demande.donnees_risque?.produit_ids) || []).map((pid) => produitsMap[pid]).filter(Boolean).join(', ') || '—'],
                                             ].map(([k, v]) => (
-                                                <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div key={k} className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
                                                     <div className="text-sm font-semibold text-slate-900 mt-0.5">{v || '—'}</div>
                                                 </div>
@@ -380,14 +386,14 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
 
                                     {/* Bloc 3 — Document */}
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Document</div>
                                         {!demande.documents || demande.documents.length === 0 ? (
                                             <div className="text-sm text-slate-400 text-center py-4">Aucun document.</div>
                                         ) : (
                                             <div className="space-y-3">
                                                 {demande.documents.map((doc) => (
-                                                    <div key={doc.id} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div key={doc.id} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                         <div className="flex items-start justify-between gap-2">
                                                             <div className="min-w-0">
                                                                 <div className="text-xs font-semibold text-slate-900 truncate">
@@ -416,7 +422,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
 
                                     {/* Bloc 4 — Statut */}
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Statut</div>
                                         <div className="space-y-3">
                                             {[
@@ -428,7 +434,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 ['Devis reçu', `${devis.length} devis`],
                                                 ['Devis présélectionné', devis.find((d) => d.statut === 'DEVIS_SIGNE')?.propose_par?.nom || devis.find((d) => d.statut === 'ACCEPTE')?.propose_par?.nom || '—'],
                                             ].map(([k, v]) => (
-                                                <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
+                                                <div key={k} className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
                                                     <div className="text-sm font-semibold text-slate-900 mt-0.5">{v || '—'}</div>
                                                 </div>
@@ -437,10 +443,10 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     </div>
 
                                     {/* Bloc 5 — Actions */}
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Actions</div>
                                         <div className="space-y-3">
-                                            <div className="bg-slate-50 rounded-lg p-3">
+                                            <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg p-3 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Afficher détail</div>
                                                 <p className="text-sm text-slate-600 leading-relaxed mt-1">
                                                     Affiche l'ensemble des détails de la demande avec possibilité d'impression.
@@ -451,7 +457,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     Afficher détail
                                                 </button>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg p-3">
+                                            <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg p-3 shadow-sm">
                                                 <label className="block text-[10px] uppercase text-slate-500 font-medium mb-1" htmlFor="precision">Ajouter précision</label>
                                                 <textarea id="precision" value={precision} onChange={(e) => setPrecision(e.target.value)}
                                                     rows="3" placeholder="Précisions complémentaires sur la demande..."
@@ -490,7 +496,8 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                             const d = devis.find((x) => x.id === (devisExpanded || devis[0]?.id)) || devis[0];
                             if (!d) return null;
                             return (
-                                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                                <div className="anim-in relative overflow-hidden bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                                    <span className="anim-bar absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
 
                                 {/* ========================================================= */}
                                 {/* 3 GRANDS BLOCS HORIZONTAUX                                */}
@@ -503,11 +510,11 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {/* ===================================================== */}
 
                                     {d.propose_par && (
-                                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 shadow-sm">
                                             <h3 className="text-sm font-semibold text-slate-900 mb-4">
                                                 Partenaire
                                             </h3>
-                                            {/* Logo + nom */}
+                                            {/* Logo uniquement */}
                                             <div className="flex items-center gap-3 mb-4">
 
                                                 {d.propose_par.logo_url ? (
@@ -527,22 +534,12 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     </div>
                                                 )}
 
-                                                <div>
-                                                    <div className="text-[10px] uppercase text-slate-500 font-medium">
-                                                        Partenaire
-                                                    </div>
-
-                                                    <div className="text-sm font-semibold text-slate-900">
-                                                        {d.propose_par.nom || '—'}
-                                                    </div>
-                                                </div>
-
                                             </div>
 
                                             {/* Contenu vertical */}
                                             <div className="space-y-3">
 
-                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-white rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">
                                                         Raison sociale
                                                     </div>
@@ -551,7 +548,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-white rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">
                                                         Type
                                                     </div>
@@ -560,7 +557,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-white rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">
                                                         Forme juridique
                                                     </div>
@@ -569,7 +566,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     </div>
                                                 </div>
 
-                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-white rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">
                                                         SIREN
                                                     </div>
@@ -577,7 +574,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                         {d.propose_par.siren || '—'}
                                                     </div>
                                                 </div>
-                                                <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
+                                                <div className="bg-gradient-to-b from-slate-50 to-white rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                     <div className="text-[10px] uppercase text-slate-500 font-medium">
                                                         PAYS
                                                     </div>
@@ -634,35 +631,35 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
 
                                         {/* Informations financières — grille interne */}
                                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Prime HT</div>
                                                 <div className="text-lg font-bold text-slate-900 mt-1">{fmt(d.prime_ht_cts)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Taxes</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.taxes_cts)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Prime TTC</div>
                                                 <div className="text-lg font-bold text-slate-900 mt-1">{fmt(d.prime_ttc_cts)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Frais courtage</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.frais_courtage_cts)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Première échéance</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{fmt(d.premiere_echeance_cts)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Fractionnement</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{d.fractionnement || '—'}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Effet possible</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{d.date_effet_possible || '—'}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                            <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Valide jusqu'au</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-1">{d.date_validite || '—'}</div>
                                             </div>
@@ -710,20 +707,20 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {/* GRAND BLOC 3 — STATUT DU DEVIS                       */}
                                     {/* ===================================================== */}
 
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="text-sm font-semibold text-slate-900 mb-4">Statut</div>
                                         <div className="space-y-3">
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                            <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Statut du devis</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-0.5">
                                                     {d.statut === 'DEVIS_SIGNE' ? 'Devis signé' : d.statut}
                                                 </div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                            <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Devis envoyé le</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-0.5">{fmtDate(d.date_envoye)}</div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg px-3 py-2">
+                                            <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                                 <div className="text-[10px] uppercase text-slate-500 font-medium">Mis à jour le</div>
                                                 <div className="text-sm font-semibold text-slate-900 mt-0.5">{fmtDate(d.maj_le)}</div>
                                             </div>
@@ -735,7 +732,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     {/* GRAND BLOC 4 — DOCUMENTS DU DEVIS                   */}
                                     {/* ===================================================== */}
 
-                                    <div className="bg-white border border-slate-200 rounded-lg p-4">
+                                    <div className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="text-sm font-semibold text-slate-900">Documents</div>
                                             <span className="text-[10px] text-slate-400">{d.documents?.length || 0}</span>
@@ -748,7 +745,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                         ) : (
                                             <div className="space-y-3">
                                                 {d.documents.map((doc) => (
-                                                    <div key={doc.id} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                                                    <div key={doc.id} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 shadow-sm">
                                                         <div className="flex items-start justify-between gap-2">
                                                             <div className="min-w-0">
                                                                 <div className="text-xs font-semibold text-slate-900 truncate">
@@ -936,7 +933,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                     ['Prise en charge', fmtDate(demande.date_prise_en_charge)],
                                     ['Délai', `${demande.age_jours ?? 0} jour(s)`],
                                 ].map(([k, v]) => (
-                                    <div key={k} className="bg-slate-50 rounded-lg px-3 py-2">
+                                    <div key={k} className="bg-gradient-to-b from-slate-50 to-white border border-slate-100 rounded-lg px-3 py-2 shadow-sm">
                                         <div className="text-[10px] uppercase text-slate-500 font-medium">{k}</div>
                                         <div className="text-sm font-semibold text-slate-900 mt-0.5">{v || '—'}</div>
                                     </div>

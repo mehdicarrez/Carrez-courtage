@@ -5,35 +5,35 @@ import api from '../api';
 import { useAuth } from '../auth';
 
 function StatCard({ label, value, icon, accent, delay = 0 }) {
-    const accents = {
-        blue: 'bg-blue-200 border border-blue-300 text-blue-900',
-        red: 'bg-rose-200 border border-rose-300 text-rose-900',
-        indigo: 'bg-indigo-200 border border-indigo-300 text-indigo-900',
-        emerald: 'bg-emerald-200 border border-emerald-300 text-emerald-900',
-        amber: 'bg-amber-200 border border-amber-300 text-amber-900',
-        violet: 'bg-violet-200 border border-violet-300 text-violet-900',
-        slate: 'bg-slate-200 border border-slate-300 text-slate-900',
+    const iconGradients = {
+        blue: 'from-blue-500 to-indigo-600 shadow-blue-500/30',
+        red: 'from-rose-500 to-red-600 shadow-rose-500/30',
+        indigo: 'from-indigo-500 to-violet-600 shadow-indigo-500/30',
+        emerald: 'from-emerald-500 to-teal-600 shadow-emerald-500/30',
+        amber: 'from-amber-500 to-orange-600 shadow-amber-500/30',
+        violet: 'from-violet-500 to-purple-600 shadow-violet-500/30',
+        slate: 'from-slate-500 to-slate-700 shadow-slate-500/30',
     };
-
-    const iconAccents = {
-        blue: 'bg-blue-300 text-blue-800',
-        red: 'bg-rose-300 text-rose-800',
-        indigo: 'bg-indigo-300 text-indigo-800',
-        emerald: 'bg-emerald-300 text-emerald-800',
-        amber: 'bg-amber-300 text-amber-800',
-        violet: 'bg-violet-300 text-violet-800',
-        slate: 'bg-slate-300 text-slate-800',
+    const lineColors = {
+        blue: 'bg-blue-400',
+        red: 'bg-rose-400',
+        indigo: 'bg-indigo-400',
+        emerald: 'bg-emerald-400',
+        amber: 'bg-amber-400',
+        violet: 'bg-violet-400',
+        slate: 'bg-slate-400',
     };
     return (
         <div
-            className={`anim-in group rounded-2xl p-5 shadow-sm ${accents[accent] || accents.blue} transition-all duration-300 hover:-translate-y-1 hover:shadow-md`}
+            className="anim-in card-sheen group relative rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:shadow-slate-200/60"
             style={{ animationDelay: `${delay}s` }}
         >
+            <span className={`absolute top-0 left-0 right-0 h-1.5 ${lineColors[accent] || lineColors.blue}`} />
             <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider opacity-90">{label}</span>
-                <span className={`h-8 w-8 flex items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 ${iconAccents[accent] || iconAccents.blue}`}>{icon}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
+                <span className={`h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 ${iconGradients[accent] || iconGradients.blue}`}>{icon}</span>
             </div>
-            <div className="mt-3 text-3xl font-extrabold">{value}</div>
+            <div className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">{value}</div>
         </div>
     );
 }
@@ -46,7 +46,7 @@ const PanelCardTones = {
 
 function PanelCard({ title, icon, accent, tone = 'blue', badge, children, footerLink, footerLabel, empty }) {
     return (
-        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col transition-shadow duration-300 hover:shadow-md">
+        <div className="bg-white card-sheen rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col transition-shadow duration-300 hover:shadow-md">
             <div className={`flex items-center justify-between px-5 py-4 border-b-2 ${PanelCardTones[tone] || PanelCardTones.blue}`}>
                 <div className="flex items-center gap-3">
                     <span className={`h-9 w-9 flex items-center justify-center rounded-xl text-white ${accent}`}>{icon}</span>
@@ -220,7 +220,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                 type={opts.type || 'text'}
                 value={form[nom]}
                 onChange={setF(nom)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                className="field-line"
             />
         </div>
     );
@@ -231,7 +231,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                 {label}{opts.required && <span className="text-red-500"> *</span>}
             </label>
             <select value={form[nom]} onChange={setF(nom)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none">
+                className="field-line">
                 <option value="">Choisir...</option>
                 {options.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -294,7 +294,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
                             value={clientId}
                             onChange={(e) => selectClient(e.target.value)}
                             disabled={chargementClients}
-                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                            className="field-line"
                         >
                             <option value="">{chargementClients ? 'Chargement des clients...' : 'Sélectionner un client...'}</option>
                             {clients.map((c) => (
@@ -407,7 +407,7 @@ function ModalPersonalisation({ ouvert, produit, criteres, estimation, onClose, 
 
 function SimulationsPanel({ simulations }) {
     return (
-        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+        <div className="bg-white card-sheen rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
             <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
                 <h2 className="font-semibold text-blue-700">Simulations</h2>
             </div>
@@ -508,7 +508,7 @@ function MessagerieOnglet() {
                 type="text"
                 value={form[nom]}
                 onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
-                className={`w-full border rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700 ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                className={`field-line ${champErreur[nom] ? 'field-line-error' : ''}`}
                 placeholder={label}
             />
             {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
@@ -517,7 +517,7 @@ function MessagerieOnglet() {
 
     return (
         <div className="space-y-5">
-            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+            <div className="bg-white card-sheen rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
                 <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200 flex items-center justify-between gap-3">
                   <h2 className="font-semibold text-blue-700">Messagerie</h2>
                     <button
@@ -595,7 +595,7 @@ function MessagerieOnglet() {
                                     maxLength={255}
                                     rows={3}
                                     onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                                 <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
                             </div>
@@ -703,7 +703,7 @@ function ReseauSocialOnglet() {
                 type="text"
                 value={form[nom]}
                 onChange={(e) => setForm({ ...form, [nom]: e.target.value })}
-                className={`w-full border rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700 ${champErreur[nom] ? 'border-red-400 bg-red-50' : 'border-slate-300'}`}
+                className={`field-line ${champErreur[nom] ? 'field-line-error' : ''}`}
                 placeholder={label}
             />
             {champErreur[nom] && <p className="mt-1 text-xs text-red-600">{champErreur[nom]}</p>}
@@ -712,7 +712,7 @@ function ReseauSocialOnglet() {
 
     return (
         <div className="space-y-5">
-            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+            <div className="bg-white card-sheen rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
                 <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200 flex items-center justify-between gap-3">
                   <h2 className="font-semibold text-blue-700">Réseaux sociaux</h2>
                     <button
@@ -738,7 +738,7 @@ function ReseauSocialOnglet() {
                     ) : (
                         <div className="flex flex-wrap gap-3">
                             {reseaux.map((r) => (
-                                <div key={r.id} className="w-[100px] flex items-center justify-center p-3 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-shadow duration-300 hover:shadow-md">
+                                <div key={r.id} className="w-[100px] flex items-center justify-center p-3 rounded-2xl bg-white border border-slate-200/70 shadow-sm transition-shadow duration-300 hover:shadow-md">
                                     <div className="relative">
                                         {r.logo_url ? (
                                             <span className="h-16 w-16 rounded-2xl bg-white/70 backdrop-blur-sm border border-slate-100 shadow-md flex items-center justify-center overflow-hidden p-2.5">
@@ -792,7 +792,7 @@ function ReseauSocialOnglet() {
                                     maxLength={255}
                                     rows={3}
                                     onChange={(e) => setForm({ ...form, descriptif: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                                 <p className="mt-1 text-right text-xs text-slate-400">{255 - form.descriptif.length} caractères restants</p>
                             </div>
@@ -874,7 +874,7 @@ function OutilEstimation({ onSimulationSaved }) {
                 value={form[name]}
                 onChange={update(name)}
                 {...(extra || {})}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
+                className="field-line"
             />
         </div>
     );
@@ -885,7 +885,7 @@ function OutilEstimation({ onSimulationSaved }) {
             <select
                 value={form[name]}
                 onChange={update(name)}
-                className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
+                className="field-line"
             >
                 {placeholder && <option value="">Sélectionner...</option>}
                 {options.map((o) => (
@@ -916,109 +916,115 @@ function OutilEstimation({ onSimulationSaved }) {
     );
 
     return (
-        <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
+        <div className="bg-white card-sheen rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden transition-shadow duration-300 hover:shadow-md">
             <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
     <h2 className="font-semibold text-blue-700">Simulateur de primes</h2>
 </div>
-            <form className="p-4 space-y-3" onSubmit={estimer}>
-                <div>
-                    <label className="block text-sm font-medium text-blue-800 mb-1">Produit</label>
-                    <select
-                        value={form.produit}
-                        onChange={update('produit')}
-                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-blue-700"
-                    >
-                        {produits.map((p) => (
-                            <option key={p} value={p}>{p}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {(form.produit === 'AUTO' || form.produit === 'Moto') && (
-                    <>
-                        {champSelect('Marque', 'marque', marques)}
-                        {form.produit === 'AUTO'
-                            ? champ('Puissance', 'puissance')
-                            : champSelect('Cylindrée', 'cylindree', ['50 cc', '125 cc', '250 cc', '500 cc', 'Plus de 600 cc'])}
-                        {champ('Âge du véhicule', 'age_vehicule')}
-                    </>
-                )}
-
-                {form.produit === 'AUTO' && (
-                    <>
-                        {champSelect('Usage', 'usage', ['Privé', 'Domicile-travail', 'Professionnel', 'Tous usages'])}
-                        {champ('Nb années de permis', 'nb_annees_permis', 'number', { min: 0 })}
-                        {champ('Nb de sinistres', 'nb_sinistres', 'number', { min: 0 })}
-                        {champSelect('Vol / LNC / RC100', 'vol_lnc_rc', ['Vol', 'LNC', 'RC100'], false)}
-                    </>
-                )}
-
-                {form.produit === 'Moto' && (
-                    <>
-                        {champ('Nb années de permis', 'nb_annees_permis', 'number', { min: 0 })}
-                        {champ('Nb de sinistres', 'nb_sinistres', 'number', { min: 0 })}
-                    </>
-                )}
-
-                {form.produit === 'Immobilier' && (
-                    <>
-                        {champSelect('Type de bien', 'type_bien', ['Maison', 'Appartement'])}
-                        {champ('Superficie (m²)', 'superficie', 'number', { min: 0 })}
-                        {champ('Année de construction', 'annee_construction', 'number', { min: 1900, max: 2100 })}
-                        {champ('Valeur du bien (€)', 'valeur_bien', 'number', { min: 0 })}
-                        {champSelect('Assurance prêt', 'assurance_pret', ['Oui', 'Non'], false)}
-                    </>
-                )}
-
-                {form.produit === 'Travaux' && (
-                    <>
-                        {champSelect('Type de travaux', 'type_travaux', ['Construction', 'Rénovation', 'Extension', 'Autre'])}
-                        {champ('Durée prévue (mois)', 'duree_travaux', 'number', { min: 1 })}
-                        {champ('Montant des travaux (€)', 'montant_travaux', 'number', { min: 0 })}
-                        {champ("Nombre d'employés", 'nb_employes', 'number', { min: 0 })}
-                    </>
-                )}
-
-                {champ('CRM (de 0.5 à 3.5)', 'crm', 'number', { min: 0.5, max: 3.5, step: 0.1 })}
-
-                {blocGarantie}
-
-                <button
-                    type="submit"
-                    disabled={calculEnCours}
-                    className="w-full py-2.5 btn-primary"
-                >
-                    {calculEnCours ? 'Calcul...' : 'Estimer'}
-                </button>
-
-                {erreurCalc && <div className="bg-red-50 text-red-700 p-3 rounded text-sm">{erreurCalc}</div>}
-
-                {resultat && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                            Estimation indicative {resultat.produit}
-                        </div>
-                        <div className="mt-2 flex items-baseline justify-between">
-                            <span className="text-sm text-slate-600">Prime annuelle</span>
-                            <span className="text-lg font-extrabold text-emerald-700">
-                                {Number(resultat.prime_min).toFixed(2)} € – {Number(resultat.prime_max).toFixed(2)} €
-                            </span>
-                        </div>
-                        <div className="flex items-baseline justify-between">
-                            <span className="text-sm text-slate-600">Prime mensuelle</span>
-                            <span className="font-semibold text-slate-700">
-                                {Number(resultat.prime_mensuelle_min).toFixed(2)} € – {Number(resultat.prime_mensuelle_max).toFixed(2)} €
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setCustomOpen(true)}
-                            className="mt-3 w-full py-2 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium hover:bg-blue-50 transition"
+            <form className="p-4" onSubmit={estimer}>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div>
+                        <label className="block text-sm font-medium text-blue-800 mb-1">Produit</label>
+                        <select
+                            value={form.produit}
+                            onChange={update('produit')}
+                            className="field-line"
                         >
-                            Personnaliser la simulation
+                            {produits.map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {(form.produit === 'AUTO' || form.produit === 'Moto') && (
+                        <>
+                            {champSelect('Marque', 'marque', marques)}
+                            {form.produit === 'AUTO'
+                                ? champ('Puissance', 'puissance')
+                                : champSelect('Cylindrée', 'cylindree', ['50 cc', '125 cc', '250 cc', '500 cc', 'Plus de 600 cc'])}
+                            {champ('Âge du véhicule', 'age_vehicule')}
+                        </>
+                    )}
+
+                    {form.produit === 'AUTO' && (
+                        <>
+                            {champSelect('Usage', 'usage', ['Privé', 'Domicile-travail', 'Professionnel', 'Tous usages'])}
+                            {champ('Nb années de permis', 'nb_annees_permis', 'number', { min: 0 })}
+                            {champ('Nb de sinistres', 'nb_sinistres', 'number', { min: 0 })}
+                            {champSelect('Vol / LNC / RC100', 'vol_lnc_rc', ['Vol', 'LNC', 'RC100'], false)}
+                        </>
+                    )}
+
+                    {form.produit === 'Moto' && (
+                        <>
+                            {champ('Nb années de permis', 'nb_annees_permis', 'number', { min: 0 })}
+                            {champ('Nb de sinistres', 'nb_sinistres', 'number', { min: 0 })}
+                        </>
+                    )}
+
+                    {form.produit === 'Immobilier' && (
+                        <>
+                            {champSelect('Type de bien', 'type_bien', ['Maison', 'Appartement'])}
+                            {champ('Superficie (m²)', 'superficie', 'number', { min: 0 })}
+                            {champ('Année de construction', 'annee_construction', 'number', { min: 1900, max: 2100 })}
+                            {champ('Valeur du bien (€)', 'valeur_bien', 'number', { min: 0 })}
+                            {champSelect('Assurance prêt', 'assurance_pret', ['Oui', 'Non'], false)}
+                        </>
+                    )}
+
+                    {form.produit === 'Travaux' && (
+                        <>
+                            {champSelect('Type de travaux', 'type_travaux', ['Construction', 'Rénovation', 'Extension', 'Autre'])}
+                            {champ('Durée prévue (mois)', 'duree_travaux', 'number', { min: 1 })}
+                            {champ('Montant des travaux (€)', 'montant_travaux', 'number', { min: 0 })}
+                            {champ("Nombre d'employés", 'nb_employes', 'number', { min: 0 })}
+                        </>
+                    )}
+
+                    <div className="col-span-2">
+                        {champ('CRM (de 0.5 à 3.5)', 'crm', 'number', { min: 0.5, max: 3.5, step: 0.1 })}
+                    </div>
+
+                    <div className="col-span-2">{blocGarantie}</div>
+
+                    <div className="col-span-2">
+                        <button
+                            type="submit"
+                            disabled={calculEnCours}
+                            className="w-full py-2.5 btn-primary"
+                        >
+                            {calculEnCours ? 'Calcul...' : 'Estimer'}
                         </button>
                     </div>
-                )}
+
+                    {erreurCalc && <div className="col-span-2 bg-red-50 text-red-700 p-3 rounded text-sm">{erreurCalc}</div>}
+
+                    {resultat && (
+                        <div className="col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                            <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                                Estimation indicative {resultat.produit}
+                            </div>
+                            <div className="mt-2 flex items-baseline justify-between">
+                                <span className="text-sm text-slate-600">Prime annuelle</span>
+                                <span className="text-lg font-extrabold text-emerald-700">
+                                    {Number(resultat.prime_min).toFixed(2)} € – {Number(resultat.prime_max).toFixed(2)} €
+                                </span>
+                            </div>
+                            <div className="flex items-baseline justify-between">
+                                <span className="text-sm text-slate-600">Prime mensuelle</span>
+                                <span className="font-semibold text-slate-700">
+                                    {Number(resultat.prime_mensuelle_min).toFixed(2)} € – {Number(resultat.prime_mensuelle_max).toFixed(2)} €
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setCustomOpen(true)}
+                                className="mt-3 w-full py-2 rounded-lg border border-blue-600 text-blue-600 text-sm font-medium hover:bg-blue-50 transition"
+                            >
+                                Personnaliser la simulation
+                            </button>
+                        </div>
+                    )}
+                </div>
             </form>
 
             <ModalPersonalisation
@@ -1286,11 +1292,11 @@ export default function Dashboard() {
     return (
         <div>
             {/* En-tête */}
-                <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-8 shadow-sm">
+                <div className="anim-in card-sheen relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-8 shadow-sm">
                 <div className="relative flex flex-wrap items-center justify-between gap-5">
                     <div>
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 border border-blue-100 text-blue-600 text-[11px] font-semibold uppercase tracking-wider mb-3 shadow-sm">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 anim-ring" />
                             Extranet partenaires
                         </span>
                         <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -1408,7 +1414,7 @@ export default function Dashboard() {
                                     {msgFour && <div className="bg-amber-50 text-amber-700 p-3 rounded text-sm">{msgFour}</div>}
 
                                     {/* Partenaires */}
-                                    <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                                    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
                                         <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
     <h2 className="font-semibold text-blue-700">Partenaires</h2>
 </div>
@@ -1416,7 +1422,7 @@ export default function Dashboard() {
                                             {partenairesAccueil.map((p, i) => {
                                                 const url = buildUrl(p.url_assurance);
                                                 return (
-                                                    <div key={p.id} className="anim-in w-[100px] flex items-center justify-center p-2 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
+                                                    <div key={p.id} className="anim-in w-[100px] flex items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
                                                         {url ? (
                                                             <a href={url} target="_blank" rel="noreferrer" title={p.url_assurance} className="flex items-center justify-center w-full">
                                                                 <LogoFournisseur f={p} />
@@ -1434,7 +1440,7 @@ export default function Dashboard() {
                                     </div>
 
                                     {/* Fournisseurs */}
-                                    <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex-1 flex flex-col">
+                                    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex-1 flex flex-col">
                                         <div className="px-5 py-4 bg-blue-50 border-b-2 border-slate-200">
     <h2 className="font-semibold text-blue-700">Fournisseurs</h2>
 </div>
@@ -1442,7 +1448,7 @@ export default function Dashboard() {
                                             {fournisseursFiltres.map((f, i) => {
                                             const url = buildUrl(f.url_assurance);
                                             return (
-                                                <div key={f.id} className="anim-in relative w-[100px] flex items-center justify-center p-2 rounded-2xl bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
+                                                <div key={f.id} className="anim-in relative w-[100px] flex items-center justify-center p-2 rounded-2xl bg-white border border-slate-200/70 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5" style={{ animationDelay: `${0.18 + i * 0.05}s` }}>
                                                         <button
                                                             onClick={() => openPlus(f)}
                                                             title={f.devenir_partenaire ? 'Désactiver le partenaire' : 'Devenir partenaire'}
@@ -1664,7 +1670,7 @@ export default function Dashboard() {
                                             value={toggleEmail}
                                             onChange={(e) => setToggleEmail(e.target.value)}
                                             placeholder="E-mail du partenaire"
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                            className="field-line"
                                         />
                                     </div>
                                     <div>
@@ -1676,7 +1682,7 @@ export default function Dashboard() {
                                             value={togglePasse}
                                             onChange={(e) => setTogglePasse(e.target.value)}
                                             placeholder="Minimum 8 caractères"
-                                            className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                            className="field-line"
                                         />
                                     </div>
                                 </div>
@@ -1728,7 +1734,7 @@ export default function Dashboard() {
                                     value={form2.partenaire}
                                     onChange={(e) => setForm2({ ...form2, partenaire: e.target.value })}
                                     placeholder="Nom du partenaire"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1737,7 +1743,7 @@ export default function Dashboard() {
                                     <input
                                         value={form2.telephone}
                                         onChange={(e) => setForm2({ ...form2, telephone: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                                 <div>
@@ -1746,7 +1752,7 @@ export default function Dashboard() {
                                         type="email"
                                         value={form2.email}
                                         onChange={(e) => setForm2({ ...form2, email: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                                 <div>
@@ -1758,7 +1764,7 @@ export default function Dashboard() {
                                         value={form2.mot_de_passe}
                                         onChange={(e) => setForm2({ ...form2, mot_de_passe: e.target.value })}
                                         placeholder="Minimum 8 caractères"
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                                 <div>
@@ -1768,7 +1774,7 @@ export default function Dashboard() {
                                         min="0"
                                         value={form2.contrats}
                                         onChange={(e) => setForm2({ ...form2, contrats: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                                 <div>
@@ -1779,7 +1785,7 @@ export default function Dashboard() {
                                         step="0.01"
                                         value={form2.montant_primes}
                                         onChange={(e) => setForm2({ ...form2, montant_primes: e.target.value })}
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                             </div>
@@ -1789,7 +1795,7 @@ export default function Dashboard() {
                                     type="date"
                                     value={form2.dernier_contrat}
                                     onChange={(e) => setForm2({ ...form2, dernier_contrat: e.target.value })}
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                             </div>
                             <div>
@@ -1806,7 +1812,7 @@ export default function Dashboard() {
                                     value={form2.nom_document}
                                     onChange={(e) => setForm2({ ...form2, nom_document: e.target.value })}
                                     placeholder="Nom du document (optionnel)"
-                                    className="mt-2 w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="mt-2 field-line"
                                 />
                             </div>
                             <div className="flex justify-end gap-3 pt-2">
@@ -1858,7 +1864,7 @@ export default function Dashboard() {
                                     value={formAjoutFour.service}
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, service: e.target.value })}
                                     placeholder="Ex : Compagnie, Mutuelle, Grossiste..."
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                             </div>
                             <div>
@@ -1869,7 +1875,7 @@ export default function Dashboard() {
                                     value={formAjoutFour.nom}
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, nom: e.target.value })}
                                     placeholder="Nom du fournisseur"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                             </div>
                             <div>
@@ -1879,7 +1885,7 @@ export default function Dashboard() {
                                     onChange={(e) => setFormAjoutFour({ ...formAjoutFour, information: e.target.value })}
                                     rows={3}
                                     placeholder="Description du fournisseur"
-                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                    className="field-line"
                                 />
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1889,7 +1895,7 @@ export default function Dashboard() {
                                         value={formAjoutFour.type_assurance}
                                         onChange={(e) => setFormAjoutFour({ ...formAjoutFour, type_assurance: e.target.value })}
                                         placeholder="Ex : Assurances générales, prévoyance, santé..."
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                                 <div>
@@ -1898,7 +1904,7 @@ export default function Dashboard() {
                                         value={formAjoutFour.url_assurance}
                                         onChange={(e) => setFormAjoutFour({ ...formAjoutFour, url_assurance: e.target.value })}
                                         placeholder="Ex : https://www.axa.com"
-                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm transition-colors focus:border-blue-700 focus:ring-2 focus:ring-blue-700/25 focus:outline-none"
+                                        className="field-line"
                                     />
                                 </div>
                             </div>

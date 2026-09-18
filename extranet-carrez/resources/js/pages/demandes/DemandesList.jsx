@@ -542,14 +542,24 @@ export default function DemandesList() {
     return (
         <div>
             {/* En-tête */}
-            <div className="mb-5">
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-5 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <div className="flex items-center gap-3">
 
                         <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent tracking-tight">
-                                {sansGestionnaire ? 'File d\'attribution' : 'Demandes de tarification'}
+                            <h1 className="text-2xl font-bold tracking-tight">
+                                {sansGestionnaire ? (
+                                    <>
+                                        <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>File</span>{' '}
+                                        <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>d'attribution</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>Demandes</span>{' '}
+                                        <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>de tarification</span>
+                                    </>
+                                )}
                             </h1>
 
                             <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
