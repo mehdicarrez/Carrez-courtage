@@ -57,9 +57,11 @@ export default function ContratsList() {
     const [produits, setProduits] = useState([]);
     const [produitId, setProduitId] = useState('');
     const [saving, setSaving] = useState(false);
+    const [page, setPage] = useState(1);
 
     const charger = (souscription) => {
         setLoading(true);
+        setPage(1);
         api.get('/contrats', { params: souscription ? { en_souscription: 1 } : {} })
             .then((res) => setContrats(res.data.data))
             .catch(() => setError('Erreur de chargement.'))
@@ -76,6 +78,10 @@ export default function ContratsList() {
         setEnSouscription(next);
         charger(next);
     };
+
+    const perPage = 10;
+    const totalPages = Math.max(1, Math.ceil(contrats.length / perPage));
+    const pageContrats = contrats.slice((page - 1) * perPage, page * perPage);
 
     const setF = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -161,30 +167,43 @@ export default function ContratsList() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
-                <h1 className="text-xl font-bold text-slate-900">Mes contrats</h1>
-                <div className="flex items-center gap-2">
-                    {estCabinet && (
-                        <button
-                            onClick={toggleSouscription}
-                            className={`text-sm px-3 py-1.5 rounded border ${
-                                enSouscription
-                                    ? 'bg-blue-700 border-blue-700 text-white'
-                                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
-                            }`}
-                        >
-                            En souscription
-                        </button>
-                    )}
-                    {estCabinet && (
-                        <button
-                            onClick={openCreate}
-                            className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors font-medium"
-                        >
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Ajouter un contrat
-                        </button>
-                    )}
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 mb-5 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>Mes</span>{' '}
+                            <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>contrats</span>
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5 text-deep-blue" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                            </svg>
+                            Suivi de vos contrats et de leurs échéances.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {estCabinet && (
+                            <button
+                                onClick={toggleSouscription}
+                                className={`text-sm px-3 py-1.5 rounded border transition-colors ${
+                                    enSouscription
+                                        ? 'bg-deep-blue border-deep-blue text-white'
+                                        : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                                }`}
+                            >
+                                En souscription
+                            </button>
+                        )}
+                        {estCabinet && (
+                            <button
+                                onClick={openCreate}
+                                className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-deep-blue hover:bg-deep-blue-dark text-white shadow-sm shadow-deep-blue/20 hover:shadow-md hover:shadow-deep-blue/25 hover:-translate-y-0.5 transition-all duration-200"
+                            >
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Ajouter un contrat
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
             {error && <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
@@ -198,24 +217,24 @@ export default function ContratsList() {
             {!loading && contrats.length > 0 && (
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
-                                    <th className="px-4 py-3 font-semibold">ID</th>
-                                    <th className="px-4 py-3 font-semibold">Client</th>
-                                    <th className="px-4 py-3 font-semibold">Origine</th>
-                                    <th className="px-4 py-3 font-semibold">Produit</th>
-                                    <th className="px-4 py-3 font-semibold">Fournisseur</th>
-                                    <th className="px-4 py-3 font-semibold">État contrat</th>
-                                    <th className="px-4 py-3 font-semibold">N° contrat</th>
-                                    <th className="px-4 py-3 font-semibold text-right">Prime</th>
-                                    <th className="px-4 py-3 font-semibold">Échéance</th>
-                                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {contrats.map((c) => (
-                                    <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
+                                <th className="px-4 py-3 font-semibold">ID</th>
+                                <th className="px-4 py-3 font-semibold">Client</th>
+                                <th className="px-4 py-3 font-semibold">Origine</th>
+                                <th className="px-4 py-3 font-semibold">Produit</th>
+                                <th className="px-4 py-3 font-semibold">Fournisseur</th>
+                                <th className="px-4 py-3 font-semibold">État contrat</th>
+                                <th className="px-4 py-3 font-semibold">N° contrat</th>
+                                <th className="px-4 py-3 font-semibold text-right">Prime</th>
+                                <th className="px-4 py-3 font-semibold">Échéance</th>
+                                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {pageContrats.map((c) => (
+                                <tr key={c.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
                                         <td className="px-4 py-3 font-mono text-xs text-slate-400" title={c.id}>
                                             {c.id?.slice(0, 8)}
                                         </td>
@@ -234,7 +253,7 @@ export default function ContratsList() {
                                         <td className="px-4 py-3 text-right">
                                             <Link
                                                 to={`${base}/contrats/${c.id}`}
-                                                className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-100"
+                                                className="inline-flex items-center gap-1.5 text-xs font-medium text-deep-blue bg-deep-blue-soft border border-deep-blue/25 px-2.5 py-1 rounded-lg hover:bg-deep-blue-soft/80"
                                             >
                                                 Ouvrir
                                             </Link>
@@ -244,6 +263,55 @@ export default function ContratsList() {
                             </tbody>
                         </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                            <span className="text-xs text-slate-500">
+                                Page <span className="font-semibold text-slate-700">{page}</span> sur{' '}
+                                <span className="font-semibold text-slate-700">{totalPages}</span>
+                                {' · '}{contrats.length} contrat{contrats.length > 1 ? 's' : ''} au total
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                                    .reduce((acc, p, idx, arr) => {
+                                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                                        acc.push(p);
+                                        return acc;
+                                    }, [])
+                                    .map((p, i) =>
+                                        p === '...' ? (
+                                            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">…</span>
+                                        ) : (
+                                            <button
+                                                key={p}
+                                                onClick={() => setPage(p)}
+                                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
+                                                    p === page
+                                                        ? 'bg-deep-blue text-white shadow-sm scale-105'
+                                                        : 'text-slate-600 hover:bg-deep-blue-soft hover:text-deep-blue'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
+                                    )}
+                                <button
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -263,7 +331,7 @@ export default function ContratsList() {
                                     <label className="block">
                                         <span className="block text-sm font-medium text-slate-700 mb-1">Sélectionner un client <span className="text-red-500">*</span></span>
                                         <select value={clientId} onChange={onSelectClient}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                             <option value="">— Choisir un client —</option>
                                             {clients.map((c) => (
                                                 <option key={c.id} value={c.id}>{c.nom_complet}</option>
@@ -282,7 +350,7 @@ export default function ContratsList() {
                                             <label className="block">
                                                 <span className="block text-sm font-medium text-slate-700 mb-1">Type <span className="text-red-500">*</span></span>
                                                 <select value={form.type} onChange={setF('type')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                                     <option value="PHYSIQUE">Personne physique</option>
                                                     <option value="MORALE">Personne morale</option>
                                                 </select>
@@ -304,7 +372,7 @@ export default function ContratsList() {
                                                     <label className="block">
                                                         <span className="block text-sm font-medium text-slate-700 mb-1">Forme juridique de l'entreprise</span>
                                                         <select value={form.forme_juridique} onChange={setF('forme_juridique')}
-                                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                                             <option value="">Choisir...</option>
                                                             {FORMES_JURIDIQUES.map((f) => <option key={f} value={f}>{f}</option>)}
                                                         </select>
@@ -328,7 +396,7 @@ export default function ContratsList() {
                                             <label className="block">
                                                 <span className="block text-sm font-medium text-slate-700 mb-1">Préférence de contact</span>
                                                 <select value={form.preference_contact} onChange={setF('preference_contact')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                                     <option value="">Choisir...</option>
                                                     {PREFERENCES.map((p) => <option key={p} value={p}>{p}</option>)}
                                                 </select>
@@ -338,7 +406,7 @@ export default function ContratsList() {
                                             <label className="block">
                                                 <span className="block text-sm font-medium text-slate-700 mb-1">Origine <span className="text-red-500">*</span></span>
                                                 <select value={form.origine} onChange={setF('origine')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                                     <option value="">Choisir...</option>
                                                     {ORIGINES.map((o) => <option key={o} value={o}>{o.charAt(0) + o.slice(1).toLowerCase()}</option>)}
                                                 </select>
@@ -348,13 +416,13 @@ export default function ContratsList() {
                                             <label className="flex items-start gap-2 cursor-pointer">
                                                 <input type="checkbox" checked={!!form.rgpd_consentement}
                                                     onChange={(e) => setForm({ ...form, rgpd_consentement: e.target.checked })}
-                                                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                                 <span className="text-sm text-slate-700">Consentement RGPD</span>
                                             </label>
                                             <label className="flex items-start gap-2 cursor-pointer">
                                                 <input type="checkbox" checked={!!form.exclure_marketing}
                                                     onChange={(e) => setForm({ ...form, exclure_marketing: e.target.checked })}
-                                                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                                 <span className="text-sm text-slate-700">Exclure des opérations de communication et marketing</span>
                                             </label>
                                         </div>
@@ -365,7 +433,7 @@ export default function ContratsList() {
                                     <button type="button" onClick={() => { setEditor(false); setError(''); }}
                                         className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                                     <button type="button" onClick={valider} disabled={!clientId}
-                                        className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 transition-colors">
+                                        className="px-5 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
                                         Valider
                                     </button>
                                 </div>
@@ -378,7 +446,7 @@ export default function ContratsList() {
                                     <label className="block">
                                         <span className="block text-sm font-medium text-slate-700 mb-1">Assurance <span className="text-red-500">*</span></span>
                                         <select value={grossisteId} onChange={(e) => setGrossisteId(e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                             <option value="">— Choisir l'assurance —</option>
                                             {grossistes.map((g) => (
                                                 <option key={g.id} value={g.id}>{g.nom}</option>
@@ -390,7 +458,7 @@ export default function ContratsList() {
                                     <label className="block">
                                         <span className="block text-sm font-medium text-slate-700 mb-1">Produit</span>
                                         <select value={produitId} onChange={(e) => setProduitId(e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                                             <option value="">— Choisir le produit —</option>
                                             {produits.map((g) => (
                                                 <optgroup key={g.categorie} label={g.categorie}>
@@ -406,7 +474,7 @@ export default function ContratsList() {
                                     <button type="button" onClick={() => { setError(''); setEtape(1); }}
                                         className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Retour</button>
                                     <button type="button" onClick={creer} disabled={saving || !grossisteId}
-                                        className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 transition-colors">
+                                        className="px-5 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
                                         {saving ? 'Création...' : 'Créer le contrat'}
                                     </button>
                                 </div>
@@ -424,7 +492,7 @@ function Field({ label, value, onChange, type = 'text', required, small, placeho
         <label className="block">
             <span className="block text-sm font-medium text-slate-700 mb-1">{label}{required && <span className="text-red-500"> *</span>}</span>
             <input type={type} value={value} onChange={onChange} required={required} placeholder={placeholder} disabled={disabled}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${disabled ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-slate-300'}`} />
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue ${disabled ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-slate-300'}`} />
         </label>
     );
 }
