@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AuditController;
 use App\Http\Controllers\Api\BrancheController;
+use App\Http\Controllers\Api\BibliothequeController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\CommissionController;
 use App\Http\Controllers\Api\ContratController;
@@ -94,6 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/clients/{client}/sinistres', [ClientController::class, 'creerSinistre']);
     Route::post('/clients/{client}/factures', [ClientController::class, 'creerFacture']);
     Route::post('/factures/{facture}/lignes', [ClientController::class, 'ajouterLignes']);
+    Route::delete('/factures/{facture}', [ClientController::class, 'supprimerFacture']);
+
+    Route::get('/clients/{client}/reglements', [ClientController::class, 'reglements']);
+    Route::post('/clients/{client}/reglements', [ClientController::class, 'creerReglement']);
+    Route::delete('/reglements/{reglement}', [ClientController::class, 'supprimerReglement']);
 
     Route::get('/clients/{client}/taches', [ClientController::class, 'taches']);
     Route::get('/taches', [ClientController::class, 'toutesTaches']);
@@ -163,6 +169,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/documents/{document}/valider', [DocumentController::class, 'valider']);
     Route::post('/documents/{document}/refuser', [DocumentController::class, 'refuser']);
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy']); // RG-55
+
+    // Bibliothèque de modèles (organisation)
+    Route::get('/bibliotheque', [BibliothequeController::class, 'index']);
+    Route::post('/bibliotheque', [BibliothequeController::class, 'store']); // upload multipart
+    Route::get('/bibliotheque/{document}/url', [BibliothequeController::class, 'urlSignee']);
+    Route::delete('/bibliotheque/{document}', [BibliothequeController::class, 'destroy']);
 
     // Module 5 — Conversations
     Route::get('/conversations/{type}/{id}', [ConversationController::class, 'show']);

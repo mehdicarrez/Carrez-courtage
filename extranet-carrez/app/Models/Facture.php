@@ -35,6 +35,11 @@ class Facture extends Model
         return $this->hasMany(FactureLigne::class);
     }
 
+    public function reglements()
+    {
+        return $this->hasMany(Reglement::class);
+    }
+
     public function recalculeTotaux(): void
     {
         $ht = 0;
