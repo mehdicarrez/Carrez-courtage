@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, estPartenaire } from './auth';
 import Login from './pages/Login';
+import LandingPage from './LandingPage';
 import Dashboard from './pages/Dashboard';
 import DemandesList from './pages/demandes/DemandesList';
 import NouvelleDemande from './pages/demandes/NouvelleDemande';
@@ -35,7 +36,10 @@ function Protected({ children }) {
     const { user, loading } = useAuth();
     const location = useLocation();
     if (loading) return <div className="p-10 text-center">Chargement...</div>;
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) {
+        if (location.pathname === '/') return <LandingPage />;
+        return <Navigate to="/login" replace />;
+    }
     if (estPartenaire(user) && location.pathname === '/') return <Navigate to="/espace-partenaire" replace />;
     return children;
 }
@@ -52,6 +56,7 @@ function AppRoutes() {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Login />} />
             <Route
                 path="/"
                 element={
