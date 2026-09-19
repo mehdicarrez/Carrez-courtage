@@ -73,6 +73,41 @@
 .anim-pop {
     animation: animPop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+@keyframes leafCloseLeft {
+    from { transform: rotateY(0deg); }
+    to   { transform: rotateY(-84deg); }
+}
+@keyframes leafCloseRight {
+    from { transform: rotateY(0deg); }
+    to   { transform: rotateY(84deg); }
+}
+.book-leaf {
+    backface-visibility: hidden;
+}
+.book-leaf-close-left {
+    animation: leafCloseLeft 0.9s cubic-bezier(0.55, 0.06, 0.68, 0.19) both;
+    transform-origin: right center;
+}
+.book-leaf-close-right {
+    animation: leafCloseRight 0.9s cubic-bezier(0.55, 0.06, 0.68, 0.19) both;
+    transform-origin: left center;
+}
+@keyframes leafOpenLeft {
+    from { transform: rotateY(-84deg); }
+    to   { transform: rotateY(0deg); }
+}
+@keyframes leafOpenRight {
+    from { transform: rotateY(84deg); }
+    to   { transform: rotateY(0deg); }
+}
+.book-leaf-open-left {
+    animation: leafOpenLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: right center;
+}
+.book-leaf-open-right {
+    animation: leafOpenRight 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: left center;
+}
 .anim-blob {
     animation: softPulse 7s ease-in-out infinite;
 }
@@ -84,6 +119,12 @@
         animation: none;
     }
     .anim-pop {
+        animation: none;
+    }
+    .book-leaf-close-left,
+    .book-leaf-close-right,
+    .book-leaf-open-left,
+    .book-leaf-open-right {
         animation: none;
     }
     .btn-primary {
