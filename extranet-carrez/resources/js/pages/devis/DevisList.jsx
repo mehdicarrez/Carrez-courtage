@@ -31,6 +31,7 @@ export default function DevisList() {
     const [q, setQ] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
+    const totalPages = Math.max(1, Math.ceil(total / 25));
 
     const charger = (p = 1) => {
         setLoading(true);
@@ -58,14 +59,20 @@ export default function DevisList() {
 
     return (
         <div>
-            <div className="mb-5">
-                <h1 className="text-2xl font-bold text-slate-900">Devis</h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 mb-5 shadow-sm">
+                <h1 className="text-2xl font-bold tracking-tight">
+                    <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>Devis</span>{' '}
+                    <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>émis</span>
+                </h1>
+                <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-deep-blue" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
+                    </svg>
                     Liste de tous les devis émis sur les demandes.
                 </p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center text-sm shadow-sm">
+            <div className="bg-gradient-to-b from-slate-50 to-slate-50/60 border border-slate-200 rounded-xl p-3 mb-4 flex flex-wrap gap-2 items-center text-sm shadow-sm">
                 <form onSubmit={rechercher} className="relative flex-1 min-w-[200px]">
                     <svg className="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
@@ -74,11 +81,11 @@ export default function DevisList() {
                         value={q}
                         onChange={(e) => setQ(e.target.value)}
                         placeholder="Rechercher (référence, client, amont)..."
-                        className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue transition-shadow"
                     />
                 </form>
                 <select value={statut} onChange={(e) => setStatut(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-deep-blue">
                     <option value="">Tous les statuts</option>
                     {Object.entries(statutLabels).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
@@ -130,8 +137,8 @@ export default function DevisList() {
                                 {devis.map((d) => {
                                     const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
                                     return (
-                                        <tr key={d.id} className="hover:bg-slate-50/60 transition-colors">
-                                            <td className="px-4 py-3 font-semibold text-blue-700 whitespace-nowrap">
+                                        <tr key={d.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
+                                            <td className="px-4 py-3 font-semibold text-deep-blue whitespace-nowrap">
                                                 <Link to={`/demandes/${d.demande_id}`}>
                                                     {d.demande?.reference || '—'}
                                                 </Link>
@@ -161,7 +168,7 @@ export default function DevisList() {
                                                 <Link
                                                     to={`/demandes/${d.demande_id}`}
                                                     title="Voir la demande"
-                                                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors inline-flex"
+                                                    className="p-2 rounded-lg text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft transition-colors inline-flex"
                                                 >
                                                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" /><path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" /></svg>
                                                 </Link>
@@ -172,18 +179,51 @@ export default function DevisList() {
                             </tbody>
                         </table>
                     </div>
-                    {total > 25 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 text-sm text-slate-500">
-                            <span>{total} devis au total</span>
-                            <div className="flex gap-2">
-                                <button onClick={() => charger(page - 1)} disabled={page <= 1}
-                                    className="px-3 py-1 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40">
-                                    Précédent
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                            <span className="text-xs text-slate-500">
+                                Page <span className="font-semibold text-slate-700">{page}</span> sur{' '}
+                                <span className="font-semibold text-slate-700">{totalPages}</span>
+                                {' · '}{total} devis au total
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => charger(page - 1)}
+                                    disabled={page === 1}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
                                 </button>
-                                <span className="px-3 py-1">Page {page}</span>
-                                <button onClick={() => charger(page + 1)} disabled={devis.length < 25}
-                                    className="px-3 py-1 rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-40">
-                                    Suivant
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                                    .reduce((acc, p, idx, arr) => {
+                                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                                        acc.push(p);
+                                        return acc;
+                                    }, [])
+                                    .map((p, i) =>
+                                        p === '...' ? (
+                                            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">…</span>
+                                        ) : (
+                                            <button
+                                                key={p}
+                                                onClick={() => charger(p)}
+                                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
+                                                    p === page
+                                                        ? 'bg-deep-blue text-white shadow-sm scale-105'
+                                                        : 'text-slate-600 hover:bg-deep-blue-soft hover:text-deep-blue'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        )
+                                    )}
+                                <button
+                                    onClick={() => charger(page + 1)}
+                                    disabled={page === totalPages}
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                >
+                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
                                 </button>
                             </div>
                         </div>

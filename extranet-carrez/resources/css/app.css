@@ -12,6 +12,10 @@
 
     --color-brand-red: #e11d2e;
     --color-brand-blue: #1d4ed8;
+
+    --color-deep-blue: oklch(0.39 0.21 263.59);
+    --color-deep-blue-dark: oklch(0.33 0.2 265.55);
+    --color-deep-blue-soft: oklch(0.94 0.025 260);
 }
 @keyframes dropdownIn {
     from { opacity: 0; transform: translateY(-4px) scale(0.98); }
@@ -202,5 +206,22 @@ body {
     .anim-bar,
     .card-sheen::after {
         animation: none !important;
+    }
+}
+
+.card-hover {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px -10px rgb(29 78 216 / 0.18);
+    border-color: rgb(203 213 225);
+}
+@media (prefers-reduced-motion: reduce) {
+    .card-hover {
+        transition: none;
+    }
+    .card-hover:hover {
+        transform: none;
     }
 }

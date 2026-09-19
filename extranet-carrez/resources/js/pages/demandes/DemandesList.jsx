@@ -563,7 +563,7 @@ export default function DemandesList() {
                             </h1>
 
                             <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
-                                <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                <svg className="w-3.5 h-3.5 text-deep-blue" viewBox="0 0 20 20" fill="currentColor">
                                     <path
                                         fillRule="evenodd"
                                         d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
@@ -583,14 +583,14 @@ export default function DemandesList() {
                     className="
                         group
                         inline-flex items-center gap-2
-                        bg-blue-600
-                        hover:bg-blue-700
+                        bg-deep-blue
+                        hover:bg-deep-blue-dark
                         text-white
                         text-sm font-medium
                         px-4 py-2.5
                         rounded-lg
-                        shadow-sm shadow-blue-600/20
-                        hover:shadow-md hover:shadow-blue-600/25
+                        shadow-sm shadow-deep-blue/20
+                        hover:shadow-md hover:shadow-deep-blue/25
                         hover:-translate-y-0.5
                         transition-all duration-200
                     "
@@ -620,18 +620,18 @@ export default function DemandesList() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Rechercher (référence, client)..."
-                    className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-600 font-semibold placeholder:text-slate-400 placeholder:font-normal caret-blue-600 selection:bg-blue-100 selection:text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                    className="w-full bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-600 font-semibold placeholder:text-slate-400 placeholder:font-normal caret-deep-blue selection:bg-deep-blue-soft selection:text-deep-blue outline-none focus:ring-2 focus:ring-deep-blue focus:border-deep-blue transition-shadow"
                 />
             </div>
             <select value={statut} onChange={(e) => setStatut(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-deep-blue">
                 <option value="" className="text-slate-600">Tous les statuts</option>
                 {Object.entries(statutLabels).map(([k, v]) => (
                     <option key={k} value={k} className="text-slate-600">{v}</option>
                 ))}
             </select>
             <select value={brancheId} onChange={(e) => setBrancheId(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-deep-blue">
                 <option value="" className="text-slate-600">Toutes les branches</option>
                 {branches.map((b) => (
                     <option key={b.id} value={b.id} className="text-slate-600">{b.nom}</option>
@@ -639,7 +639,7 @@ export default function DemandesList() {
             </select>
             {estCabinet && (
                 <select value={gestionnaireId} onChange={(e) => mettreAJourFiltreGestionnaire(e.target.value)}
-                    className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                    className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-deep-blue">
                     <option value="" className="text-slate-600">Tous les gestionnaires</option>
                     {gestionnaires.map((g) => (
                         <option key={g.id} value={g.id} className="text-slate-600">{g.name}</option>
@@ -661,13 +661,13 @@ export default function DemandesList() {
                 </button>
             )}
             <select value={sort} onChange={(e) => setSort(e.target.value)}
-                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-blue-500">
+                className="bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-600 font-semibold outline-none focus:ring-2 focus:ring-deep-blue">
                 <option value="recent" className="text-slate-600">Plus récentes</option>
                 <option value="ancien" className="text-slate-600">Plus anciennes</option>
             </select>
             {filterCount > 0 && (
                 <button onClick={viderFiltres}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2">
+                    className="text-xs text-deep-blue hover:text-deep-blue-dark font-medium px-2">
                     Effacer ({filterCount})
                 </button>
             )}
@@ -675,11 +675,11 @@ export default function DemandesList() {
 
             {/* Barre d'action de masse */}
             {estCabinet && selected.length > 0 && (
-            <div className="relative bg-white rounded-2xl p-3.5 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-blue-900/10 border border-blue-100 ring-1 ring-blue-700/5">
-                <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-700 rounded-l-2xl"></span>
+            <div className="relative bg-white rounded-2xl p-3.5 mb-4 flex flex-wrap items-center gap-3 text-sm shadow-lg shadow-deep-blue/10 border border-deep-blue/15 ring-1 ring-deep-blue/10">
+                <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-deep-blue rounded-l-2xl"></span>
 
                 <span className="inline-flex items-center gap-2 pl-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-700 animate-pulse"></span>
+                    <span className="w-2 h-2 rounded-full bg-deep-blue animate-pulse"></span>
                     <span className="font-semibold text-slate-800">
                         {selected.length} demande{selected.length > 1 ? 's' : ''} sélectionnée{selected.length > 1 ? 's' : ''}
                     </span>
@@ -701,15 +701,15 @@ export default function DemandesList() {
                     </button>
 
                     {attribDropdownOpen && (
-                        <div className="absolute z-20 top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-blue-900/15 border border-slate-100 py-1.5 max-h-64 overflow-y-auto">
+                        <div className="absolute z-20 top-full left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl shadow-deep-blue/15 border border-slate-100 py-1.5 max-h-64 overflow-y-auto">
                             {gestionnaires.map((g) => (
                                 <button
                                     key={g.id}
                                     onClick={() => { setAttributionGestionnaire(g.id); setAttribDropdownOpen(false); }}
                                     className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between ${
                                         String(attributionGestionnaire) === String(g.id)
-                                            ? 'text-blue-700 font-semibold bg-blue-50/70'
-                                            : 'text-slate-700 hover:bg-blue-50/70 hover:text-blue-700'
+                                            ? 'text-deep-blue font-semibold bg-deep-blue-soft/70'
+                                            : 'text-slate-700 hover:bg-deep-blue-soft/70 hover:text-deep-blue'
                                     }`}
                                 >
                                     {g.name}
@@ -725,7 +725,7 @@ export default function DemandesList() {
                 <button
                     onClick={attribuerMasse}
                     disabled={!attributionGestionnaire || attributionBusy}
-                    className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-40 disabled:hover:bg-blue-700 transition-colors shadow-sm shadow-blue-700/20"
+                    className="bg-deep-blue hover:bg-deep-blue-dark text-white px-4 py-1.5 rounded-full text-sm font-medium disabled:opacity-40 disabled:hover:bg-deep-blue-dark transition-colors shadow-sm shadow-deep-blue/20"
                 >
                     {attributionBusy ? 'Attribution...' : 'Attribuer'}
                 </button>
@@ -782,7 +782,7 @@ export default function DemandesList() {
                                                 type="checkbox"
                                                 checked={demandes.length > 0 && selected.length === demandes.length}
                                                 onChange={(e) => setSelected(e.target.checked ? demandes.map((x) => x.id) : [])}
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue"
                                             />
                                         </th>
                                     )}
@@ -809,7 +809,7 @@ export default function DemandesList() {
                                                 selected.includes(d.id)
                                                     ? 'bg-slate-200/70'
                                                     : estOuvert
-                                                        ? 'bg-blue-50/60'
+                                                        ? 'bg-deep-blue-soft/70'
                                                         : ''
                                             }`}
                                         >
@@ -819,12 +819,12 @@ export default function DemandesList() {
                                                         type="checkbox"
                                                         checked={selected.includes(d.id)}
                                                         onChange={() => toggleSelect(d.id)}
-                                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                        className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue"
                                                     />
                                                 </td>
                                             )}
 
-                                            <td className="px-4 py-3 font-semibold text-blue-700 whitespace-nowrap">
+                                            <td className="px-4 py-3 font-semibold text-deep-blue whitespace-nowrap">
                                                 <Link to={`${base}/demandes/${d.id}`}>
                                                     {d.reference}
                                                 </Link>
@@ -905,7 +905,7 @@ export default function DemandesList() {
                                                         onClick={() => toggleVoir(d.id)}
                                                         title={estOuvert ? 'Masquer' : 'Voir'}
                                                         className={`p-2 rounded-lg transition-all duration-200 ${
-                                                            estOuvert ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 hover:scale-110'
+                                                            estOuvert ? 'text-deep-blue bg-deep-blue-soft' : 'text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft hover:scale-110'
                                                         }`}
                                                     >
                                                         <svg className={`w-5 h-5 transition-transform duration-300 ${estOuvert ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -957,7 +957,7 @@ export default function DemandesList() {
                                                             {estOuvert && (
                                                                 voirBusy || !voirData ? (
                                                                     <div className="flex items-center justify-center h-32">
-                                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-deep-blue"></div>
                                                                     </div>
                                                                 ) : (
                                                                     <>
@@ -1432,7 +1432,7 @@ export default function DemandesList() {
                                                                                 <button
                                                                                     type="submit"
                                                                                     disabled={docUploading}
-                                                                                    className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm disabled:opacity-50 transition-colors flex-shrink-0"
+                                                                                    className="inline-flex items-center justify-center gap-1.5 bg-deep-blue hover:bg-deep-blue-dark text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm disabled:opacity-50 transition-colors flex-shrink-0"
                                                                                 >
                                                                                     {docUploading ? 'Envoi...' : 'Ajouter'}
                                                                                 </button>
@@ -1454,7 +1454,7 @@ export default function DemandesList() {
                                                                                             key={doc.id}
                                                                                             className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors"
                                                                                         >
-                                                                                            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                                                                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center flex-shrink-0">
                                                                                                 <svg
                                                                                                     className="w-4 h-4"
                                                                                                     viewBox="0 0 20 20"
@@ -1502,7 +1502,7 @@ export default function DemandesList() {
                                                                                                     telechargerDocument(doc.id)
                                                                                                 }
                                                                                                 title="Télécharger"
-                                                                                                className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors flex-shrink-0"
+                                                                                                className="p-2 rounded-lg text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft transition-colors flex-shrink-0"
                                                                                             >
                                                                                                 ↓
                                                                                             </button>
@@ -1556,7 +1556,7 @@ export default function DemandesList() {
                                                                                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                                                                             >
                                                                                 <svg
-                                                                                    className="w-4 h-4 text-blue-600"
+                                                                                    className="w-4 h-4 text-deep-blue"
                                                                                     viewBox="0 0 20 20"
                                                                                     fill="currentColor"
                                                                                 >
@@ -1701,7 +1701,7 @@ export default function DemandesList() {
                                 <button
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page === 1}
-                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
                                 >
                                     <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
                                 </button>
@@ -1721,8 +1721,8 @@ export default function DemandesList() {
                                                 onClick={() => setPage(p)}
                                                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
                                                     p === page
-                                                        ? 'bg-blue-600 text-white shadow-sm scale-105'
-                                                        : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                                                        ? 'bg-deep-blue text-white shadow-sm scale-105'
+                                                        : 'text-slate-600 hover:bg-deep-blue-soft hover:text-deep-blue'
                                                 }`}
                                             >
                                                 {p}
@@ -1732,7 +1732,7 @@ export default function DemandesList() {
                                 <button
                                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                     disabled={page === totalPages}
-                                    className="p-2 rounded-lg text-slate-500 hover:text-blue-700 hover:bg-blue-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
+                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
                                 >
                                     <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
                                 </button>
@@ -1747,8 +1747,8 @@ export default function DemandesList() {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl p-5 w-full max-w-2xl shadow-2xl">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5c2.567 0 4.5 1.933 4.5 4.5s-1.933 4.5-4.5 4.5S5.5 8.567 5.5 6 7.433 1.5 10 1.5Zm0 10.5c2.508 0 6.5 1.25 6.5 3.5v.5c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1v-.5c0-2.25 3.992-3.5 6.5-3.5Z" /></svg>
+                            <div className="w-10 h-10 rounded-full bg-deep-blue-soft flex items-center justify-center">
+                                <svg className="w-5 h-5 text-deep-blue" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5c2.567 0 4.5 1.933 4.5 4.5s-1.933 4.5-4.5 4.5S5.5 8.567 5.5 6 7.433 1.5 10 1.5Zm0 10.5c2.508 0 6.5 1.25 6.5 3.5v.5c0 .552-.448 1-1 1h-11c-.552 0-1-.448-1-1v-.5c0-2.25 3.992-3.5 6.5-3.5Z" /></svg>
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Affecter un client</h2>
@@ -1762,7 +1762,7 @@ export default function DemandesList() {
                             value={clientSearch}
                             onChange={(e) => chercherClients(e.target.value)}
                             placeholder="Rechercher un client (nom, email, siren)..."
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue mb-3"
                             autoFocus
                         />
 
@@ -1775,7 +1775,7 @@ export default function DemandesList() {
                                 clients.map((c) => (
                                     <button key={c.id} onClick={() => affecterClient(c.id)}
                                         disabled={clientBusy}
-                                        className="w-full text-left px-4 py-3 hover:bg-blue-50/60 transition-colors disabled:opacity-50">
+                                        className="w-full text-left px-4 py-3 hover:bg-deep-blue-soft/60 transition-colors disabled:opacity-50">
                                         <div className="text-sm font-medium text-slate-900">{c.nom_complet}</div>
                                         <div className="text-xs text-slate-500">
                                             {c.type === 'MORALE' ? c.siren : [c.email, c.telephone].filter(Boolean).join(' · ') || '—'}
@@ -1866,7 +1866,7 @@ export default function DemandesList() {
 
                         <label className="block text-sm font-medium text-slate-700 mb-1">Motif principal <span className="text-red-500">*</span></label>
                         <select value={clotureMotif} onChange={(e) => setClotureMotif(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
                             <option value="">— Sélectionner un motif —</option>
                             <option value="Projet finalisé">Projet finalisé</option>
                             <option value="Projet abandonné">Projet abandonné</option>
@@ -1878,7 +1878,7 @@ export default function DemandesList() {
                         <label className="block text-sm font-medium text-slate-700 mb-1">Autres précisions</label>
                         <textarea value={cloturePrecisions} onChange={(e) => setCloturePrecisions(e.target.value)}
                             rows="3" placeholder="Précisions complémentaires (facultatif)..."
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-deep-blue focus:border-deep-blue"></textarea>
 
                         <div className="flex justify-end gap-2">
                             <button onClick={() => { setClotureModal(null); setClotureMotif(''); setCloturePrecisions(''); }}
@@ -1899,8 +1899,8 @@ export default function DemandesList() {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[70] backdrop-blur-sm">
                     <div className="bg-white rounded-2xl p-5 w-full max-w-4xl shadow-2xl max-h-[92vh] overflow-y-auto">
                         <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg className="w-5 h-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 5.5A3.5 3.5 0 0 1 9.5 2h1A3.5 3.5 0 0 1 14 5.5v.55c1.7.39 3 1.93 3 3.8v3.4A3.25 3.25 0 0 1 13.75 16H6.25A3.25 3.25 0 0 1 3 12.75v-3.4c0-1.87 1.3-3.41 3-3.8V5.5Zm4 3.5a.75.75 0 0 1 .75.75v2.1l.95.5a.75.75 0 1 1-.75 1.3l-1.5-.8A.75.75 0 0 1 9 12.25v-3A.75.75 0 0 1 9.75 8.5Zm1.75-4.5v.53c.42 0 .83.08 1.2.23A2 2 0 0 0 11.25 4h-.75Z" clipRule="evenodd" /></svg>
+                            <div className="w-10 h-10 rounded-full bg-deep-blue-soft flex items-center justify-center">
+                                <svg className="w-5 h-5 text-deep-blue" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 5.5A3.5 3.5 0 0 1 9.5 2h1A3.5 3.5 0 0 1 14 5.5v.55c1.7.39 3 1.93 3 3.8v3.4A3.25 3.25 0 0 1 13.75 16H6.25A3.25 3.25 0 0 1 3 12.75v-3.4c0-1.87 1.3-3.41 3-3.8V5.5Zm4 3.5a.75.75 0 0 1 .75.75v2.1l.95.5a.75.75 0 1 1-.75 1.3l-1.5-.8A.75.75 0 0 1 9 12.25v-3A.75.75 0 0 1 9.75 8.5Zm1.75-4.5v.53c.42 0 .83.08 1.2.23A2 2 0 0 0 11.25 4h-.75Z" clipRule="evenodd" /></svg>
                             </div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Nouvelle tâche</h2>
@@ -1917,12 +1917,12 @@ export default function DemandesList() {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Réf</label>
                                 <input type="text" value={taskRef} onChange={(e) => setTaskRef(e.target.value)}
                                     placeholder="Référence de la tâche"
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Suivi par <span className="text-red-500">*</span></label>
                                 <select value={taskSuivi} onChange={(e) => setTaskSuivi(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue">
                                     <option value="">— Sélectionner —</option>
                                     {gestionnaires.map((g) => (
                                         <option key={g.id} value={g.id}>{g.name}</option>
@@ -1932,17 +1932,17 @@ export default function DemandesList() {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Date début <span className="text-red-500">*</span></label>
                                 <input type="date" value={taskDateDebut} onChange={(e) => setTaskDateDebut(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Date fin <span className="text-red-500">*</span></label>
                                 <input type="date" value={taskDateFin} onChange={(e) => setTaskDateFin(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Priorité <span className="text-red-500">*</span></label>
                                 <select value={taskPriorite} onChange={(e) => setTaskPriorite(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue">
                                     <option value="BASSE">Basse</option>
                                     <option value="MOYENNE">Moyenne</option>
                                     <option value="HAUTE">Haute</option>
@@ -1953,18 +1953,18 @@ export default function DemandesList() {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Avancement (%)</label>
                                 <input type="number" min="0" max="100" value={taskAvancement}
                                     onChange={(e) => setTaskAvancement(Number(e.target.value))}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Temps passé (h)</label>
                                 <input type="number" min="0" step="0.25" value={taskTemps}
                                     onChange={(e) => setTaskTemps(Number(e.target.value))}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Type <span className="text-red-500">*</span></label>
                                 <select value={taskType} onChange={(e) => setTaskType(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue">
                                     <option value="TELEPHONE">Téléphone</option>
                                     <option value="EMAIL">Email</option>
                                     <option value="COURRIER">Courrier</option>
@@ -1977,19 +1977,19 @@ export default function DemandesList() {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Objet <span className="text-red-500">*</span></label>
                                 <input type="text" value={taskObjet} onChange={(e) => setTaskObjet(e.target.value)}
                                     placeholder="Objet de la tâche"
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Montant</label>
                                 <input type="number" min="0" step="0.01" value={taskMontant}
                                     onChange={(e) => setTaskMontant(e.target.value)}
                                     placeholder="0.00"
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" />
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Statut <span className="text-red-500">*</span></label>
                                 <select value={taskStatut} onChange={(e) => setTaskStatut(e.target.value)}
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue">
                                     <option value="A_FAIRE">À faire</option>
                                     <option value="EN_COURS">En cours</option>
                                     <option value="EN_ATTENTE">En attente</option>
@@ -2001,16 +2001,16 @@ export default function DemandesList() {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Description <span className="text-red-500">*</span></label>
                                 <textarea value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)}
                                     rows="3" placeholder="Décrivez la tâche à réaliser..."
-                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue"></textarea>
                             </div>
                             <div className="sm:col-span-2">
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Documents à joindre</label>
                                 <div
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => { e.preventDefault(); addTaskFiles(e.dataTransfer.files); }}
-                                    className="border-2 border-dashed border-slate-300 rounded-lg px-4 py-6 text-center text-sm text-slate-500 hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                                    className="border-2 border-dashed border-slate-300 rounded-lg px-4 py-6 text-center text-sm text-slate-500 hover:border-deep-blue hover:bg-deep-blue-soft/50 transition-colors">
                                     <p>Déposez vos fichiers ici...</p>
-                                    <label className="mt-2 inline-block cursor-pointer text-blue-600 font-medium">
+                                    <label className="mt-2 inline-block cursor-pointer text-deep-blue font-medium">
                                         ou parcourir
                                         <input type="file" multiple className="hidden" onChange={(e) => addTaskFiles(e.target.files)} />
                                     </label>
@@ -2034,7 +2034,7 @@ export default function DemandesList() {
                                 Annuler
                             </button>
                             <button onClick={submitNote} disabled={noteBusy}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 transition-colors">
+                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
                                 {noteBusy ? 'Enregistrement...' : 'Enregistrer'}
                             </button>
                         </div>
@@ -2060,19 +2060,19 @@ export default function DemandesList() {
                         <label className="block text-sm font-medium text-slate-700 mb-1">Email <span className="text-red-500">*</span></label>
                         <input type="email" value={sigEmail} onChange={(e) => setSigEmail(e.target.value)}
                             placeholder="client@exemple.fr"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-deep-blue focus:border-deep-blue" />
 
                         {/* Mobile */}
                         <label className="block text-sm font-medium text-slate-700 mb-1">Mobile <span className="text-red-500">*</span></label>
                         <input type="tel" value={sigMobile} onChange={(e) => setSigMobile(e.target.value)}
                             placeholder="06 12 34 56 78"
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-deep-blue focus:border-deep-blue" />
 
                         {/* Message */}
                         <label className="block text-sm font-medium text-slate-700 mb-1">Message <span className="text-red-500">*</span></label>
                         <textarea value={sigMessage} onChange={(e) => setSigMessage(e.target.value)}
                             rows="3" placeholder="Message accompagnant la demande de signature..."
-                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm mb-4 focus:ring-2 focus:ring-deep-blue focus:border-deep-blue"></textarea>
 
                         {/* Documents sélectionnés */}
                         <label className="block text-sm font-medium text-slate-700 mb-1">Documents sélectionnés <span className="text-red-500">*</span></label>
@@ -2089,9 +2089,9 @@ export default function DemandesList() {
                                     ))}
                                 </select>
                             </div>
-                            <label className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/40 rounded-xl px-4 py-5 cursor-pointer transition-colors">
-                                <svg className="w-6 h-6 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03l2.955-3.13v8.615Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
-                                <span className="text-sm font-medium text-blue-700">Téléverser des documents</span>
+                            <label className="flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-deep-blue/30 hover:border-deep-blue bg-deep-blue-soft/40 rounded-xl px-4 py-5 cursor-pointer transition-colors">
+                                <svg className="w-6 h-6 text-deep-blue" viewBox="0 0 20 20" fill="currentColor"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03l2.955-3.13v8.615Z" /><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z" /></svg>
+                                <span className="text-sm font-medium text-deep-blue">Téléverser des documents</span>
                                 <span className="text-xs text-slate-400">Cliquez pour choisir un ou plusieurs fichiers</span>
                                 <input type="file" multiple onChange={(e) => { addSigFiles(e.target.files); e.target.value = ''; }}
                                     className="hidden" />
@@ -2104,7 +2104,7 @@ export default function DemandesList() {
                             <div className="space-y-1.5 mb-4">
                                 {/* Fichiers téléversés */}
                                 {sigNewFiles.map((file, index) => (
-                                    <div key={`new-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2">
+                                    <div key={`new-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-deep-blue/25 bg-deep-blue-soft/50 px-3 py-2">
                                         <span className="flex items-center gap-2 text-sm text-slate-700 min-w-0">
                                             <svg className="w-4 h-4 text-emerald-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" /></svg>
                                             <span className="truncate">{file.name}</span>
@@ -2120,7 +2120,7 @@ export default function DemandesList() {
                                 {(voirData.documents || []).filter((d) => sigSelected.includes(d.id)).map((d) => (
                                     <div key={d.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
                                         <span className="flex items-center gap-2 text-sm text-slate-700 min-w-0">
-                                            <svg className="w-4 h-4 text-blue-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
+                                            <svg className="w-4 h-4 text-deep-blue flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
                                             <span className="truncate">{d.nom_origine || d.type_document || 'Document'}</span>
                                         </span>
                                         <button type="button" onClick={() => toggleSigDoc(d.id)}
@@ -2142,7 +2142,7 @@ export default function DemandesList() {
                                     <label key={d.id}
                                         className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
                                         <input type="checkbox" checked={sigSelected.includes(d.id)}
-                                            onChange={() => toggleSigDoc(d.id)} className="w-4 h-4 accent-blue-600 flex-shrink-0" />
+                                            onChange={() => toggleSigDoc(d.id)} className="w-4 h-4 accent-deep-blue flex-shrink-0" />
                                         <svg className="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V9.621a1.5 1.5 0 0 0-.44-1.06L11.94 3.44A1.5 1.5 0 0 0 10.878 3H4.5Zm2 3.75a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75ZM7 10.5a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5A.75.75 0 0 1 7 10.5Zm0 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" /></svg>
                                         <span className="text-sm text-slate-700 truncate">{d.nom_origine || d.type_document || 'Document'}</span>
                                     </label>
