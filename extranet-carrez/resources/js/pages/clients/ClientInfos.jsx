@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api';
+import Pagination from '../../components/Pagination';
 
 const statutConfig = {
     BROUILLON: { label: 'Brouillon', cls: 'bg-slate-100 text-slate-600' },
@@ -145,6 +146,20 @@ export default function ClientInfos() {
     const [expandedProjetId, setExpandedProjetId] = useState(null);
     const [projetData, setProjetData] = useState(null);
     const [projetBusy, setProjetBusy] = useState(false);
+
+    const PER_PAGE = 10;
+    const [pageProjets, setPageProjets] = useState(1);
+    const [pageContrats, setPageContrats] = useState(1);
+    const [pageFactures, setPageFactures] = useState(1);
+    const [pageReglements, setPageReglements] = useState(1);
+    const [pageSinistres, setPageSinistres] = useState(1);
+    const [pageTaches, setPageTaches] = useState(1);
+
+    const pager = (list, page) => {
+        const total = list.length;
+        const cur = total === 0 ? 1 : Math.min(page, Math.max(1, Math.ceil(total / PER_PAGE)));
+        return { items: list.slice((cur - 1) * PER_PAGE, cur * PER_PAGE), cur, total };
+    };
 
     const load = () => {
         setLoading(true);
@@ -696,7 +711,10 @@ export default function ClientInfos() {
     if (!client) {
         return (
             <div>
-                <button onClick={() => navigate('/clients')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4">← Retour à la liste</button>
+                <button onClick={() => navigate('/clients')} className="anim-in group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-deep-blue/40 hover:text-deep-blue hover:shadow-md mb-4">
+                    <svg className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                    Retour à la liste
+                </button>
                 <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500">Client introuvable.</div>
             </div>
         );
@@ -711,85 +729,89 @@ export default function ClientInfos() {
 
     return (
         <div>
-            <button onClick={() => navigate('/clients')} className="flex items-center gap-1 text-sm text-slate-500 hover:text-blue-700 mb-4">← Retour à la liste</button>
+            <button onClick={() => navigate('/clients')} className="anim-in group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-deep-blue/40 hover:text-deep-blue hover:shadow-md mb-4">
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                Retour à la liste
+            </button>
 
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl px-6 py-5 flex items-center gap-4 mb-4 shadow-lg">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-lg ${client.type === 'MORALE' ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-sky-400 to-blue-600'}`}>
-                    {client.nom_complet?.charAt(0)?.toUpperCase() || '?'}
-                </div>
-                <div className="flex-1">
-                    <h1 className="text-lg font-bold text-white">{client.nom_complet}</h1>
-                    {client.raison_sociale && <div className="text-sm text-blue-100">{client.raison_sociale}</div>}
-                    <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${client.type === 'MORALE' ? 'bg-purple-500/40 text-white' : 'bg-sky-500/40 text-white'}`}>
-                        {client.type === 'MORALE' ? 'Personne morale' : 'Personne physique'}
-                    </span>
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-5 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold text-white shadow-sm ${client.type === 'MORALE' ? 'bg-gradient-to-br from-[oklch(0.52_0.21_27.14)] to-[oklch(0.42_0.18_27)]' : 'bg-gradient-to-br from-deep-blue to-deep-blue-dark'}`}>
+                        {client.nom_complet?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center flex-wrap gap-x-3 gap-y-1.5">
+                            <h1 className="text-2xl font-bold tracking-tight">
+                                {(() => {
+                                    const parts = (client.nom_complet || '').split(' ');
+                                    return (
+                                        <>
+                                            <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>{parts[0]}</span>
+                                            {parts.length > 1 && <>{' '}<span style={{ color: 'oklch(0.39 0.21 263.59)' }}>{parts.slice(1).join(' ')}</span></>}
+                                        </>
+                                    );
+                                })()}
+                            </h1>
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${client.type === 'MORALE' ? 'bg-[oklch(0.52_0.21_27.14/0.12)] text-[oklch(0.42_0.18_27)] ring-[oklch(0.52_0.21_27.14/0.25)]' : 'bg-deep-blue-soft text-deep-blue ring-deep-blue/20'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${client.type === 'MORALE' ? 'bg-[oklch(0.52_0.21_27.14)]' : 'bg-deep-blue'}`}></span>
+                                {client.type === 'MORALE' ? 'Personne morale' : 'Personne physique'}
+                            </span>
+                        </div>
+                        {client.raison_sociale && <p className="text-sm text-slate-500 mt-1">{client.raison_sociale}</p>}
+                    </div>
                 </div>
             </div>
 
             {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
-            <div className="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 mb-4 w-fit shadow-sm">
-                <button onClick={() => setTab('fiche')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'fiche' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Fiche Client
-                </button>
-                <button onClick={() => setTab('projets')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'projets' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Projets
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'projets' ? 'bg-white/20' : 'bg-slate-100'}`}>{demandes.length}</span>
-                </button>
-                <button onClick={() => setTab('contrats')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'contrats' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Contrats
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'contrats' ? 'bg-white/20' : 'bg-slate-100'}`}>{contrats.length}</span>
-                </button>
-                <button onClick={() => setTab('factures')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'factures' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Factures
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'factures' ? 'bg-white/20' : 'bg-slate-100'}`}>{factures.length}</span>
-                </button>
-                <button onClick={() => setTab('reglements')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'reglements' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Règlements
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'reglements' ? 'bg-white/20' : 'bg-slate-100'}`}>{reglements.length}</span>
-                </button>
-                <button onClick={() => setTab('sinistres')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'sinistres' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Sinistres
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'sinistres' ? 'bg-white/20' : 'bg-slate-100'}`}>{sinistres.length}</span>
-                </button>
-                <button onClick={() => setTab('taches')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'taches' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Tâches
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'taches' ? 'bg-white/20' : 'bg-slate-100'}`}>{taches.length}</span>
-                </button>
-                <button onClick={() => setTab('documents')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${tab === 'documents' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    Documents
-                    <span className={`text-xs px-1.5 rounded-full ${tab === 'documents' ? 'bg-white/20' : 'bg-slate-100'}`}>{clientDocs.length}</span>
-                </button>
+            <div className="anim-in no-scrollbar overflow-x-auto bg-white border border-slate-200 rounded-xl mb-5 shadow-sm">
+                <div className="flex items-center gap-1 px-2 border-b border-slate-100">
+                {[
+                    { key: 'fiche', label: 'Fiche Client' },
+                    { key: 'projets', label: 'Projets', n: demandes.length },
+                    { key: 'contrats', label: 'Contrats', n: contrats.length },
+                    { key: 'factures', label: 'Factures', n: factures.length },
+                    { key: 'reglements', label: 'Règlements', n: reglements.length },
+                    { key: 'sinistres', label: 'Sinistres', n: sinistres.length },
+                    { key: 'taches', label: 'Tâches', n: taches.length },
+                    { key: 'documents', label: 'Documents', n: clientDocs.length },
+                ].map((t) => (
+                    <button key={t.key} onClick={() => setTab(t.key)}
+                        className={`flex-shrink-0 inline-flex items-center gap-2 px-3.5 py-2.5 border-b-2 mb-[-1px] transition-colors text-sm font-medium ${
+                            tab === t.key
+                                ? 'border-deep-blue text-deep-blue'
+                                : 'border-transparent text-slate-500 hover:text-deep-blue hover:border-slate-300'
+                        }`}>
+                        {t.label}
+                        {typeof t.n === 'number' && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full transition-colors ${tab === t.key ? 'bg-deep-blue-soft text-deep-blue' : 'bg-slate-100 text-slate-500'}`}>{t.n}</span>
+                        )}
+                    </button>
+                ))}
+                </div>
             </div>
 
             {tab === 'documents' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                     {['Documents', 'Édition'].map((titre) => (
-                        <div key={titre} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                            <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-                                <h3 className="font-semibold text-slate-900">{titre}</h3>
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{clientDocs.length}</span>
+                        <div key={titre} className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-0 shadow-sm">
+                            <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
+                            <div className="px-5 py-3 pt-4 border-b border-slate-100 flex items-center justify-between">
+                                <h3 className="text-sm font-bold text-deep-blue">{titre}</h3>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-deep-blue-soft text-deep-blue">{clientDocs.length}</span>
                             </div>
                             {clientDocs.length === 0 ? (
                                 <p className="px-5 py-8 text-sm text-slate-400 text-center">Aucun document.</p>
                             ) : (
-                                <ul className="divide-y divide-slate-100 max-h-[420px] overflow-y-auto">
+                                <ul className="scroll-blue divide-y divide-slate-100 max-h-[420px] overflow-y-auto">
                                     {clientDocs.map((d) => (
-                                        <li key={d.id} className="px-4 py-3 flex items-center gap-3">
+                                        <li key={d.id} className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
                                             <span className="flex-1 min-w-0">
                                                 <span className="block text-sm font-medium text-slate-900 truncate">{d.nom_origine}</span>
                                                 <span className="block text-xs text-slate-400">{d.type_document}{d.taille ? ` • ${fmtTaille(d.taille)}` : ''}</span>
                                             </span>
                                             <button onClick={() => telechargerDoc(d.id)} title="Télécharger"
-                                                className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft transition-colors">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                                 </svg>
@@ -807,17 +829,18 @@ export default function ClientInfos() {
                         </div>
                     ))}
 
-                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
-                        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
-                            <h3 className="font-semibold text-slate-900">Action</h3>
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-0 shadow-sm flex flex-col">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
+                        <div className="px-5 py-3 pt-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="text-sm font-bold text-deep-blue">Action</h3>
                         </div>
-                        <div className="p-5 flex flex-col gap-3">
+                        <div className="p-4 flex flex-col gap-3">
                             <button onClick={openModele}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 btn-primary">
                                 + Ajouter modèle
                             </button>
                             <button onClick={ouvrirBibliotheque}
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors">
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors">
                                 Bibliothèque
                             </button>
                         </div>
@@ -827,12 +850,13 @@ export default function ClientInfos() {
 
             {tab === 'fiche' && (<>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                    <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm">
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
                                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-3.9 0-7 2.7-7 5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1c0-2.3-3.1-5-7-5Z" /></svg>
                             </div>
-                            <h3 className="font-semibold text-slate-900">Identité</h3>
+                            <h3 className="text-sm font-bold text-deep-blue">Identité</h3>
                         </div>
                         <dl className="space-y-2 text-sm">
                             {row('Type', client.type === 'MORALE' ? 'Personne morale' : 'Personne physique')}
@@ -860,7 +884,7 @@ export default function ClientInfos() {
                                 <dd className="flex flex-wrap justify-end gap-1">
                                     {(client.preference_contact || '').split(',').map(s => s.trim()).filter(Boolean).length > 0
                                         ? (client.preference_contact || '').split(',').map(s => s.trim()).filter(Boolean).map((v) => (
-                                            <span key={v} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{v}</span>
+                                            <span key={v} className="text-xs px-2 py-0.5 rounded-full bg-deep-blue-soft text-deep-blue">{v}</span>
                                         ))
                                         : <span className="text-slate-400">—</span>
                                     }
@@ -872,12 +896,13 @@ export default function ClientInfos() {
                         </dl>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm">
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5Z" /></svg>
                                 </div>
-                                <h3 className="font-semibold text-slate-900">Contact</h3>
+                                <h3 className="text-sm font-bold text-deep-blue">Contact</h3>
                             </div>
                             <dl className="space-y-2 text-sm">
                                 {row('E-mail', client.email)}
@@ -888,23 +913,24 @@ export default function ClientInfos() {
                             </dl>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {client.email && (
-                                    <a href={`mailto:${client.email}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-100">Envoyer un e-mail</a>
+                                    <a href={`mailto:${client.email}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-deep-blue bg-deep-blue-soft border border-deep-blue/20 px-3 py-1.5 rounded-lg hover:bg-deep-blue/10 transition-colors">Envoyer un e-mail</a>
                                 )}
                                 {client.telephone && (
-                                    <a href={`tel:${client.telephone}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-100">Appeler</a>
+                                    <a href={`tel:${client.telephone}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-deep-blue bg-deep-blue-soft border border-deep-blue/20 px-3 py-1.5 rounded-lg hover:bg-deep-blue/10 transition-colors">Appeler</a>
                                 )}
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm">
+                        <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                            <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                                <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /></svg>
                                 </div>
-                                <h3 className="font-semibold text-slate-900">Action</h3>
+                                <h3 className="text-sm font-bold text-deep-blue">Action</h3>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <button onClick={openEdit} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">Modifier</button>
+                                <button onClick={openEdit} className="inline-flex items-center gap-2 px-4 py-2.5 btn-primary">Modifier</button>
                                 <button onClick={remove} disabled={deleting}
                                     className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 disabled:opacity-50 transition-colors">
                                     {deleting ? 'Suppression...' : 'Supprimer'}
@@ -913,23 +939,24 @@ export default function ClientInfos() {
                         </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 p-5 bg-white shadow-sm mt-5">
+                <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm mt-5">
+                    <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.39_0.21_263.59)] via-[oklch(0.48_0.20_262)] to-[oklch(0.52_0.21_27.14)]" />
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" /></svg>
                         </div>
-                        <h3 className="font-semibold text-slate-900">Notes</h3>
+                        <h3 className="text-sm font-bold text-deep-blue">Notes</h3>
                     </div>
                     <textarea
                         value={notesDraft}
                         onChange={(e) => setNotesDraft(e.target.value)}
                         rows={4}
                         placeholder="Notes sur le client..."
-                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
+                        className="w-full field-line rounded-lg px-3 py-2 text-sm mb-3"
                     />
                     <div className="flex justify-end">
                         <button onClick={saveNotes} disabled={savingNotes}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50 transition-colors">
+                            className="px-4 py-2 btn-primary">
                             {savingNotes ? 'Enregistrement...' : 'Enregistrer les notes'}
                         </button>
                     </div>
@@ -944,32 +971,32 @@ export default function ClientInfos() {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-4 py-3">Référence</th>
-                                    <th className="px-4 py-3">Statut</th>
-                                    <th className="px-4 py-3">Branche</th>
-                                    <th className="px-4 py-3">Gestionnaire</th>
-                                    <th className="px-4 py-3">Soumission</th>
-                                    <th className="px-4 py-3"></th>
+                                    <th className="px-5 py-3">Référence</th>
+                                    <th className="px-5 py-3">Statut</th>
+                                    <th className="px-5 py-3">Branche</th>
+                                    <th className="px-5 py-3">Gestionnaire</th>
+                                    <th className="px-5 py-3">Soumission</th>
+                                    <th className="px-5 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {demandes.map((d) => {
+                                {pager(demandes, pageProjets).items.map((d) => {
                                     const sc = statutConfig[d.statut] || { label: d.statut, cls: 'bg-slate-100 text-slate-600' };
                                     const estOuvert = expandedProjetId === d.id;
                                     return (
                                         <Fragment key={d.id}>
                                             <tr onClick={() => toggleProjet(d.id)}
-                                                className={`border-b border-slate-100 cursor-pointer transition-colors ${estOuvert ? 'bg-blue-50/60' : 'hover:bg-slate-50/60'}`}>
-                                                <td className="px-4 py-3 font-medium text-slate-900">{d.reference}</td>
-                                                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                                <td className="px-4 py-3 text-slate-600">{d.branche || '—'}</td>
-                                                <td className="px-4 py-3 text-slate-600">{d.gestionnaire || '—'}</td>
-                                                <td className="px-4 py-3 text-slate-600">{fmtDate(d.date_soumission)}</td>
-                                                <td className="px-4 py-3 text-right">
+                                                className={`group border-b border-slate-100 cursor-pointer transition-all duration-150 ${estOuvert ? 'bg-deep-blue-soft/60' : 'hover:bg-slate-100 hover:shadow-sm'}`}>
+                                                <td className="px-5 py-3 font-medium text-slate-900">{d.reference}</td>
+                                                <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                                <td className="px-5 py-3 text-slate-600">{d.branche || '—'}</td>
+                                                <td className="px-5 py-3 text-slate-600">{d.gestionnaire || '—'}</td>
+                                                <td className="px-5 py-3 text-slate-600">{fmtDate(d.date_soumission)}</td>
+                                                <td className="px-5 py-3 text-right">
                                                     <button type="button"
                                                         onClick={(e) => { e.stopPropagation(); toggleProjet(d.id); }}
                                                         title={estOuvert ? 'Masquer' : 'Voir'}
-                                                        className={`inline-flex p-2 rounded-lg transition-all duration-200 ${estOuvert ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}>
+                                                        className={`inline-flex p-2 rounded-lg transition-all duration-200 ${estOuvert ? 'text-deep-blue bg-deep-blue-soft' : 'text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft'}`}>
                                                         <svg className={`w-5 h-5 transition-transform duration-300 ${estOuvert ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                                                             <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" />
                                                         </svg>
@@ -985,7 +1012,7 @@ export default function ClientInfos() {
                                                                 {estOuvert && (
                                                                     projetBusy || !projetData ? (
                                                                         <div className="flex items-center justify-center h-32">
-                                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-deep-blue"></div>
                                                                         </div>
                                                                     ) : (
                                                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4">
@@ -1151,6 +1178,7 @@ export default function ClientInfos() {
                             </tbody>
                         </table>
                     )}
+                    <Pagination page={pageProjets} totalPages={Math.max(1, Math.ceil(demandes.length / PER_PAGE))} onChange={setPageProjets} label={`${demandes.length} projet${demandes.length > 1 ? 's' : ''} au total`} />
                 </div>
             )}
 
@@ -1162,33 +1190,34 @@ export default function ClientInfos() {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
                                 <tr>
-                                    <th className="px-4 py-3">Référence</th>
-                                    <th className="px-4 py-3">N° Police</th>
-                                    <th className="px-4 py-3">Statut</th>
-                                    <th className="px-4 py-3">Produit</th>
-                                    <th className="px-4 py-3">Date effet</th>
-                                    <th className="px-4 py-3">Échéance</th>
-                                    <th className="px-4 py-3 text-right">Prime TTC</th>
+                                    <th className="px-5 py-3">Référence</th>
+                                    <th className="px-5 py-3">N° Police</th>
+                                    <th className="px-5 py-3">Statut</th>
+                                    <th className="px-5 py-3">Produit</th>
+                                    <th className="px-5 py-3">Date effet</th>
+                                    <th className="px-5 py-3">Échéance</th>
+                                    <th className="px-5 py-3 text-right">Prime TTC</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {contrats.map((c) => {
+                                {pager(contrats, pageContrats).items.map((c) => {
                                     const sc = contratStatutConfig[c.statut] || { label: c.statut, cls: 'bg-slate-100 text-slate-600' };
                                     return (
-                                        <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-                                            <td className="px-4 py-3 font-medium text-slate-900">{c.reference || '—'}</td>
-                                            <td className="px-4 py-3 text-slate-600">{c.numero_police || '—'}</td>
-                                            <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                            <td className="px-4 py-3 text-slate-600">{c.produit || '—'}</td>
-                                            <td className="px-4 py-3 text-slate-600">{fmtDate(c.date_effet)}</td>
-                                            <td className="px-4 py-3 text-slate-600">{fmtDate(c.date_echeance_principale)}</td>
-                                            <td className="px-4 py-3 text-right font-medium text-slate-900">{c.prime_ttc_cts != null ? `${(c.prime_ttc_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                        <tr key={c.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
+                                            <td className="px-5 py-3 font-medium text-slate-900">{c.reference || '—'}</td>
+                                            <td className="px-5 py-3 text-slate-600">{c.numero_police || '—'}</td>
+                                            <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                            <td className="px-5 py-3 text-slate-600">{c.produit || '—'}</td>
+                                            <td className="px-5 py-3 text-slate-600">{fmtDate(c.date_effet)}</td>
+                                            <td className="px-5 py-3 text-slate-600">{fmtDate(c.date_echeance_principale)}</td>
+                                            <td className="px-5 py-3 text-right font-medium text-slate-900">{c.prime_ttc_cts != null ? `${(c.prime_ttc_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
                     )}
+                    <Pagination page={pageContrats} totalPages={Math.max(1, Math.ceil(contrats.length / PER_PAGE))} onChange={setPageContrats} label={`${contrats.length} contrat${contrats.length > 1 ? 's' : ''} au total`} />
                 </div>
             )}
 
@@ -1196,31 +1225,31 @@ export default function ClientInfos() {
                 <div>
                     <div className="flex justify-end mb-3">
                         <button onClick={openFacture}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                            className="px-4 py-2 btn-primary">
                             + Ajouter une facture
                         </button>
                     </div>
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
+                    <div className="scroll-blue overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
                             <tr>
-                                <th className="px-4 py-3 w-8">
+                                <th className="px-5 py-3 w-8">
                                     <input
                                         type="checkbox"
-                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue"
                                         checked={factures.length > 0 && selFactures.length === factures.length}
                                         onChange={(e) => setSelFactures(e.target.checked ? factures.map((f) => f.id) : [])}
                                     />
                                 </th>
-                                <th className="px-4 py-3">Id</th>
-                                <th className="px-4 py-3">Numéro</th>
-                                <th className="px-4 py-3 text-right">Montant TTC</th>
-                                <th className="px-4 py-3">Date Facture</th>
-                                <th className="px-4 py-3">Date Échéance</th>
-                                <th className="px-4 py-3">Statut</th>
-                                <th className="px-4 py-3 text-right">Solde</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
+                                <th className="px-5 py-3">Id</th>
+                                <th className="px-5 py-3">Numéro</th>
+                                <th className="px-5 py-3 text-right">Montant TTC</th>
+                                <th className="px-5 py-3">Date Facture</th>
+                                <th className="px-5 py-3">Date Échéance</th>
+                                <th className="px-5 py-3">Statut</th>
+                                <th className="px-5 py-3 text-right">Solde</th>
+                                <th className="px-5 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1229,27 +1258,27 @@ export default function ClientInfos() {
                                 <td colSpan={9} className="px-4 py-6 text-center text-slate-500">Aucune donnée à afficher</td>
                             </tr>
                         ) : (
-                            factures.map((f) => {
+                            pager(factures, pageFactures).items.map((f) => {
                                 const sc = factureStatutConfig[f.statut] || { label: f.statut, cls: 'bg-slate-100 text-slate-600' };
                                 const soldeCts = f.statut === 'PAYEE' ? 0 : (f.montant_ttc_cts ?? 0);
                                 return (
-                                    <tr key={f.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-                                        <td className="px-4 py-3">
+                                    <tr key={f.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
+                                        <td className="px-5 py-3">
                                             <input
                                                 type="checkbox"
-                                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue"
                                                 checked={selFactures.includes(f.id)}
                                                 onChange={(e) => setSelFactures(e.target.checked ? [...selFactures, f.id] : selFactures.filter((x) => x !== f.id))}
                                             />
                                         </td>
-                                        <td className="px-4 py-3 text-slate-500">{f.id}</td>
-                                        <td className="px-4 py-3 font-medium text-slate-900">{f.reference || '—'}</td>
-                                        <td className="px-4 py-3 text-right font-medium text-slate-900">{f.montant_ttc_cts != null ? `${(f.montant_ttc_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{fmtDate(f.date_facture)}</td>
-                                        <td className="px-4 py-3 text-slate-600">{fmtDate(f.date_echeance)}</td>
-                                        <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                        <td className="px-4 py-3 text-right font-medium text-slate-900">{soldeCts > 0 ? `${(soldeCts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td className="px-5 py-3 text-slate-500">{f.id}</td>
+                                        <td className="px-5 py-3 font-medium text-slate-900">{f.reference || '—'}</td>
+                                        <td className="px-5 py-3 text-right font-medium text-slate-900">{f.montant_ttc_cts != null ? `${(f.montant_ttc_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{fmtDate(f.date_facture)}</td>
+                                        <td className="px-5 py-3 text-slate-600">{fmtDate(f.date_echeance)}</td>
+                                        <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                        <td className="px-5 py-3 text-right font-medium text-slate-900">{soldeCts > 0 ? `${(soldeCts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                        <td className="px-5 py-3 text-right">
                                             <button type="button" onClick={() => supprimerFacture(f)} title="Supprimer"
                                                 className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -1264,9 +1293,7 @@ export default function ClientInfos() {
                         </tbody>
                     </table>
                     </div>
-                    <div className="px-4 py-2 text-sm text-slate-500 border-t border-slate-200 bg-slate-50">
-                        {selFactures.length} sélectionné{selFactures.length > 1 ? 's' : ''} / {factures.length} total
-                    </div>
+                    <Pagination page={pageFactures} totalPages={Math.max(1, Math.ceil(factures.length / PER_PAGE))} onChange={setPageFactures} label={`${selFactures.length} sélectionné${selFactures.length > 1 ? 's' : ''} / ${factures.length} total`} />
                 </div>
                 </div>
             )}
@@ -1275,22 +1302,22 @@ export default function ClientInfos() {
                 <div>
                     <div className="flex justify-end mb-3">
                         <button onClick={openReglement}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                            className="px-4 py-2 btn-primary">
                             + Ajouter un règlement
                         </button>
                     </div>
                     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                        <div className="overflow-x-auto">
+                        <div className="scroll-blue overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
                                     <tr>
-                                        <th className="px-4 py-3">Facture</th>
-                                        <th className="px-4 py-3">Mode de règlement</th>
-                                        <th className="px-4 py-3">Référence du règlement</th>
-                                        <th className="px-4 py-3">Date</th>
-                                        <th className="px-4 py-3 text-right">Montant</th>
-                                        <th className="px-4 py-3">Statut</th>
-                                        <th className="px-4 py-3 text-right">Actions</th>
+                                        <th className="px-5 py-3">Facture</th>
+                                        <th className="px-5 py-3">Mode de règlement</th>
+                                        <th className="px-5 py-3">Référence du règlement</th>
+                                        <th className="px-5 py-3">Date</th>
+                                        <th className="px-5 py-3 text-right">Montant</th>
+                                        <th className="px-5 py-3">Statut</th>
+                                        <th className="px-5 py-3 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1299,17 +1326,17 @@ export default function ClientInfos() {
                                             <td colSpan={7} className="px-4 py-6 text-center text-slate-500">Aucune donnée à afficher</td>
                                         </tr>
                                     ) : (
-                                        reglements.map((r) => {
+                                        pager(reglements, pageReglements).items.map((r) => {
                                             const sc = reglementStatutConfig[r.statut] || { label: r.statut, cls: 'bg-slate-100 text-slate-600' };
                                             return (
-                                                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-                                                    <td className="px-4 py-3 font-medium text-slate-900">{r.facture_reference || `#${r.facture_id}`}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{r.mode_reglement || '—'}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{r.reference || '—'}</td>
-                                                    <td className="px-4 py-3 text-slate-600">{fmtDate(r.date_reglement)}</td>
-                                                    <td className="px-4 py-3 text-right font-medium text-slate-900">{r.montant_cts != null ? `${(r.montant_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
-                                                    <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                                    <td className="px-4 py-3 text-right">
+                                                <tr key={r.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
+                                                    <td className="px-5 py-3 font-medium text-slate-900">{r.facture_reference || `#${r.facture_id}`}</td>
+                                                    <td className="px-5 py-3 text-slate-600">{r.mode_reglement || '—'}</td>
+                                                    <td className="px-5 py-3 text-slate-600">{r.reference || '—'}</td>
+                                                    <td className="px-5 py-3 text-slate-600">{fmtDate(r.date_reglement)}</td>
+                                                    <td className="px-5 py-3 text-right font-medium text-slate-900">{r.montant_cts != null ? `${(r.montant_cts / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                                    <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                                    <td className="px-5 py-3 text-right">
                                                         <button type="button" onClick={() => supprimerReglement(r)} title="Supprimer"
                                                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -1324,6 +1351,7 @@ export default function ClientInfos() {
                                 </tbody>
                             </table>
                         </div>
+                        <Pagination page={pageReglements} totalPages={Math.max(1, Math.ceil(reglements.length / PER_PAGE))} onChange={setPageReglements} label={`${reglements.length} règlement${reglements.length > 1 ? 's' : ''} au total`} />
                     </div>
                 </div>
             )}
@@ -1332,25 +1360,25 @@ export default function ClientInfos() {
                 <div>
                     <div className="flex justify-end mb-3">
                         <button onClick={openSinistre}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                            className="px-4 py-2 btn-primary">
                             + Ajouter sinistre
                         </button>
                     </div>
                 <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    <div className="overflow-x-auto">
+                    <div className="scroll-blue overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 border-b border-slate-200">
                             <tr>
-                                <th className="px-4 py-3">Réf interne</th>
-                                <th className="px-4 py-3">Réf compagnie</th>
-                                <th className="px-4 py-3">Type de contrat</th>
-                                <th className="px-4 py-3">Réf contrat</th>
-                                <th className="px-4 py-3">Compagnie</th>
-                                <th className="px-4 py-3">Gtie applicable</th>
-                                <th className="px-4 py-3">Statut</th>
-                                <th className="px-4 py-3">État</th>
-                                <th className="px-4 py-3">Date</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
+                                <th className="px-5 py-3">Réf interne</th>
+                                <th className="px-5 py-3">Réf compagnie</th>
+                                <th className="px-5 py-3">Type de contrat</th>
+                                <th className="px-5 py-3">Réf contrat</th>
+                                <th className="px-5 py-3">Compagnie</th>
+                                <th className="px-5 py-3">Gtie applicable</th>
+                                <th className="px-5 py-3">Statut</th>
+                                <th className="px-5 py-3">État</th>
+                                <th className="px-5 py-3">Date</th>
+                                <th className="px-5 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1359,21 +1387,21 @@ export default function ClientInfos() {
                                 <td colSpan={10} className="px-4 py-6 text-center text-slate-500">Aucune donnée à afficher</td>
                             </tr>
                         ) : (
-                            sinistres.map((s) => {
+                            pager(sinistres, pageSinistres).items.map((s) => {
                                 const sc = sinistreStatutConfig[s.statut] || { label: s.statut, cls: 'bg-slate-100 text-slate-600' };
                                 const ec = sinistreEtatConfig[s.etat] || { label: s.etat, cls: 'bg-slate-100 text-slate-600' };
                                 return (
-                                    <tr key={s.id} className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
-                                        <td className="px-4 py-3 font-medium text-slate-900">{s.numero || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{s.ref_compagnie || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{s.type_contrat || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{s.contrat_numero_police || s.contrat_reference || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{s.compagnie || '—'}</td>
-                                        <td className="px-4 py-3 text-slate-600">{s.garantie || '—'}</td>
-                                        <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                        <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${ec.cls}`}>{ec.label}</span></td>
-                                        <td className="px-4 py-3 text-slate-600">{fmtDate(s.date_survenance)}</td>
-                                        <td className="px-4 py-3 text-right text-slate-400 hover:text-blue-600 cursor-pointer">⋯</td>
+                                    <tr key={s.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
+                                        <td className="px-5 py-3 font-medium text-slate-900">{s.numero || '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{s.ref_compagnie || '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{s.type_contrat || '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{s.contrat_numero_police || s.contrat_reference || '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{s.compagnie || '—'}</td>
+                                        <td className="px-5 py-3 text-slate-600">{s.garantie || '—'}</td>
+                                        <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                        <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${ec.cls}`}>{ec.label}</span></td>
+                                        <td className="px-5 py-3 text-slate-600">{fmtDate(s.date_survenance)}</td>
+                                        <td className="px-5 py-3 text-right text-slate-400 hover:text-deep-blue cursor-pointer">⋯</td>
                                     </tr>
                                 );
                             })
@@ -1381,6 +1409,7 @@ export default function ClientInfos() {
                         </tbody>
                     </table>
                     </div>
+                    <Pagination page={pageSinistres} totalPages={Math.max(1, Math.ceil(sinistres.length / PER_PAGE))} onChange={setPageSinistres} label={`${sinistres.length} sinistre${sinistres.length > 1 ? 's' : ''} au total`} />
                 </div>
                 </div>
             )}
@@ -1389,7 +1418,7 @@ export default function ClientInfos() {
                 <div>
                     <div className="flex justify-end mb-3">
                         <button onClick={openTache}
-                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors">
+                            className="px-4 py-2 btn-primary">
                             + Ajouter une tâche
                         </button>
                     </div>
@@ -1400,38 +1429,38 @@ export default function ClientInfos() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
-                                        <th className="px-4 py-3 font-semibold">Réf</th>
-                                        <th className="px-4 py-3 font-semibold">Date limite</th>
-                                        <th className="px-4 py-3 font-semibold">Type</th>
-                                        <th className="px-4 py-3 font-semibold">Objet</th>
-                                        <th className="px-4 py-3 font-semibold">Statut</th>
-                                        <th className="px-4 py-3 font-semibold">Priorité</th>
-                                        <th className="px-4 py-3 font-semibold text-right">Montant en jeu</th>
-                                        <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                                        <th className="px-5 py-3 font-semibold">Réf</th>
+                                        <th className="px-5 py-3 font-semibold">Date limite</th>
+                                        <th className="px-5 py-3 font-semibold">Type</th>
+                                        <th className="px-5 py-3 font-semibold">Objet</th>
+                                        <th className="px-5 py-3 font-semibold">Statut</th>
+                                        <th className="px-5 py-3 font-semibold">Priorité</th>
+                                        <th className="px-5 py-3 font-semibold text-right">Montant en jeu</th>
+                                        <th className="px-5 py-3 font-semibold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {taches.map((t) => {
+                                    {pager(taches, pageTaches).items.map((t) => {
                                         const pc = tachePrioriteConfig[t.priorite] || { label: t.priorite, cls: 'bg-slate-100 text-slate-600' };
                                         const sc = tacheStatutConfig[t.statut] || { label: t.statut, cls: 'bg-slate-100 text-slate-600' };
                                         const dl = t.date_echeance || t.date_fin;
                                         return (
-                                            <tr key={t.id} className={`border-b border-slate-100 hover:bg-slate-50/60 transition-colors ${t.statut === 'TERMINEE' ? 'opacity-60' : ''}`}>
-                                                <td className="px-4 py-3 font-medium text-slate-900">{t.reference || t.id}</td>
-                                                <td className="px-4 py-3 text-slate-600">{dl ? fmtDate(dl) : '—'}</td>
-                                                <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{t.type || 'SINISTRE'}</span></td>
-                                                <td className="px-4 py-3">
+                                            <tr key={t.id} className={`group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150 ${t.statut === 'TERMINEE' ? 'opacity-60' : ''}`}>
+                                                <td className="px-5 py-3 font-medium text-slate-900">{t.reference || t.id}</td>
+                                                <td className="px-5 py-3 text-slate-600">{dl ? fmtDate(dl) : '—'}</td>
+                                                <td className="px-5 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{t.type || 'SINISTRE'}</span></td>
+                                                <td className="px-5 py-3">
                                                     <div className="font-medium text-slate-900">{t.objet || t.titre}</div>
                                                     {t.assignee_name && <div className="text-xs text-slate-400">Suivi par : {t.assignee_name}</div>}
                                                 </td>
-                                                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
-                                                <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${pc.cls}`}>{pc.label}</span></td>
-                                                <td className="px-4 py-3 text-right font-medium text-slate-900">{t.montant != null ? `${Number(t.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
-                                                <td className="px-4 py-3 text-right whitespace-nowrap">
+                                                <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${sc.cls}`}>{sc.label}</span></td>
+                                                <td className="px-5 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${pc.cls}`}>{pc.label}</span></td>
+                                                <td className="px-5 py-3 text-right font-medium text-slate-900">{t.montant != null ? `${Number(t.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €` : '—'}</td>
+                                                <td className="px-5 py-3 text-right whitespace-nowrap">
                                                     <button
                                                         onClick={() => basculerTache(t)}
                                                         title={t.statut === 'TERMINEE' ? 'Réouvrir' : 'Marquer terminée'}
-                                                        className="text-slate-400 hover:text-blue-600 text-lg leading-none mr-2">
+                                                        className="text-slate-400 hover:text-deep-blue text-lg leading-none mr-2">
                                                         {t.statut === 'TERMINEE' ? '↺' : '✓'}
                                                     </button>
                                                     <button onClick={() => supprimerTache(t)} className="text-slate-400 hover:text-red-600 text-lg leading-none">&times;</button>
@@ -1441,6 +1470,7 @@ export default function ClientInfos() {
                                     })}
                                 </tbody>
                             </table>
+                            <Pagination page={pageTaches} totalPages={Math.max(1, Math.ceil(taches.length / PER_PAGE))} onChange={setPageTaches} label={`${taches.length} tâche${taches.length > 1 ? 's' : ''} au total`} />
                         </div>
                     )}
                 </div>
@@ -1448,15 +1478,19 @@ export default function ClientInfos() {
 
 
             {factureOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-4xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-4xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Ajouter une facture</h2>
-                                <p className="text-xs text-slate-400 mt-0.5">Étape {factureEtape} sur 2 — {factureEtape === 1 ? 'Informations' : 'Facturation'}</p>
+                                <h2 className="text-lg font-bold text-deep-blue">Ajouter une facture</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Étape {factureEtape} sur 2 — {factureEtape === 1 ? 'Informations' : 'Facturation'}</p>
                             </div>
-                            <button onClick={() => setFactureOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                            <button onClick={() => setFactureOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
                         {factureEtape === 1 && (
@@ -1474,7 +1508,7 @@ export default function ClientInfos() {
                                         <Field label="Contact commercial" value={factureHeader.contact_commercial} onChange={(e) => setFactureHeader({ ...factureHeader, contact_commercial: e.target.value })} />
                                     </div>
                                     <div className="col-span-2">
-                                        <div className="text-sm font-medium text-slate-700 mb-1">Numéro Facture</div>
+                                        <div className="text-sm font-medium text-blue-800 mb-1">Numéro Facture</div>
                                         <div className="text-sm text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                                             La référence sera générée après la création de la facture
                                         </div>
@@ -1483,10 +1517,10 @@ export default function ClientInfos() {
                                     <Field label="Date d'échéance *" type="date" value={factureHeader.date_echeance} onChange={(e) => setFactureHeader({ ...factureHeader, date_echeance: e.target.value })} />
                                     <div className="col-span-2">
                                         <label className="flex items-center justify-between gap-2">
-                                            <span className="text-sm font-medium text-slate-700">Autoriser les moyens de règlement pour cette facture *</span>
+                                            <span className="text-sm font-medium text-blue-800">Autoriser les moyens de règlement pour cette facture *</span>
                                             <input
                                                 type="checkbox"
-                                                className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                className="w-5 h-5 rounded border-slate-300 text-deep-blue focus:ring-deep-blue"
                                                 checked={factureHeader.moyens_reglement.length > 0}
                                                 onChange={(e) => setFactureHeader({ ...factureHeader, moyens_reglement: e.target.checked ? ['Carte bancaire'] : [] })}
                                             />
@@ -1494,15 +1528,15 @@ export default function ClientInfos() {
                                         {factureHeader.moyens_reglement.length > 0 && (
                                             <div className="mt-3 flex flex-wrap gap-2">
                                                 {['Carte bancaire', 'Virement'].filter((m) => factureHeader.moyens_reglement.includes(m)).map((m) => (
-                                                    <span key={m} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">
+                                                    <span key={m} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-deep-blue-soft text-deep-blue text-sm font-medium">
                                                         {m}
-                                                        <button type="button" onClick={() => basculerMoyen(m)} className="text-blue-400 hover:text-blue-700">&times;</button>
+                                                        <button type="button" onClick={() => basculerMoyen(m)} className="text-deep-blue hover:text-deep-blue-dark">&times;</button>
                                                     </span>
                                                 ))}
                                                 <div className="flex flex-wrap gap-2 items-center">
                                                     {['Carte bancaire', 'Virement'].filter((m) => !factureHeader.moyens_reglement.includes(m)).map((m) => (
                                                         <button type="button" key={m} onClick={() => basculerMoyen(m)}
-                                                            className="px-3 py-1.5 rounded-full border border-dashed border-slate-300 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600">
+                                                            className="px-3 py-1.5 rounded-full border border-dashed border-slate-300 text-sm text-slate-500 hover:border-deep-blue hover:text-deep-blue">
                                                             + {m}
                                                         </button>
                                                     ))}
@@ -1513,7 +1547,7 @@ export default function ClientInfos() {
                                 </div>
                                 <div className="flex justify-end gap-2 mt-6">
                                     <button type="button" onClick={() => setFactureOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                    <button type="submit" className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+                                    <button type="submit" className="px-5 py-2.5 btn-primary">
                                         Poursuivre
                                     </button>
                                 </div>
@@ -1525,9 +1559,9 @@ export default function ClientInfos() {
                                 <div className="mb-3">
                                     <div className="flex items-center justify-between mb-2">
                                         <h3 className="text-sm font-semibold text-slate-900">Facturation</h3>
-                                        <button type="button" onClick={ajouterLigne} className="text-sm font-medium text-blue-600 hover:text-blue-700">+ Ajouter une ligne</button>
+                                        <button type="button" onClick={ajouterLigne} className="text-sm font-medium text-deep-blue hover:text-deep-blue-dark">+ Ajouter une ligne</button>
                                     </div>
-                                    <div className="overflow-x-auto">
+                                    <div className="scroll-blue overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="bg-slate-50 text-left text-xs uppercase text-slate-500">
@@ -1595,35 +1629,40 @@ export default function ClientInfos() {
                                                     <td></td>
                                                 </tr>
                                             </tfoot>
-                                        </table>
-                                    </div>
+                        </table>
+                        </div>
                                 </div>
                                 <div className="flex justify-end gap-2 mt-6">
                                     <button type="button" onClick={() => setFactureEtape(1)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Retour</button>
-                                    <button type="submit" disabled={savingFacture} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                    <button type="submit" disabled={savingFacture} className="px-5 py-2.5 btn-primary disabled:opacity-50">
                                         {savingFacture ? 'Enregistrement...' : 'Créer la facture'}
                                     </button>
                                 </div>
                             </form>
                         )}
+                        </div>
                     </div>
                 </div>
             )}
 
             {modeleOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-lg shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900">Ajouter un modèle</h2>
-                            <button onClick={() => setModeleOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-lg my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-deep-blue">Ajouter un modèle</h2>
+                            <button onClick={() => setModeleOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveModele}>
                             <div className="space-y-3">
                                 <label className="block">
-                                    <span className="block text-sm font-medium text-slate-700 mb-1">Catégorie *</span>
+                                    <span className="block text-sm font-medium text-blue-800 mb-1">Catégorie *</span>
                                     <select value={modeleForm.categorie} onChange={(e) => setModeleForm({ ...modeleForm, categorie: e.target.value })}
-                                        className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                        className="field-line" required>
                                         {CATEGORIES_MODELE.map((c) => (
                                             <option key={c} value={c}>{c}</option>
                                         ))}
@@ -1632,31 +1671,36 @@ export default function ClientInfos() {
                                 <Field label="Titre *" value={modeleForm.titre} onChange={(e) => setModeleForm({ ...modeleForm, titre: e.target.value })} required />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Joindre document *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Joindre document *</span>
                                         <input type="file" onChange={(e) => setModeleFile(e.target.files[0] || null)}
-                                            className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
+                                            className="w-full text-sm border border-slate-300 rounded-lg px-3 py-2 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-deep-blue-soft file:text-deep-blue hover:file:bg-deep-blue/10" required />
                                         {modeleFile && <span className="block mt-1 text-xs text-slate-400">{modeleFile.name}</span>}
                                     </label>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setModeleOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                <button type="submit" disabled={savingModele} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                <button type="submit" disabled={savingModele} className="px-5 py-2.5 btn-primary disabled:opacity-50">
                                     {savingModele ? 'Enregistrement...' : 'Ajouter'}
                                 </button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             )}
 
             {bibliothequeOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-3xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900">Bibliothèque</h2>
-                            <button onClick={() => setBibliothequeOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-3xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-deep-blue">Bibliothèque</h2>
+                            <button onClick={() => setBibliothequeOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <div className="space-y-4">
                             {CATEGORIES_MODELE.map((categorie) => {
@@ -1668,11 +1712,11 @@ export default function ClientInfos() {
                                             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{docs.length}</span>
                                         </div>
                                         {docs.length === 0 ? (
-                                            <p className="px-4 py-3 text-sm text-slate-400">Aucun document.</p>
+                                            <p className="px-5 py-3 text-sm text-slate-400">Aucun document.</p>
                                         ) : (
                                             <ul className="divide-y divide-slate-100">
                                                 {docs.map((d) => (
-                                                    <li key={d.id} className="px-4 py-3 flex items-center gap-3">
+                                                    <li key={d.id} className="px-5 py-3 flex items-center gap-3">
                                                         <span className="flex-1 min-w-0">
                                                             <span className="block text-sm font-medium text-slate-900 truncate">{d.titre}</span>
                                                             <span className="block text-xs text-slate-400">{d.nom_origine}{d.taille ? ` • ${fmtTaille(d.taille)}` : ''}</span>
@@ -1697,31 +1741,36 @@ export default function ClientInfos() {
                                 );
                             })}
                         </div>
+                        </div>
                     </div>
                 </div>
             )}
 
             {reglementOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-2xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900">Ajouter un règlement</h2>
-                            <button onClick={() => setReglementOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-2xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-deep-blue">Ajouter un règlement</h2>
+                            <button onClick={() => setReglementOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveReglement}>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2">
-                                    <div className="text-sm font-medium text-slate-700 mb-1">Référence du règlement</div>
+                                    <div className="text-sm font-medium text-blue-800 mb-1">Référence du règlement</div>
                                     <div className="text-sm text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                                         La référence sera générée après l'ajout du règlement
                                     </div>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Facture *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Facture *</span>
                                         <select value={reglementForm.facture_id} onChange={(e) => choisirFactureReglement(e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">— Sélectionnez une facture —</option>
                                             {factures.map((f) => (
                                                 <option key={f.id} value={f.id}>
@@ -1733,9 +1782,9 @@ export default function ClientInfos() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Mode de règlement *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Mode de règlement *</span>
                                         <select value={reglementForm.mode_reglement} onChange={(e) => setReglementForm({ ...reglementForm, mode_reglement: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required disabled={!reglementForm.facture_id}>
+                                            className="field-line" required disabled={!reglementForm.facture_id}>
                                             <option value="">— Sélectionnez un mode —</option>
                                             {modesReglementPourFacture(reglementForm.facture_id).map((m) => (
                                                 <option key={m} value={m}>{m}</option>
@@ -1746,63 +1795,64 @@ export default function ClientInfos() {
                                 <Field label="Montant reçu *" type="number" min="0" step="0.01" value={reglementForm.montant_euros} onChange={(e) => setReglementForm({ ...reglementForm, montant_euros: e.target.value })} required />
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Détails</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Détails</span>
                                         <textarea value={reglementForm.details} onChange={(e) => setReglementForm({ ...reglementForm, details: e.target.value })} rows={2}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Mention(s)</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Mention(s)</span>
                                         <textarea value={reglementForm.mentions} onChange={(e) => setReglementForm({ ...reglementForm, mentions: e.target.value })} rows={2}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <Field label="Date de règlement *" type="date" value={reglementForm.date_reglement} onChange={(e) => setReglementForm({ ...reglementForm, date_reglement: e.target.value })} required />
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setReglementOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                <button type="submit" disabled={savingReglement} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                <button type="submit" disabled={savingReglement} className="px-5 py-2.5 btn-primary disabled:opacity-50">
                                     {savingReglement ? 'Enregistrement...' : 'Ajouter le règlement'}
                                 </button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             )}
 
             {tacheOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl my-6 overflow-hidden flex flex-col">
-                        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
-                            <div className="flex items-center gap-3">
-                                <span className="w-1.5 h-10 bg-white/70 rounded-full"></span>
-                                <div>
-                                    <h2 className="text-xl font-bold leading-tight">Données Générales</h2>
-                                    <p className="text-xs text-blue-100">Ajouter une tâche — la référence sera générée après la création</p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-5xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <div>
+                                <h2 className="text-lg font-bold text-deep-blue">Données Générales</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Ajouter une tâche — la référence sera générée après la création</p>
                             </div>
-                            <button onClick={() => setTacheOpen(false)} className="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            <button onClick={() => setTacheOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
-                        <div className="p-6 overflow-y-auto">
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveTache}>
                             <div className="grid grid-cols-2 gap-3">
                                 <Field label="Réf" value="(Généré automatiquement)" disabled />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Type *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Type *</span>
                                         <select value={tacheForm.type} onChange={(e) => setTacheForm({ ...tacheForm, type: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500 cursor-not-allowed" disabled>
+                                            className="field-line bg-slate-100 text-slate-500 cursor-not-allowed" disabled>
                                             <option value="SINISTRE">SINISTRE</option>
                                         </select>
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Suivi par *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Suivi par *</span>
                                         <select value={tacheForm.assignee_id} onChange={(e) => setTacheForm({ ...tacheForm, assignee_id: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">Choisir...</option>
                                             {tacheSuiveurs.map((u) => (
                                                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -1812,9 +1862,9 @@ export default function ClientInfos() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Objet *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Objet *</span>
                                         <select value={tacheForm.objet} onChange={(e) => setTacheForm({ ...tacheForm, objet: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="Ouvrir sinistre">Ouvrir sinistre</option>
                                             <option value="Suivi sinistre">Suivi sinistre</option>
                                             <option value="Clôturer sinistre">Clôturer sinistre</option>
@@ -1829,9 +1879,9 @@ export default function ClientInfos() {
                                 <Field label="Date fin *" type="date" value={tacheForm.date_fin} onChange={(e) => setTacheForm({ ...tacheForm, date_fin: e.target.value })} required />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Priorité *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Priorité *</span>
                                         <select value={tacheForm.priorite} onChange={(e) => setTacheForm({ ...tacheForm, priorite: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="FAIBLE">Faible</option>
                                             <option value="BASSE">Basse</option>
                                             <option value="MOYENNE">Moyenne</option>
@@ -1843,17 +1893,17 @@ export default function ClientInfos() {
                                 <Field label="Avancement (%)" type="number" min="0" max="100" value={tacheForm.avancement} onChange={(e) => setTacheForm({ ...tacheForm, avancement: e.target.value })} />
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Description *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Description *</span>
                                         <textarea value={tacheForm.description} onChange={(e) => setTacheForm({ ...tacheForm, description: e.target.value })} rows={3} required
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <Field label="Temps passé (h)" type="number" min="0" step="0.5" value={tacheForm.temps_passe_h} onChange={(e) => setTacheForm({ ...tacheForm, temps_passe_h: e.target.value })} />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Statut *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Statut *</span>
                                         <select value={tacheForm.statut} onChange={(e) => setTacheForm({ ...tacheForm, statut: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="A_FAIRE">À faire</option>
                                             <option value="EN_COURS">En cours</option>
                                             <option value="TERMINEE">Terminée</option>
@@ -1863,10 +1913,10 @@ export default function ClientInfos() {
                             </div>
 
                             <div className="flex items-center gap-2 mt-6 mb-3 pb-3 border-b border-slate-200">
-                                <h3 className="text-base font-bold text-blue-700 uppercase tracking-wide">Documents à joindre</h3>
+                                <h3 className="text-base font-bold text-deep-blue uppercase tracking-wide">Documents à joindre</h3>
                             </div>
                             <label className="cursor-pointer block">
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-deep-blue hover:bg-deep-blue-soft/20 transition-colors">
                                     <div className="text-3xl mb-1">⬆</div>
                                     Déposez vos fichiers ici... ou cliquez pour parcourir
                                 </div>
@@ -1892,7 +1942,7 @@ export default function ClientInfos() {
 
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setTacheOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                <button type="submit" disabled={savingTache} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                <button type="submit" disabled={savingTache} className="px-5 py-2.5 btn-primary disabled:opacity-50">
                                     {savingTache ? 'Enregistrement...' : 'Créer la tâche'}
                                 </button>
                             </div>
@@ -1903,27 +1953,27 @@ export default function ClientInfos() {
             )}
 
             {sinistreOpen && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl w-full max-w-5xl shadow-2xl my-6 overflow-hidden flex flex-col">
-                        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
-                            <div className="flex items-center gap-3">
-                                <span className="w-1.5 h-10 bg-white/70 rounded-full"></span>
-                                <div>
-                                    <h2 className="text-xl font-bold leading-tight">Données Générales</h2>
-                                    <p className="text-xs text-blue-100">Ajouter un sinistre — la référence sera générée après la création</p>
-                                </div>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-5xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <div>
+                                <h2 className="text-lg font-bold text-deep-blue">Données Générales</h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Ajouter un sinistre — la référence sera générée après la création</p>
                             </div>
-                            <button onClick={() => setSinistreOpen(false)} className="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                            <button onClick={() => setSinistreOpen(false)} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
-                        <div className="p-6 overflow-y-auto">
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveSinistre}>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Contrat *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Contrat *</span>
                                         <select value={sinistreForm.contrat_id} onChange={(e) => setSinistreForm({ ...sinistreForm, contrat_id: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">Choisir un contrat...</option>
                                             {contrats.map((c) => (
                                                 <option key={c.id} value={c.id}>{c.numero_police || c.reference || c.id}</option>
@@ -1936,9 +1986,9 @@ export default function ClientInfos() {
                                 <Field label="Référence compagnie" value={sinistreForm.ref_compagnie} onChange={(e) => setSinistreForm({ ...sinistreForm, ref_compagnie: e.target.value })} />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Suivi par *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Suivi par *</span>
                                         <select value={sinistreForm.suivi_par_id} onChange={(e) => setSinistreForm({ ...sinistreForm, suivi_par_id: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">Sélectionner...</option>
                                             {sinistreSuiveurs.map((u) => (
                                                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -1948,9 +1998,9 @@ export default function ClientInfos() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Statut *</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Statut *</span>
                                         <select value={sinistreForm.statut} onChange={(e) => setSinistreForm({ ...sinistreForm, statut: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="NON_OUVERT">Non ouvert</option>
                                             <option value="OUVERT">Ouvert</option>
                                             <option value="EN_COURS">En cours</option>
@@ -1967,9 +2017,9 @@ export default function ClientInfos() {
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Description des dommages</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">Description des dommages</span>
                                         <textarea value={sinistreForm.description_dommages} onChange={(e) => setSinistreForm({ ...sinistreForm, description_dommages: e.target.value })} rows={3}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <Field label="Responsabilité *" value={sinistreForm.responsabilite} onChange={(e) => setSinistreForm({ ...sinistreForm, responsabilite: e.target.value })} required />
@@ -1979,9 +2029,9 @@ export default function ClientInfos() {
                                 <Field label="Recours" value={sinistreForm.recours} onChange={(e) => setSinistreForm({ ...sinistreForm, recours: e.target.value })} />
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">État</span>
+                                        <span className="block text-sm font-medium text-blue-800 mb-1">État</span>
                                         <select value={sinistreForm.etat} onChange={(e) => setSinistreForm({ ...sinistreForm, etat: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="OUVERT">Ouvert</option>
                                             <option value="EN_COURS_EXPERTISE">En cours d'expertise</option>
                                             <option value="CLOS">Clos</option>
@@ -1993,10 +2043,10 @@ export default function ClientInfos() {
                             </div>
 
                             <div className="flex items-center gap-2 mt-6 mb-3 pb-3 border-b border-slate-200">
-                                <h3 className="text-base font-bold text-blue-700 uppercase tracking-wide">Documents à joindre</h3>
+                                <h3 className="text-base font-bold text-deep-blue uppercase tracking-wide">Documents à joindre</h3>
                             </div>
                             <label className="cursor-pointer block">
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-deep-blue hover:bg-deep-blue-soft/20 transition-colors">
                                     <div className="text-3xl mb-1">⬆</div>
                                     Déposez vos fichiers ici... ou cliquez pour parcourir
                                 </div>
@@ -2022,7 +2072,7 @@ export default function ClientInfos() {
 
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => setSinistreOpen(false)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                <button type="submit" disabled={savingSinistre} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                <button type="submit" disabled={savingSinistre} className="px-5 py-2.5 btn-primary disabled:opacity-50">
                                     {savingSinistre ? 'Enregistrement...' : 'Créer le sinistre'}
                                 </button>
                             </div>
@@ -2033,19 +2083,23 @@ export default function ClientInfos() {
             )}
 
             {editor && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-4xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900">Modifier : {client.nom_complet}</h2>
-                            <button onClick={() => { setEditor(false); setError(''); }} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-4xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-700 via-indigo-600 to-red-500"></div>
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-deep-blue">Modifier : {client.nom_complet}</h2>
+                            <button onClick={() => { setEditor(false); setError(''); }} className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
                         </div>
+                        <div className="p-5">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={save}>
                             <div className="flex gap-3 mb-4">
                                 <button type="button" onClick={() => setForm({ ...form, type: 'PHYSIQUE' })}
-                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'PHYSIQUE' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>Personne physique</button>
+                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'PHYSIQUE' ? 'bg-deep-blue border-deep-blue text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>Personne physique</button>
                                 <button type="button" onClick={() => setForm({ ...form, type: 'MORALE' })}
-                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'MORALE' ? 'bg-purple-600 border-purple-600 text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>Entreprise</button>
+                                    className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${form.type === 'MORALE' ? 'bg-[oklch(0.52_0.21_27.14)] border-[oklch(0.52_0.21_27.14)] text-white' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}>Entreprise</button>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 {form.type === 'PHYSIQUE' ? (
@@ -2072,7 +2126,7 @@ export default function ClientInfos() {
                                 <Field label="E-mail 2" type="email" value={form.email2} onChange={setF('email2')} />
                             </div>
                             <div className="mt-4 pt-4 border-t border-slate-200">
-                                <span className="block text-sm font-medium text-slate-700 mb-2">Préférence de contact</span>
+                                <span className="block text-sm font-medium text-blue-800 mb-2">Préférence de contact</span>
                                 <div className="flex flex-wrap gap-4">
                                     {['Téléphone', 'E-mail', 'WhatsApp', 'Courrier'].map((opt) => {
                                         const checked = (form.preference_contact || '').split(',').map(s => s.trim()).filter(Boolean).includes(opt);
@@ -2084,7 +2138,7 @@ export default function ClientInfos() {
                                                         const next = checked ? list.filter((v) => v !== opt) : [...list, opt];
                                                         setForm({ ...form, preference_contact: next.join(', ') });
                                                     }}
-                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                    className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                                 {opt}
                                             </label>
                                         );
@@ -2092,7 +2146,7 @@ export default function ClientInfos() {
                                 </div>
                             </div>
                             <div className="mt-4 pt-4 border-t border-slate-200">
-                                <span className="block text-sm font-medium text-slate-700 mb-2">Origine</span>
+                                <span className="block text-sm font-medium text-blue-800 mb-2">Origine</span>
                                 <div className="flex flex-wrap gap-4">
                                     {['Prospection LinkedIn', 'Prospection Facebook', 'Prospection Twitter', 'Radio', 'Famille', 'Bouche à oreille'].map((opt) => {
                                         const checked = (form.origine || '').split(',').map(s => s.trim()).filter(Boolean).includes(opt);
@@ -2104,7 +2158,7 @@ export default function ClientInfos() {
                                                         const next = checked ? list.filter((v) => v !== opt) : [...list, opt];
                                                         setForm({ ...form, origine: next.join(', ') });
                                                     }}
-                                                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                                    className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                                 {opt}
                                             </label>
                                         );
@@ -2114,7 +2168,7 @@ export default function ClientInfos() {
                             <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-200">
                                 <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                                     <input type="checkbox" checked={form.rgpd_consentement} onChange={(e) => setForm({ ...form, rgpd_consentement: e.target.checked })}
-                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                        className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                     Consentement RGPD
                                     <span className="relative group">
                                         <svg className="w-4 h-4 text-slate-400 hover:text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" /></svg>
@@ -2125,7 +2179,7 @@ export default function ClientInfos() {
                                 </label>
                                 <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                                     <input type="checkbox" checked={form.exclure_marketing} onChange={(e) => setForm({ ...form, exclure_marketing: e.target.checked })}
-                                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                                        className="w-4 h-4 rounded border-slate-300 text-deep-blue focus:ring-deep-blue" />
                                     Exclure des opérations de communication et marketing
                                     <span className="relative group">
                                         <svg className="w-4 h-4 text-slate-400 hover:text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" /></svg>
@@ -2137,9 +2191,10 @@ export default function ClientInfos() {
                             </div>
                             <div className="flex justify-end gap-2 mt-6">
                                 <button type="button" onClick={() => { setEditor(false); setError(''); }} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
-                                <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">Enregistrer</button>
+                                <button type="submit" disabled={saving} className="px-5 py-2.5 btn-primary disabled:opacity-50">Enregistrer</button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -2150,10 +2205,10 @@ export default function ClientInfos() {
 function Field({ label, value, onChange, type = 'text', required, placeholder, disabled, min, max, step }) {
     return (
         <label className="block">
-            <span className="block text-sm font-medium text-slate-700 mb-1">{label}{required && <span className="text-red-500"> *</span>}</span>
+            <span className="block text-sm font-medium text-blue-800 mb-1">{label}{required && <span className="text-red-500"> *</span>}</span>
             <input type={type} value={value} onChange={onChange} required={required} placeholder={placeholder} disabled={disabled}
                 min={min} max={max} step={step}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-400" />
+                className="field-line disabled:bg-slate-50 disabled:text-slate-400" />
         </label>
     );
 }

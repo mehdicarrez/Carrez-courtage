@@ -225,3 +225,30 @@ body {
         transform: none;
     }
 }
+
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-blue {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(130 154 193 / 35%) transparent;
+}
+.scroll-blue::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.scroll-blue::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scroll-blue::-webkit-scrollbar-thumb {
+    background-color: rgb(130 154 193 / 35%);
+    border-radius: 9999px;
+}
+.scroll-blue::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(130 154 193 / 55%);
+}
