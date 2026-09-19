@@ -286,10 +286,10 @@ export default function Login() {
 
                     <div className="relative flex items-center gap-3">
                         <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-lg">
-                            <img src="/images/logo-carrez.png" alt="Carrez Co Courtage" className="h-9 w-9 object-contain" />
+                            <img src="/images/logo-carrez.png" alt="Carrez Co Courtage" className="h-90 w-90 object-contain" />
                         </span>
                         <div>
-                            <div className="text-lg font-bold tracking-tight">Carrez Co Courtage</div>
+                            {/* <div className="text-lg font-bold tracking-tight">Carrez Co Courtage</div> */}
                             <div className="text-xs text-blue-200/90 uppercase tracking-widest">Extranet partenaires</div>
                         </div>
                     </div>
