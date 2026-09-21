@@ -85,6 +85,7 @@ export default function PartnerLayout() {
 
     const [autreOpen, setAutreOpen] = useState(false);
     const [autrePos, setAutrePos] = useState({ top: 0, left: 0 });
+    const [logoErreur, setLogoErreur] = useState(false);
     const autreBtnRef = useRef(null);
     const autreRef = useRef(null);
 
@@ -118,9 +119,15 @@ export default function PartnerLayout() {
                 {/* Ligne 1 : logo + icônes */}
                 <div className="h-16 max-w-full px-4 xl:px-10 flex items-center gap-4">
                     <NavLink to="/espace-partenaire" className="flex items-center gap-2.5 flex-shrink-0 group">
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-black text-sm shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform">
-                            CP
-                        </div>
+                        {user?.organisation_logo_url && !logoErreur ? (
+                            <img src={user.organisation_logo_url} alt={user?.name || 'Partenaire'}
+                                onError={() => setLogoErreur(true)}
+                                className="w-9 h-9 rounded-lg object-contain bg-white border border-gray-200 shadow p-0.5" />
+                        ) : (
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white flex items-center justify-center font-black text-sm shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform">
+                                CP
+                            </div>
+                        )}
                         <div className="leading-tight hidden sm:block">
                             <div className="font-extrabold text-slate-900 tracking-tight">Espace Partenaire</div>
                             <div className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">Carrez Co Courtage</div>

@@ -126,8 +126,10 @@ export default function NouvelleDemande() {
     const [groupesProduits, setGroupesProduits] = useState([]);
     const [produitsSelectionnes, setProduitsSelectionnes] = useState([]);
     const [categorieActive, setCategorieActive] = useState('');
-    const [grossistes, setGrossistes] = useState([]);
-    const [fournisseursPlateforme, setFournisseursPlateforme] = useState([]);
+    const [partenaires, setPartenaires] = useState([]);
+    const [fournisseursCibles, setFournisseursCibles] = useState([]);
+    const [afficherATous, setAfficherATous] = useState(true);
+    const [recherchePartenaire, setRecherchePartenaire] = useState('');
     const [ajouterMesFournisseurs, setAjouterMesFournisseurs] = useState(false);
     const [mesFournisseurs, setMesFournisseurs] = useState([]);
     const [nouveauFournisseur, setNouveauFournisseur] = useState('');
@@ -144,7 +146,9 @@ export default function NouvelleDemande() {
 
     useEffect(() => {
         api.get('/produits').then((res) => setGroupesProduits(res.data.data)).catch(() => {});
-        api.get('/grossistes').then((res) => setGrossistes(res.data.data)).catch(() => {});
+        api.get('/fournisseurs/partenaires')
+            .then((res) => setPartenaires(res.data.data || []))
+            .catch(() => {});
     }, []);
 
     useEffect(() => {
@@ -217,6 +221,31 @@ export default function NouvelleDemande() {
         setMesFournisseurs((prev) => prev.filter((_, i) => i !== index));
     };
 
+    const basculerPartenaire = (id) => {
+        if (afficherATous) {
+            setAfficherATous(false);
+            setFournisseursCibles([id]);
+        } else {
+            const dejaCible = fournisseursCibles.includes(id);
+            const next = dejaCible
+                ? fournisseursCibles.filter((x) => x !== id)
+                : [...fournisseursCibles, id];
+            if (next.length === 0) setAfficherATous(true);
+            setFournisseursCibles(next);
+        }
+    };
+
+    const ciblerPartenaire = (nom) => {
+        if (!nom) return;
+        const p = partenaires.find((x) => x.nom === nom);
+        if (!p) return;
+        setRecherchePartenaire('');
+        setAfficherATous(false);
+        setFournisseursCibles((prev) =>
+            prev.includes(p.id) ? prev : [...prev, p.id]
+        );
+    };
+
     const validerClient = () => {
         if (!clientSelection) {
             setError('Sélectionnez un client ou ajoutez un nouveau client.');
@@ -273,7 +302,8 @@ export default function NouvelleDemande() {
                 branche_id: brancheId,
                 mode_intervention: modeIntervention,
                 produit_ids: produitsSelectionnes,
-                fournisseurs_plateforme: fournisseursPlateforme,
+                fournisseurs_plateforme: [],
+                fournisseurs_cibles: afficherATous ? [] : fournisseursCibles,
                 mes_fournisseurs: mesFournisseurs,
                 client: payloadClient,
                 donnees_risque: values,
@@ -447,39 +477,65 @@ export default function NouvelleDemande() {
                     <p className="text-sm text-slate-500 text-center mb-6">Sélectionnez les fournisseurs susceptibles de répondre à votre demande.</p>
 
                     <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <svg className="w-5 h-5 text-sky-600" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M12 2.5 4 5.5v6c0 4.6 3.2 8.7 7.2 10 4-1.3 7.2-5.4 7.2-10v-6l-8-3Zm0 2.1 6 2.25V11.5c-.2-2.8-1.6-5.1-6-6.9Zm0 6.9c-3.5 1.3-5.6 3.8-6 7.4 3.9 0 7.2-.8 6-7.4ZM6.9 7.4l-2.4-.9c.5 3 2.2 5 2.4 5.6v-4.7Zm10.2 0v4.7c.2-.6 1.9-2.6 2.4-5.6l-2.4.9Z" clipRule="evenodd" /></svg>
-                            <h3 className="font-bold text-slate-900">Fournisseurs plateforme <span className="text-sky-600">[cocourtage]</span></h3>
+                        <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5 text-sky-600" viewBox="0 0 24 24" fill="currentColor"><path fillRule="evenodd" d="M12 2.5 4 5.5v6c0 4.6 3.2 8.7 7.2 10 4-1.3 7.2-5.4 7.2-10v-6l-8-3Zm0 2.1 6 2.25V11.5c-.2-2.8-1.6-5.1-6-6.9Zm0 6.9c-3.5 1.3-5.6 3.8-6 7.4 3.9 0 7.2-.8 6-7.4ZM6.9 7.4l-2.4-.9c.5 3 2.2 5 2.4 5.6v-4.7Zm10.2 0v4.7c.2-.6 1.9-2.6 2.4-5.6l-2.4.9Z" clipRule="evenodd" /></svg>
+                                <h3 className="font-bold text-slate-900">Partenaires</h3>
+                            </div>
+                            <button type="button" onClick={() => { setAfficherATous(true); setFournisseursCibles([]); }}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                                    afficherATous
+                                        ? 'bg-sky-600 text-white border-sky-600'
+                                        : 'bg-white text-sky-700 border-sky-300 hover:bg-sky-50'
+                                }`}>
+                                Afficher à tous
+                            </button>
                         </div>
                         <p className="text-sm text-slate-600 mb-4">
-                            La plateforme vous mettra en relation avec tous les fournisseurs référencés en cocourtage
-                            susceptibles de répondre à votre demande. Vous pourrez privilégier et/ou exclure certains
-                            fournisseurs/compagnies lors de la validation de votre demande.
+                            Sélectionnez le(s) partenaire(s) qui doivent recevoir cette demande. Sans ciblage, elle reste visible par tous.
                         </p>
-                        {grossistes.length === 0 ? (
-                            <p className="text-sm text-slate-400">Aucun fournisseur plateforme référencé.</p>
+                        {partenaires.length === 0 ? (
+                            <p className="text-sm text-slate-400">Aucun partenaire référencé.</p>
                         ) : (
-                            <div className="space-y-2">
-                                {grossistes.map((g) => {
-                                    const actif = fournisseursPlateforme.includes(g.id);
+                            <div className="flex flex-wrap gap-3">
+                                {partenaires.map((p) => {
+                                    const actif = afficherATous || fournisseursCibles.includes(p.id);
                                     return (
-                                        <label key={g.id}
-                                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${actif ? 'border-sky-500 bg-sky-50' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
-                                            <input type="checkbox" checked={actif}
-                                                onChange={() => setFournisseursPlateforme((prev) => actif ? prev.filter((x) => x !== g.id) : [...prev, g.id])}
-                                                className="w-4 h-4 accent-sky-600" />
-                                            <div>
-                                                <div className="font-semibold text-slate-800">{g.nom}</div>
-                                                {g.orias && <div className="text-xs text-slate-500">ORIAS : {g.orias}</div>}
-                                            </div>
-                                        </label>
+                                        <button key={p.id} type="button" onClick={() => basculerPartenaire(p.id)}
+                                            title={p.nom}
+                                            className={`w-24 rounded-xl border-2 p-3 flex flex-col items-center justify-center gap-2 transition-all ${
+                                                actif ? 'border-sky-500 bg-sky-50 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+                                            }`}>
+                                            {p.logo_url ? (
+                                                <img src={p.logo_url} alt={p.nom || ''} className="h-12 w-auto max-w-[70px] object-contain" />
+                                            ) : (
+                                                <div className="h-12 w-12 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">
+                                                    {(p.nom || '??').slice(0, 2)}
+                                                </div>
+                                            )}
+                                            <input type="checkbox" readOnly checked={actif} className="w-4 h-4 accent-sky-600 cursor-pointer" />
+                                        </button>
                                     );
                                 })}
                             </div>
                         )}
-                        <p className="text-xs text-slate-500 mt-3">
-                            Vous pouvez également ajouter vos propres fournisseurs en cochant la case ci-dessous.
-                        </p>
+                        <div className="mt-4 pt-4 border-t border-slate-100">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Ajouter un fournisseur ciblé</label>
+                            <input list="partenaires-cibles"
+                                value={recherchePartenaire}
+                                onChange={(e) => setRecherchePartenaire(e.target.value)}
+                                onSelect={(e) => ciblerPartenaire(e.target.value)}
+                                placeholder="Tapez ou choisissez le nom d'un fournisseur..."
+                                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-sky-500" />
+                            <datalist id="partenaires-cibles">
+                                {partenaires.map((p) => (
+                                    <option key={p.id} value={p.nom} />
+                                ))}
+                            </datalist>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Après validation, la demande ne sera visible que par le(s) fournisseur(s) sélectionné(s).
+                            </p>
+                        </div>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-lg p-5 mb-4">
