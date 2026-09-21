@@ -35,6 +35,21 @@ const CONTRAT_STATUT_LABELS = {
     EXPIRE: 'Expiré', REGLE: 'Réglé', NON_REGLE: 'Non réglé',
 };
 
+const STATUT_CLS = {
+    EN_CONSTITUTION: 'bg-slate-100 text-slate-600 ring-slate-200',
+    EN_ATTENTE_SIGNATURE: 'bg-amber-50 text-amber-700 ring-amber-200',
+    SIGNE: 'bg-blue-50 text-blue-700 ring-blue-200',
+    EN_ATTENTE_EMISSION: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+    EN_VIGUEUR: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+    IMPAYE: 'bg-red-50 text-red-700 ring-red-200',
+    SUSPENDU: 'bg-orange-50 text-orange-700 ring-orange-200',
+    RESILIE: 'bg-slate-100 text-slate-500',
+    SANS_EFFET: 'bg-gray-100 text-gray-500',
+    EXPIRE: 'bg-purple-50 text-purple-700 ring-purple-200',
+    REGLE: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+    NON_REGLE: 'bg-rose-50 text-rose-700 ring-rose-200',
+};
+
 const DOC_GENERE_CODES = ['FICHE_CONSEIL', 'ORDRE_REMPLACEMENT', 'MANDAT_EXCLUSIF', 'POLICE'];
 
 export default function ContratDetail() {
@@ -339,43 +354,102 @@ export default function ContratDetail() {
     return (
         <>
         <div>
-            <button onClick={() => navigate(estCabinet ? '/contrats' : '/espace-partenaire/contrats')} className="text-sm text-blue-700 mb-3">← Retour aux contrats</button>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">{contrat.reference}</h1>
-            <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">{contrat.statut}</span>
-                {contrat.numero_police && <span className="text-sm text-slate-500">Police {contrat.numero_police}</span>}
+            <button onClick={() => navigate(estCabinet ? '/contrats' : '/espace-partenaire/contrats')} className="anim-in group inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-deep-blue/40 hover:text-deep-blue hover:shadow-md mb-4">
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:-translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
+                Retour aux contrats
+            </button>
+
+            <div className="anim-in relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60 p-6 md:p-8 mb-6 shadow-sm">
+                <div className="flex items-start justify-between gap-5">
+                    <div>
+                        <div className="flex items-center gap-3 mb-1.5">
+                            <h1 className="text-2xl font-bold tracking-tight">
+                                {(() => {
+                                    const parts = (contrat.reference || '').split('-');
+                                    return parts.length > 1 ? (
+                                        <>
+                                            <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>{parts.slice(0, -1).join('-')}-</span>
+                                            <span style={{ color: 'oklch(0.39 0.21 263.59)' }}>{parts[parts.length - 1]}</span>
+                                        </>
+                                    ) : (
+                                        <span style={{ color: 'oklch(0.52 0.21 27.14)' }}>{contrat.reference}</span>
+                                    );
+                                })()}
+                            </h1>
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap ${STATUT_CLS[contrat.statut] || 'bg-slate-100 text-slate-600'}`}>
+                                {CONTRAT_STATUT_LABELS[contrat.statut] || contrat.statut}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                            <span>{contrat.fournisseur || '—'}</span>
+                            <span>·</span>
+                            <span>{contrat.produit || '—'}</span>
+                            <span>·</span>
+                            <span>{contrat.client || '—'}</span>
+                            {contrat.numero_police && <><span>·</span><span>Police {contrat.numero_police}</span></>}
+                        </div>
+                    </div>
+                    {estCabinet && !edition && (
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={() => setEdition(true)}
+                                className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.6 2.4a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8l-8 8a1 1 0 0 1-.4.24l-3.5 1a1 1 0 0 1-1.24-1.24l1-3.5a1 1 0 0 1 .24-.4l8-8Z" /></svg>
+                                Modifier la fiche
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Onglets */}
-            <div className="flex gap-1 border-b border-slate-200 mb-4">
-                {TABS.map((t) => (
-                    <button key={t.key} onClick={() => setOnglet(t.key)}
-                        className={`px-4 py-2 text-sm font-medium rounded-t-lg -mb-px ${
-                            onglet === t.key ? 'bg-white border border-slate-200 text-blue-700' : 'text-slate-500 hover:text-slate-700'
-                        }`}>{t.label}</button>
-                ))}
+            <div className="anim-in no-scrollbar overflow-x-auto bg-white border border-slate-200 rounded-xl mb-5 shadow-sm">
+                <div className="flex items-center gap-1 px-2 border-b border-slate-100">
+                {TABS.map((t) => {
+                    const n = t.key === 'avenants' ? contrat.nb_avenants : t.key === 'quittances' ? contrat.nb_quittances : t.key === 'sinistres' ? contrat.nb_sinistres : null;
+                    return (
+                        <button key={t.key} onClick={() => setOnglet(t.key)}
+                            className={`flex-shrink-0 inline-flex items-center gap-2 px-3.5 py-2.5 border-b-2 mb-[-1px] transition-colors text-sm font-medium ${
+                                onglet === t.key
+                                    ? 'border-deep-blue text-deep-blue'
+                                    : 'border-transparent text-slate-500 hover:text-deep-blue hover:border-slate-300'
+                            }`}>
+                            {t.label}
+                            {typeof n === 'number' && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full transition-colors ${onglet === t.key ? 'bg-deep-blue-soft text-deep-blue' : 'bg-slate-100 text-slate-500'}`}>{n}</span>
+                            )}
+                        </button>
+                    );
+                })}
+                </div>
             </div>
 
             {/* ===== ONGLET DÉTAIL ===== */}
             {onglet === 'detail' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Div 1 — Infos de l'assurance */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-blue-600">
-                        <h2 className="font-semibold text-slate-900 mb-3">Assurance</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                            <div><span className="text-slate-500">Fournisseur :</span> <span className="font-medium">{contrat.fournisseur || '—'}</span></div>
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
+                            </div>
+                            <h3 className="text-sm font-bold text-deep-blue">Assurance</h3>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <div><span className="text-slate-500">Fournisseur :</span> <span className="font-medium text-slate-800">{contrat.fournisseur || '—'}</span></div>
                         </div>
                     </div>
 
                     {/* Div 2 — Infos du contrat */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-emerald-600">
-                        <div className="flex justify-between items-center mb-3">
-                            <h2 className="font-semibold text-slate-900">Contrat</h2>
-                            {estCabinet && !edition && (
-                                <button onClick={() => setEdition(true)} className="text-sm px-3 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-50">Modifier</button>
-                            )}
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11.25 2.25a3 3 0 0 0-3 3v13.5a3 3 0 0 0 3 3h1.5a3 3 0 0 0 3-3V5.25a3 3 0 0 0-3-3h-1.5Z" /></svg>
+                            </div>
+                            <h3 className="text-sm font-bold text-deep-blue">Contrat</h3>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                             <div><span className="text-slate-500">Client :</span> {contrat.client}</div>
                             <div><span className="text-slate-500">Produit :</span> {contrat.produit || '—'}</div>
                             <div><span className="text-slate-500">Prime HT :</span> {(contrat.prime_ht_cts ?? 0) / 100} €</div>
@@ -385,22 +459,22 @@ export default function ContratDetail() {
                                     <div>
                                         <label className="text-slate-500 text-xs">N° Police</label>
                                         <input value={form.numero_police} onChange={(e) => setForm({ ...form, numero_police: e.target.value })}
-                                            className="block w-full border border-slate-300 rounded px-2 py-1 text-sm mt-1" />
+                                            className="field-line" />
                                     </div>
                                     <div>
                                         <label className="text-slate-500 text-xs">Date effet</label>
                                         <input type="date" value={form.date_effet} onChange={(e) => setForm({ ...form, date_effet: e.target.value })}
-                                            className="block w-full border border-slate-300 rounded px-2 py-1 text-sm mt-1" />
+                                            className="field-line" />
                                     </div>
                                     <div>
                                         <label className="text-slate-500 text-xs">Échéance</label>
                                         <input type="date" value={form.date_echeance_principale} onChange={(e) => setForm({ ...form, date_echeance_principale: e.target.value })}
-                                            className="block w-full border border-slate-300 rounded px-2 py-1 text-sm mt-1" />
+                                            className="field-line" />
                                     </div>
                                     <div>
                                         <label className="text-slate-500 text-xs">Fractionnement</label>
                                         <select value={form.fractionnement} onChange={(e) => setForm({ ...form, fractionnement: e.target.value })}
-                                            className="block w-full border border-slate-300 rounded px-2 py-1 text-sm mt-1">
+                                            className="field-line">
                                             <option value="ANNUEL">Annuel</option>
                                             <option value="SEMESTRIEL">Semestriel</option>
                                             <option value="TRIMESTRIEL">Trimestriel</option>
@@ -420,20 +494,26 @@ export default function ContratDetail() {
                         {edition && (
                             <div className="flex gap-3 mt-4 pt-3 border-t border-slate-100">
                                 <button onClick={sauvegarderFiche} disabled={busy}
-                                    className="px-4 py-1.5 rounded text-sm bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Enregistrer</button>
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Enregistrer</button>
                                 <button onClick={() => { setEdition(false); setForm({ numero_police: contrat.numero_police || '', date_effet: contrat.date_effet || '', date_echeance_principale: contrat.date_echeance_principale || '', fractionnement: contrat.fractionnement || '' }); }}
-                                    className="px-4 py-1.5 rounded text-sm border border-slate-300 text-slate-700 hover:bg-slate-50">Annuler</button>
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                             </div>
                         )}
                     </div>
 
                     {/* Div 3 — Statut */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-amber-500">
-                        <h2 className="font-semibold text-slate-900 mb-3">Statut</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11.514 1.792a.75.75 0 0 0-1.028 0l-1.5 1.379a.75.75 0 0 1-.56.272H6.75a.75.75 0 0 0-.75.75v1.676c0 .208-.08.41-.272.56L4.35 7.91a.75.75 0 0 0 0 1.028l1.628 1.5c.192.149.272.352.272.56v1.676a.75.75 0 0 0 .75.75h1.676c.208 0 .41.08.56.272l1.5 1.628a.75.75 0 0 0 1.028 0l1.5-1.5a.75.75 0 0 1 .56-.272h1.676a.75.75 0 0 0 .75-.75v-1.676c0-.208.08-.41.272-.56l1.628-1.5a.75.75 0 0 0 0-1.028l-1.5-1.5a.75.75 0 0 1-.272-.56V6.75a.75.75 0 0 0-.75-.75h-1.676a.75.75 0 0 1-.56-.272l-1.5-1.5Z" /></svg>
+                            </div>
+                            <h3 className="text-sm font-bold text-deep-blue">Statut</h3>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
                             <div>
                                 <span className="text-slate-500">Statut :</span>{' '}
-                                <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap ${STATUT_CLS[contrat.statut] || 'bg-slate-100 text-slate-600'}`}>
                                     {CONTRAT_STATUT_LABELS[contrat.statut] || contrat.statut}
                                 </span>
                                 {['EN_ATTENTE_SIGNATURE', 'REGLE', 'NON_REGLE'].includes(contrat.statut) && (
@@ -472,9 +552,15 @@ export default function ContratDetail() {
                     </div>
 
                     {/* Div 4 — Documents de courtage */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-indigo-600">
-                        <div className="flex justify-between items-center mb-3">
-                            <h2 className="font-semibold text-slate-900">Documents de courtage</h2>
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center justify-between gap-2 mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>
+                                </div>
+                                <h3 className="text-sm font-bold text-deep-blue">Documents de courtage</h3>
+                            </div>
                             <span className="text-xs text-slate-400">{docsGenere.length} document(s)</span>
                         </div>
 
@@ -484,10 +570,10 @@ export default function ContratDetail() {
                                 {Object.keys(DOC_TYPES).map((k) => (
                                     <button key={k}
                                         onClick={() => (docMode === k ? setDocMode(null) : ouvrirDoc(k))}
-                                        className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                                        className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                                             docMode === k
-                                                ? 'bg-blue-700 border-blue-700 text-white'
-                                                : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                                                ? 'bg-deep-blue text-white shadow-sm'
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                                         }`}>
                                         {DOC_TYPES[k].label}
                                     </button>
@@ -505,27 +591,27 @@ export default function ContratDetail() {
                                             <div className="col-span-2 md:col-span-3">
                                                 <label className="text-slate-500 text-xs">Garanties souhaitées par l'assuré</label>
                                                 <textarea value={docForm.garanties_souhaitees} onChange={(e) => setDocForm({ ...docForm, garanties_souhaitees: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" rows={2} />
+                                                    className="field-line" rows={2} />
                                             </div>
                                             <div className="col-span-2 md:col-span-3">
                                                 <label className="text-slate-500 text-xs">Observations</label>
                                                 <textarea value={docForm.observations} onChange={(e) => setDocForm({ ...docForm, observations: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" rows={2} />
+                                                    className="field-line" rows={2} />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Compagnie</label>
                                                 <input value={docForm.compagnie} onChange={(e) => setDocForm({ ...docForm, compagnie: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Numéro de projet</label>
                                                 <input value={docForm.numero_projet} onChange={(e) => setDocForm({ ...docForm, numero_projet: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Montant des frais de courtage</label>
                                                 <input value={docForm.montant_frais_courtage} onChange={(e) => setDocForm({ ...docForm, montant_frais_courtage: e.target.value })}
-                                                    placeholder="Ex: 1 200,00 €" className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    placeholder="Ex: 1 200,00 €" className="field-line" />
                                             </div>
                                         </>
                                     )}
@@ -534,7 +620,7 @@ export default function ContratDetail() {
                                             <div>
                                                 <label className="text-slate-500 text-xs">Numéro de l'ancien contrat</label>
                                                 <input value={docForm.ancien_police} onChange={(e) => setDocForm({ ...docForm, ancien_police: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                         </>
                                     )}
@@ -543,36 +629,36 @@ export default function ContratDetail() {
                                             <div>
                                                 <label className="text-slate-500 text-xs">Référence</label>
                                                 <input value={docForm.reference} onChange={(e) => setDocForm({ ...docForm, reference: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Date</label>
                                                 <input type="date" value={docForm.date} onChange={(e) => setDocForm({ ...docForm, date: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Durée</label>
                                                 <input value={docForm.duree} onChange={(e) => setDocForm({ ...docForm, duree: e.target.value })}
-                                                    placeholder="Ex: 1 an renouvelable" className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    placeholder="Ex: 1 an renouvelable" className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Objet du mandat</label>
                                                 <input value={docForm.objet} onChange={(e) => setDocForm({ ...docForm, objet: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                             <div>
                                                 <label className="text-slate-500 text-xs">Contrepartie / Commissions</label>
                                                 <input value={docForm.commissions} onChange={(e) => setDocForm({ ...docForm, commissions: e.target.value })}
-                                                    className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                                    className="field-line" />
                                             </div>
                                         </>
                                     )}
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={genererDocument} disabled={busy}
-                                        className="px-4 py-1.5 rounded text-sm bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Générer et télécharger</button>
+                                        className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Générer et télécharger</button>
                                     <button onClick={() => { setDocMode(null); setDocForm({}); }}
-                                        className="px-4 py-1.5 rounded text-sm border border-slate-300 text-slate-700 hover:bg-slate-50">Annuler</button>
+                                        className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                                 </div>
                             </div>
                         )}
@@ -588,7 +674,7 @@ export default function ContratDetail() {
                                         </div>
                                         <div className="text-xs text-slate-500 truncate" title={d.nom_origine}>{d.nom_origine}</div>
                                         <button onClick={() => telecharger(d.id)}
-                                            className="text-xs px-2 py-1 rounded border border-blue-700 text-blue-700 hover:bg-blue-50 self-start">Télécharger</button>
+                                            className="text-xs px-2 py-1 rounded border border-deep-blue text-deep-blue hover:bg-deep-blue-soft/60 self-start">Télécharger</button>
                                     </div>
                                 ))}
                             </div>
@@ -598,21 +684,27 @@ export default function ContratDetail() {
                     </div>
 
                     {/* Div 5 — Fichiers uploadés par le client */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-purple-600">
-                        <div className="flex justify-between items-center mb-3">
-                            <h2 className="font-semibold text-slate-900">Fichiers uploadés par le client</h2>
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center justify-between gap-2 mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                                </div>
+                                <h3 className="text-sm font-bold text-deep-blue">Fichiers uploadés par le client</h3>
+                            </div>
                             <span className="text-xs text-slate-400">{clientDossierDocs.length} fichier(s)</span>
                         </div>
                         {clientDossierDocs.length > 0 ? (
-                            <ul className="divide-y divide-slate-100 max-h-[420px] overflow-y-auto">
+                            <ul className="divide-y divide-slate-100 max-h-[420px] overflow-y-auto scroll-blue">
                                 {clientDossierDocs.map((d) => (
-                                    <li key={d.id} className="px-4 py-3 flex items-center gap-3">
+                                    <li key={d.id} className="px-1 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors rounded-lg">
                                         <span className="flex-1 min-w-0">
                                             <span className="block text-sm font-medium text-slate-900 truncate">{d.nom_origine}</span>
                                             <span className="block text-xs text-slate-400">{d.type_document}{d.taille ? ` • ${fmtTaille(d.taille)}` : ''}</span>
                                         </span>
                                         <button onClick={() => telecharger(d.id)} title="Télécharger"
-                                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-deep-blue hover:bg-deep-blue-soft transition-colors">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                                             </svg>
@@ -632,19 +724,25 @@ export default function ContratDetail() {
                     </div>
 
                     {/* Div 6 — Actions */}
-                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm border-t-4 border-t-rose-500">
-                        <h2 className="font-semibold text-slate-900 mb-3">Actions</h2>
+                    <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                        <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center">
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></svg>
+                            </div>
+                            <h3 className="text-sm font-bold text-deep-blue">Actions</h3>
+                        </div>
                         {estCabinet ? (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2.5">
                                 <button onClick={openTache}
-                                    className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded bg-blue-700 text-white hover:bg-blue-800">
+                                    className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-deep-blue hover:bg-deep-blue-dark text-white shadow-sm transition-colors">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                     </svg>
                                     Créer une tâche
                                 </button>
                                 <button onClick={openSinistre}
-                                    className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+                                    className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-sm transition-colors">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                                     </svg>
@@ -660,12 +758,13 @@ export default function ContratDetail() {
 
             {/* ===== ONGLET AVENANTS ===== */}
             {onglet === 'avenants' && (
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="font-semibold text-slate-900">Avenants</h2>
+                <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                    <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-deep-blue">Avenants</h3>
                         {estCabinet && (
                             <button onClick={() => setFormAvenant({ type: '', date_effet: '', variation_prime_cts: '', description: '' })}
-                                className="text-sm px-3 py-1.5 rounded bg-blue-700 text-white hover:bg-blue-800">+ Nouvel avenant</button>
+                                className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors">+ Nouvel avenant</button>
                         )}
                     </div>
                     {formAvenant && (
@@ -674,33 +773,33 @@ export default function ContratDetail() {
                                 <div>
                                     <label className="text-slate-500 text-xs">Type</label>
                                     <input value={formAvenant.type} onChange={(e) => setFormAvenant({ ...formAvenant, type: e.target.value })}
-                                        placeholder="Ex: MODIFICATION" className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        placeholder="Ex: MODIFICATION" className="field-line" />
                                 </div>
                                 <div>
                                     <label className="text-slate-500 text-xs">Date effet</label>
                                     <input type="date" value={formAvenant.date_effet} onChange={(e) => setFormAvenant({ ...formAvenant, date_effet: e.target.value })}
-                                        className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        className="field-line" />
                                 </div>
                                 <div>
                                     <label className="text-slate-500 text-xs">Variation prime (cts)</label>
                                     <input type="number" value={formAvenant.variation_prime_cts} onChange={(e) => setFormAvenant({ ...formAvenant, variation_prime_cts: e.target.value })}
-                                        className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        className="field-line" />
                                 </div>
                                 <div>
                                     <label className="text-slate-500 text-xs">Description</label>
                                     <input value={formAvenant.description} onChange={(e) => setFormAvenant({ ...formAvenant, description: e.target.value })}
-                                        className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        className="field-line" />
                                 </div>
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={creerAvenant} disabled={busy || !formAvenant.type || !formAvenant.date_effet}
-                                    className="px-3 py-1 rounded text-sm bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Créer</button>
-                                <button onClick={() => setFormAvenant(null)} className="px-3 py-1 rounded text-sm border border-slate-300">Annuler</button>
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Créer</button>
+                                <button onClick={() => setFormAvenant(null)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                             </div>
                         </div>
                     )}
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-slate-600">
+                        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                             <tr><th className="px-3 py-2">Type</th><th className="px-3 py-2">Date effet</th><th className="px-3 py-2 text-right">Variation</th><th className="px-3 py-2">Description</th><th className="px-3 py-2">Statut</th></tr>
                         </thead>
                         <tbody>
@@ -723,16 +822,17 @@ export default function ContratDetail() {
 
             {/* ===== ONGLET QUITTANCES ===== */}
             {onglet === 'quittances' && (
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="font-semibold text-slate-900">Quittances</h2>
+                <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                    <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-deep-blue">Quittances</h3>
                         {estCabinet && (!contrat.quittances || contrat.quittances.length === 0) && (
                             <button onClick={genererQuittances} disabled={busy}
-                                className="text-sm px-3 py-1.5 rounded bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Générer l'échéancier</button>
+                                className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Générer l'échéancier</button>
                         )}
                     </div>
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-slate-600">
+                        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                             <tr><th className="px-3 py-2">#</th><th className="px-3 py-2">Appel</th><th className="px-3 py-2">Échéance</th><th className="px-3 py-2 text-right">Montant</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2">Encaissée</th>{estCabinet && <th className="px-3 py-2">Action</th>}</tr>
                         </thead>
                         <tbody>
@@ -770,11 +870,12 @@ export default function ContratDetail() {
 
             {/* ===== ONGLET SINISTRES ===== */}
             {onglet === 'sinistres' && (
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="font-semibold text-slate-900">Sinistres</h2>
+                <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                    <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-deep-blue">Sinistres</h3>
                         <button onClick={() => setFormSinistre({ date_survenance: '', nature: '', montant_estime_cts: '' })}
-                            className="text-sm px-3 py-1.5 rounded bg-blue-700 text-white hover:bg-blue-800">+ Déclarer</button>
+                            className="inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors">+ Déclarer</button>
                     </div>
                     {formSinistre && (
                         <div className="bg-slate-50 border border-slate-200 rounded p-4 mb-4 text-sm">
@@ -782,28 +883,28 @@ export default function ContratDetail() {
                                 <div>
                                     <label className="text-slate-500 text-xs">Date survenance</label>
                                     <input type="date" value={formSinistre.date_survenance} onChange={(e) => setFormSinistre({ ...formSinistre, date_survenance: e.target.value })}
-                                        className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        className="field-line" />
                                 </div>
                                 <div>
                                     <label className="text-slate-500 text-xs">Nature</label>
                                     <input value={formSinistre.nature} onChange={(e) => setFormSinistre({ ...formSinistre, nature: e.target.value })}
-                                        placeholder="Ex: Incendie" className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        placeholder="Ex: Incendie" className="field-line" />
                                 </div>
                                 <div>
                                     <label className="text-slate-500 text-xs">Montant estimé (cts)</label>
                                     <input type="number" value={formSinistre.montant_estime_cts} onChange={(e) => setFormSinistre({ ...formSinistre, montant_estime_cts: e.target.value })}
-                                        className="block w-full border border-slate-300 rounded px-2 py-1 mt-1" />
+                                        className="field-line" />
                                 </div>
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={declarerSinistre} disabled={busy || !formSinistre.date_survenance}
-                                    className="px-3 py-1 rounded text-sm bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Déclarer</button>
-                                <button onClick={() => setFormSinistre(null)} className="px-3 py-1 rounded text-sm border border-slate-300">Annuler</button>
+                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Déclarer</button>
+                                <button onClick={() => setFormSinistre(null)} className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                             </div>
                         </div>
                     )}
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-slate-600">
+                        <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                             <tr><th className="px-3 py-2">N°</th><th className="px-3 py-2">Survenance</th><th className="px-3 py-2">Nature</th><th className="px-3 py-2 text-right">Estimé</th><th className="px-3 py-2 text-right">Réglé</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2">Déclaré par</th></tr>
                         </thead>
                         <tbody>
@@ -828,14 +929,15 @@ export default function ContratDetail() {
 
             {/* ===== ONGLET SOUSCRIPTION ===== */}
             {onglet === 'souscription' && estCabinet && (
-                <div className="bg-white border border-slate-200 rounded-lg p-5">
+                <div className="card-hover relative overflow-hidden bg-white border border-slate-100 rounded-xl p-5 shadow-sm">
+                    <span className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
                     <div className="flex items-center justify-between mb-3">
-                        <h2 className="font-semibold text-slate-900">Souscription</h2>
+                        <h3 className="text-sm font-bold text-deep-blue">Souscription</h3>
                         <span className="text-sm text-slate-500">Progression : {progression}% — {progression === 100 ? 'Terminée' : 'En cours'}</span>
                     </div>
                     <div className="flex items-center gap-2 mb-4">
                         <div className="flex-1 h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 transition-all" style={{ width: `${progression}%` }} />
+                            <div className="h-full bg-deep-blue transition-all" style={{ width: `${progression}%` }} />
                         </div>
                     </div>
                     <div className="space-y-2 mb-5">
@@ -847,14 +949,14 @@ export default function ContratDetail() {
                         ))}
                     </div>
                     <div className="border-t border-slate-100 pt-4 flex flex-wrap gap-3">
-                        <button onClick={genererPolice} disabled={busy} className="px-3 py-1.5 rounded text-sm bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50">Générer la police</button>
+                        <button onClick={genererPolice} disabled={busy} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm transition-colors disabled:opacity-50">Générer la police</button>
                         {contrat.statut === 'EN_CONSTITUTION' && (
                             <button onClick={envoyerSignature} disabled={busy || !contrat.documents?.length}
-                                className="px-3 py-1.5 rounded text-sm bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-50">Envoyer en signature</button>
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-700 text-white hover:bg-slate-800 shadow-sm transition-colors disabled:opacity-50">Envoyer en signature</button>
                         )}
                         {contrat.statut === 'EN_ATTENTE_SIGNATURE' && (
                             <button onClick={marquerSigne} disabled={busy}
-                                className="px-3 py-1.5 rounded text-sm bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50">Marquer signé</button>
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-emerald-700 text-white hover:bg-emerald-800 shadow-sm transition-colors disabled:opacity-50">Marquer signé</button>
                         )}
                     </div>
                     {signature && Object.keys(signature).length > 0 && (
@@ -872,7 +974,7 @@ export default function ContratDetail() {
                             {contrat.documents.map((d) => (
                                 <div key={d.id} className="flex items-center justify-between text-sm py-1">
                                     <span className="text-slate-600">{d.nom_origine}{d.version > 1 && ` (v${d.version})`}</span>
-                                    <button onClick={() => telecharger(d.id)} className="text-blue-700 hover:underline">Télécharger</button>
+                                    <button onClick={() => telecharger(d.id)} className="text-deep-blue hover:underline">Télécharger</button>
                                 </div>
                             ))}
                         </div>
@@ -882,35 +984,41 @@ export default function ContratDetail() {
         </div>
 
         {tacheOpen && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-6 overflow-hidden flex flex-col max-h-[92vh]">
-                    <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white">
-                        <h2 className="text-lg font-bold">Créer une tâche</h2>
-                        <button onClick={() => setTacheOpen(false)} className="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+            <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-4xl my-8">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                    <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                        <h2 className="text-lg font-bold text-deep-blue">Créer une tâche</h2>
+                        <button onClick={() => setTacheOpen(false)} aria-label="Fermer"
+                            className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <div className="p-6 overflow-y-auto">
+                    <div className="p-5 overflow-y-auto">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveTache}>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Réf</span>
-                                        <input value="(Généré automatiquement)" disabled className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500" />
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Réf</span>
+                                        <input value="(Généré automatiquement)" disabled className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Type *</span>
-                                        <select value={tacheForm.type} disabled className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500">
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Type *</span>
+                                        <select value={tacheForm.type} disabled className="field-line">
                                             <option value="SINISTRE">SINISTRE</option>
                                         </select>
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Suivi par *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Suivi par *</span>
                                         <select value={tacheForm.assignee_id} onChange={(e) => setTacheForm({ ...tacheForm, assignee_id: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">Choisir...</option>
                                             {tacheSuiveurs.map((u) => (
                                                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -920,9 +1028,9 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Objet *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Objet *</span>
                                         <select value={tacheForm.objet} onChange={(e) => setTacheForm({ ...tacheForm, objet: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="Ouvrir sinistre">Ouvrir sinistre</option>
                                             <option value="Suivi sinistre">Suivi sinistre</option>
                                             <option value="Clôturer sinistre">Clôturer sinistre</option>
@@ -934,30 +1042,30 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Date début *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Date début *</span>
                                         <input type="date" value={tacheForm.date_debut} onChange={(e) => setTacheForm({ ...tacheForm, date_debut: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                                            className="field-line" required />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Montant</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Montant</span>
                                         <input type="number" min="0" step="0.01" value={tacheForm.montant} onChange={(e) => setTacheForm({ ...tacheForm, montant: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Date fin *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Date fin *</span>
                                         <input type="date" value={tacheForm.date_fin} onChange={(e) => setTacheForm({ ...tacheForm, date_fin: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                                            className="field-line" required />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Priorité *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Priorité *</span>
                                         <select value={tacheForm.priorite} onChange={(e) => setTacheForm({ ...tacheForm, priorite: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="FAIBLE">Faible</option>
                                             <option value="BASSE">Basse</option>
                                             <option value="MOYENNE">Moyenne</option>
@@ -968,30 +1076,30 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Avancement (%)</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Avancement (%)</span>
                                         <input type="number" min="0" max="100" value={tacheForm.avancement} onChange={(e) => setTacheForm({ ...tacheForm, avancement: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Description *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Description *</span>
                                         <textarea value={tacheForm.description} onChange={(e) => setTacheForm({ ...tacheForm, description: e.target.value })} rows={3} required
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Temps passé (h)</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Temps passé (h)</span>
                                         <input type="number" min="0" step="0.5" value={tacheForm.temps_passe_h} onChange={(e) => setTacheForm({ ...tacheForm, temps_passe_h: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Statut *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Statut *</span>
                                         <select value={tacheForm.statut} onChange={(e) => setTacheForm({ ...tacheForm, statut: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="A_FAIRE">À faire</option>
                                             <option value="EN_COURS">En cours</option>
                                             <option value="TERMINEE">Terminée</option>
@@ -1001,10 +1109,10 @@ export default function ContratDetail() {
                             </div>
 
                             <div className="flex items-center gap-2 mt-6 mb-3 pb-3 border-b border-slate-200">
-                                <h3 className="text-base font-bold text-blue-700 uppercase tracking-wide">Documents à joindre</h3>
+                                <h3 className="text-base font-bold text-deep-blue uppercase tracking-wide">Documents à joindre</h3>
                             </div>
                             <label className="cursor-pointer block">
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm hover:border-deep-blue hover:bg-deep-blue-soft/40 transition-colors">
                                     <div className="text-3xl mb-1">⬆</div>
                                     Déposez vos fichiers ici... ou cliquez pour parcourir
                                 </div>
@@ -1027,7 +1135,7 @@ export default function ContratDetail() {
                                 <button type="button" onClick={() => setTacheOpen(false)}
                                     className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200">Annuler</button>
                                 <button type="submit" disabled={savingTache}
-                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50">
+                                    className="px-5 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50">
                                     {savingTache ? 'Enregistrement...' : 'Créer la tâche'}
                                 </button>
                             </div>
@@ -1038,53 +1146,56 @@ export default function ContratDetail() {
         )}
 
         {sinistreOpen && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl my-6 overflow-hidden flex flex-col max-h-[92vh]">
-                    <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-red-600 to-red-500 text-white">
-                        <div className="flex items-center gap-3">
-                            <span className="w-1.5 h-10 bg-white/70 rounded-full"></span>
-                            <div>
-                                <h2 className="text-lg font-bold leading-tight">Ajouter un sinistre</h2>
-                                <p className="text-xs text-red-100">La référence sera générée après la création</p>
-                            </div>
+            <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-4xl my-8">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                    <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                        <div>
+                            <h2 className="text-lg font-bold text-deep-blue leading-tight">Ajouter un sinistre</h2>
+                            <p className="text-xs text-slate-400 mt-0.5">La référence sera générée après la création</p>
                         </div>
-                        <button onClick={() => setSinistreOpen(false)} className="text-white/80 hover:text-white text-2xl leading-none">&times;</button>
+                        <button onClick={() => setSinistreOpen(false)} aria-label="Fermer"
+                            className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
-                    <div className="p-6 overflow-y-auto">
+                    <div className="p-5 overflow-y-auto">
                         {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
                         <form onSubmit={saveSinistre}>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Contrat *</span>
-                                        <input value={contrat.reference} disabled className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500" />
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Contrat *</span>
+                                        <input value={contrat.reference} disabled className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Date sinistre</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Date sinistre</span>
                                         <input type="date" value={sinistreForm.date_survenance} onChange={(e) => setSinistreForm({ ...sinistreForm, date_survenance: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Référence sinistre</span>
-                                        <input value="" disabled placeholder="Générée après création" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-slate-100 text-slate-500" />
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Référence sinistre</span>
+                                        <input value="" disabled placeholder="Générée après création" className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Référence compagnie</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Référence compagnie</span>
                                         <input value={sinistreForm.ref_compagnie} onChange={(e) => setSinistreForm({ ...sinistreForm, ref_compagnie: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Suivi par *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Suivi par *</span>
                                         <select value={sinistreForm.suivi_par_id} onChange={(e) => setSinistreForm({ ...sinistreForm, suivi_par_id: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="">Sélectionner...</option>
                                             {sinistreSuiveurs.map((u) => (
                                                 <option key={u.id} value={u.id}>{u.name}</option>
@@ -1094,9 +1205,9 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Statut *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Statut *</span>
                                         <select value={sinistreForm.statut} onChange={(e) => setSinistreForm({ ...sinistreForm, statut: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                                            className="field-line" required>
                                             <option value="NON_OUVERT">Non ouvert</option>
                                             <option value="OUVERT">Ouvert</option>
                                             <option value="EN_COURS">En cours</option>
@@ -1108,72 +1219,72 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Garantie applicable</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Garantie applicable</span>
                                         <input value={sinistreForm.garantie} onChange={(e) => setSinistreForm({ ...sinistreForm, garantie: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Franchise</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Franchise</span>
                                         <input value={sinistreForm.franchise} onChange={(e) => setSinistreForm({ ...sinistreForm, franchise: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Circonstance *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Circonstance *</span>
                                         <input value={sinistreForm.circonstance} onChange={(e) => setSinistreForm({ ...sinistreForm, circonstance: e.target.value })} required
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Description des dommages</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Description des dommages</span>
                                         <textarea value={sinistreForm.description_dommages} onChange={(e) => setSinistreForm({ ...sinistreForm, description_dommages: e.target.value })} rows={3}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Responsabilité *</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Responsabilité *</span>
                                         <input value={sinistreForm.responsabilite} onChange={(e) => setSinistreForm({ ...sinistreForm, responsabilite: e.target.value })} required
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Montant des dommages (€)</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Montant des dommages (€)</span>
                                         <input type="number" step="0.01" min="0" value={sinistreForm.montant_estime_cts} onChange={(e) => setSinistreForm({ ...sinistreForm, montant_estime_cts: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Bénéficiaire</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Bénéficiaire</span>
                                         <input value={sinistreForm.beneficiaire} onChange={(e) => setSinistreForm({ ...sinistreForm, beneficiaire: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Expertise</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Expertise</span>
                                         <input value={sinistreForm.expertise} onChange={(e) => setSinistreForm({ ...sinistreForm, expertise: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Recours</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Recours</span>
                                         <input value={sinistreForm.recours} onChange={(e) => setSinistreForm({ ...sinistreForm, recours: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">État</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">État</span>
                                         <select value={sinistreForm.etat} onChange={(e) => setSinistreForm({ ...sinistreForm, etat: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            className="field-line">
                                             <option value="OUVERT">Ouvert</option>
                                             <option value="EN_COURS_EXPERTISE">En cours d'expertise</option>
                                             <option value="CLOS">Clos</option>
@@ -1183,9 +1294,9 @@ export default function ContratDetail() {
                                 </div>
                                 <div>
                                     <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Clôturé le</span>
+                                        <span className="block text-sm font-medium text-deep-blue mb-1">Clôturé le</span>
                                         <input type="date" value={sinistreForm.cloture_le} onChange={(e) => setSinistreForm({ ...sinistreForm, cloture_le: e.target.value })}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                                            className="field-line" />
                                     </label>
                                 </div>
                             </div>

@@ -19,18 +19,18 @@ const STATUT_LABELS = {
 };
 
 const STATUT_CLS = {
-    EN_CONSTITUTION: 'bg-slate-100 text-slate-600',
-    EN_ATTENTE_SIGNATURE: 'bg-amber-50 text-amber-700',
-    SIGNE: 'bg-blue-50 text-blue-700',
-    EN_ATTENTE_EMISSION: 'bg-indigo-50 text-indigo-700',
-    EN_VIGUEUR: 'bg-emerald-50 text-emerald-700',
-    IMPAYE: 'bg-red-50 text-red-700',
-    SUSPENDU: 'bg-orange-50 text-orange-700',
-    RESILIE: 'bg-slate-100 text-slate-500',
-    SANS_EFFET: 'bg-gray-100 text-gray-500',
-    EXPIRE: 'bg-purple-50 text-purple-700',
-    REGLE: 'bg-emerald-50 text-emerald-700',
-    NON_REGLE: 'bg-rose-50 text-rose-700',
+    EN_CONSTITUTION: { cls: 'bg-slate-100 text-slate-600', dot: 'bg-slate-400' },
+    EN_ATTENTE_SIGNATURE: { cls: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
+    SIGNE: { cls: 'bg-blue-50 text-blue-700 ring-blue-200', dot: 'bg-blue-500' },
+    EN_ATTENTE_EMISSION: { cls: 'bg-indigo-50 text-indigo-700 ring-indigo-200', dot: 'bg-indigo-500' },
+    EN_VIGUEUR: { cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+    IMPAYE: { cls: 'bg-red-50 text-red-700 ring-red-200', dot: 'bg-red-500' },
+    SUSPENDU: { cls: 'bg-orange-50 text-orange-700 ring-orange-200', dot: 'bg-orange-500' },
+    RESILIE: { cls: 'bg-slate-100 text-slate-500', dot: 'bg-slate-400' },
+    SANS_EFFET: { cls: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
+    EXPIRE: { cls: 'bg-purple-50 text-purple-700 ring-purple-200', dot: 'bg-purple-500' },
+    REGLE: { cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+    NON_REGLE: { cls: 'bg-rose-50 text-rose-700 ring-rose-200', dot: 'bg-rose-500' },
 };
 
 const EMPTY = { type: 'PHYSIQUE', civilite: '', nom: '', prenom: '', raison_sociale: '', siren: '', siret: '', forme_juridique: '', personne_a_contacter: '', adresse: '', code_postal: '', ville: '', telephone: '', tel2: '', email: '', email2: '', preference_contact: '', origine: '', rgpd_consentement: false, exclure_marketing: false };
@@ -79,7 +79,7 @@ export default function ContratsList() {
         charger(next);
     };
 
-    const perPage = 10;
+    const perPage = 8;
     const totalPages = Math.max(1, Math.ceil(contrats.length / perPage));
     const pageContrats = contrats.slice((page - 1) * perPage, page * perPage);
 
@@ -185,7 +185,7 @@ export default function ContratsList() {
                         {estCabinet && (
                             <button
                                 onClick={toggleSouscription}
-                                className={`text-sm px-3 py-1.5 rounded border transition-colors ${
+                                className={`inline-flex items-center gap-2 text-sm font-medium px-4 py-2.5 rounded-lg border transition-all duration-200 ${
                                     enSouscription
                                         ? 'bg-deep-blue border-deep-blue text-white'
                                         : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -219,7 +219,7 @@ export default function ContratsList() {
                     <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50/70 text-left text-xs uppercase tracking-wide text-slate-500">
+                            <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200 bg-gradient-to-b from-slate-50 to-slate-50/60">
                                 <th className="px-4 py-3 font-semibold">ID</th>
                                 <th className="px-4 py-3 font-semibold">Client</th>
                                 <th className="px-4 py-3 font-semibold">Origine</th>
@@ -232,7 +232,7 @@ export default function ContratsList() {
                                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100">
                             {pageContrats.map((c) => (
                                 <tr key={c.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
                                         <td className="px-4 py-3 font-mono text-xs text-slate-400" title={c.id}>
@@ -242,8 +242,8 @@ export default function ContratsList() {
                                         <td className="px-4 py-3 text-slate-600">{c.origine || '—'}</td>
                                         <td className="px-4 py-3 text-slate-600">{c.produit || '—'}</td>
                                         <td className="px-4 py-3 text-slate-600">{c.fournisseur || '—'}</td>
-                                        <td className="px-4 py-3">
-                                            <span className={`text-xs px-2 py-0.5 rounded-full ${STATUT_CLS[c.statut] || 'bg-slate-100 text-slate-600'}`}>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${STATUT_CLS[c.statut]?.cls || 'bg-slate-100 text-slate-600'}`}>
                                                 {STATUT_LABELS[c.statut] || c.statut}
                                             </span>
                                         </td>
@@ -253,9 +253,10 @@ export default function ContratsList() {
                                         <td className="px-4 py-3 text-right">
                                             <Link
                                                 to={`${base}/contrats/${c.id}`}
-                                                className="inline-flex items-center gap-1.5 text-xs font-medium text-deep-blue bg-deep-blue-soft border border-deep-blue/25 px-2.5 py-1 rounded-lg hover:bg-deep-blue-soft/80"
+                                                className="group inline-flex items-center justify-center gap-1.5 h-9 text-sm font-semibold text-deep-blue px-2.5 rounded-lg transition-all duration-200 hover:text-deep-blue-dark hover:translate-x-0.5"
                                             >
                                                 Ouvrir
+                                                <svg className="w-4 h-4 -translate-x-1 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" /></svg>
                                             </Link>
                                         </td>
                                     </tr>
@@ -316,28 +317,32 @@ export default function ContratsList() {
             )}
 
             {editor && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-2xl p-5 w-full max-w-4xl shadow-2xl my-4 max-h-[92vh] overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900">Nouveau contrat</h2>
-                            <button onClick={() => { setEditor(false); setError(''); }} className="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 overflow-y-auto">
+                    <div className="anim-pop relative bg-white overflow-hidden rounded-2xl shadow-xl w-full max-w-4xl my-8">
+                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-deep-blue via-indigo-600 to-brand-red" />
+                        <div className="flex items-center justify-between px-5 py-4 pl-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-deep-blue">Nouveau contrat</h3>
+                            <button onClick={() => { setEditor(false); setError(''); }} aria-label="Fermer"
+                                className="group h-8 w-8 flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-all duration-300 hover:bg-deep-blue-soft hover:text-deep-blue hover:rotate-90 active:scale-90">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
 
-                        {error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
+                        <div className="p-5">{error && <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-4 text-sm">{error}</div>}
 
                         {etape === 1 && (
                             <div>
                                 <div className="mb-4">
-                                    <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Sélectionner un client <span className="text-red-500">*</span></span>
-                                        <select value={clientId} onChange={onSelectClient}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
-                                            <option value="">— Choisir un client —</option>
-                                            {clients.map((c) => (
-                                                <option key={c.id} value={c.id}>{c.nom_complet}</option>
-                                            ))}
-                                        </select>
-                                    </label>
+                                    <label className="block text-sm font-medium text-deep-blue mb-1">Sélectionner un client <span className="text-red-500">*</span></label>
+                                    <select value={clientId} onChange={onSelectClient}
+                                        className="field-line">
+                                        <option value="">— Choisir un client —</option>
+                                        {clients.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.nom_complet}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 {clientId && (
@@ -347,14 +352,12 @@ export default function ContratsList() {
                                                 onChange={(e) => setForm({ ...form, [form.type === 'MORALE' ? 'raison_sociale' : 'nom']: e.target.value })} placeholder="test test" />
                                         </div>
                                         <div className="col-span-2">
-                                            <label className="block">
-                                                <span className="block text-sm font-medium text-slate-700 mb-1">Type <span className="text-red-500">*</span></span>
+                                            <label className="block text-sm font-medium text-deep-blue mb-1">Type <span className="text-red-500">*</span></label>
                                                 <select value={form.type} onChange={setF('type')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                                    className="field-line">
                                                     <option value="PHYSIQUE">Personne physique</option>
                                                     <option value="MORALE">Personne morale</option>
                                                 </select>
-                                            </label>
                                         </div>
                                         {form.type === 'PHYSIQUE' ? (
                                             <>
@@ -369,14 +372,12 @@ export default function ContratsList() {
                                                 <Field label="SIREN" value={form.siren} onChange={setF('siren')} small />
                                                 <Field label="SIRET" value={form.siret} onChange={setF('siret')} small />
                                                 <div className="col-span-2">
-                                                    <label className="block">
-                                                        <span className="block text-sm font-medium text-slate-700 mb-1">Forme juridique de l'entreprise</span>
+                                                    <label className="block text-sm font-medium text-deep-blue mb-1">Forme juridique de l'entreprise</label>
                                                         <select value={form.forme_juridique} onChange={setF('forme_juridique')}
-                                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                                            className="field-line">
                                                             <option value="">Choisir...</option>
                                                             {FORMES_JURIDIQUES.map((f) => <option key={f} value={f}>{f}</option>)}
                                                         </select>
-                                                    </label>
                                                 </div>
                                             </>
                                         )}
@@ -393,24 +394,20 @@ export default function ContratsList() {
                                         <Field label="Email" type="email" value={form.email} onChange={setF('email')} />
                                         <Field label="Email 2" type="email" value={form.email2} onChange={setF('email2')} />
                                         <div>
-                                            <label className="block">
-                                                <span className="block text-sm font-medium text-slate-700 mb-1">Préférence de contact</span>
+                                            <label className="block text-sm font-medium text-deep-blue mb-1">Préférence de contact</label>
                                                 <select value={form.preference_contact} onChange={setF('preference_contact')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                                    className="field-line">
                                                     <option value="">Choisir...</option>
                                                     {PREFERENCES.map((p) => <option key={p} value={p}>{p}</option>)}
                                                 </select>
-                                            </label>
                                         </div>
                                         <div>
-                                            <label className="block">
-                                                <span className="block text-sm font-medium text-slate-700 mb-1">Origine <span className="text-red-500">*</span></span>
+                                            <label className="block text-sm font-medium text-deep-blue mb-1">Origine <span className="text-red-500">*</span></label>
                                                 <select value={form.origine} onChange={setF('origine')}
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                                    className="field-line">
                                                     <option value="">Choisir...</option>
                                                     {ORIGINES.map((o) => <option key={o} value={o}>{o.charAt(0) + o.slice(1).toLowerCase()}</option>)}
                                                 </select>
-                                            </label>
                                         </div>
                                         <div className="col-span-2 space-y-2 mt-1">
                                             <label className="flex items-start gap-2 cursor-pointer">
@@ -443,22 +440,19 @@ export default function ContratsList() {
                         {etape === 2 && (
                             <div>
                                 <div className="mb-4">
-                                    <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Assurance <span className="text-red-500">*</span></span>
+                                    <label className="block text-sm font-medium text-deep-blue mb-1">Assurance <span className="text-red-500">*</span></label>
                                         <select value={grossisteId} onChange={(e) => setGrossisteId(e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                            className="field-line">
                                             <option value="">— Choisir l'assurance —</option>
                                             {grossistes.map((g) => (
                                                 <option key={g.id} value={g.id}>{g.nom}</option>
                                             ))}
                                         </select>
-                                    </label>
                                 </div>
                                 <div className="mb-4">
-                                    <label className="block">
-                                        <span className="block text-sm font-medium text-slate-700 mb-1">Produit</span>
+                                    <label className="block text-sm font-medium text-deep-blue mb-1">Produit</label>
                                         <select value={produitId} onChange={(e) => setProduitId(e.target.value)}
-                                            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue">
+                                            className="field-line">
                                             <option value="">— Choisir le produit —</option>
                                             {produits.map((g) => (
                                                 <optgroup key={g.categorie} label={g.categorie}>
@@ -468,7 +462,6 @@ export default function ContratsList() {
                                                 </optgroup>
                                             ))}
                                         </select>
-                                    </label>
                                 </div>
                                 <div className="flex justify-between gap-2 mt-4">
                                     <button type="button" onClick={() => { setError(''); setEtape(1); }}
@@ -480,6 +473,7 @@ export default function ContratsList() {
                                 </div>
                             </div>
                         )}
+                        </div>
                     </div>
                 </div>
             )}
@@ -489,10 +483,10 @@ export default function ContratsList() {
 
 function Field({ label, value, onChange, type = 'text', required, small, placeholder, disabled }) {
     return (
-        <label className="block">
-            <span className="block text-sm font-medium text-slate-700 mb-1">{label}{required && <span className="text-red-500"> *</span>}</span>
+        <div>
+            <label className="block text-sm font-medium text-deep-blue mb-1">{label}{required && <span className="text-red-500"> *</span>}</label>
             <input type={type} value={value} onChange={onChange} required={required} placeholder={placeholder} disabled={disabled}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue ${disabled ? 'border-slate-200 bg-slate-50 text-slate-600' : 'border-slate-300'}`} />
-        </label>
+                className="field-line" />
+        </div>
     );
 }
