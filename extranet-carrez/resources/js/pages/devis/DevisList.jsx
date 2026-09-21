@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api';
+import Pagination from '../../components/Pagination';
 
 const statutLabels = {
     BROUILLON: 'Brouillon',
@@ -24,6 +25,8 @@ const statutConfig = {
 
 const eur = (cts) => cts != null ? (cts / 100).toFixed(2) + ' €' : '—';
 
+const PER_PAGE = 8;
+
 export default function DevisList() {
     const [devis, setDevis] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -31,18 +34,20 @@ export default function DevisList() {
     const [q, setQ] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const totalPages = Math.max(1, Math.ceil(total / 25));
+    const effectiveTotal = total || devis.length;
+    const totalPages = Math.max(1, Math.ceil(effectiveTotal / PER_PAGE));
+    const lignes = devis.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
     const charger = (p = 1) => {
         setLoading(true);
         setPage(p);
-        const params = { per_page: 25, page: p };
+        const params = {};
         if (statut) params.statut = statut;
         if (q.trim()) params.q = q.trim();
         api.get('/devis', { params })
             .then((res) => {
                 setDevis(res.data.data);
-                setTotal(res.data.meta?.total || 0);
+                setTotal(res.data.meta?.total || res.data.data?.length || 0);
             })
             .catch(() => {})
             .finally(() => setLoading(false));
@@ -81,11 +86,11 @@ export default function DevisList() {
                         value={q}
                         onChange={(e) => setQ(e.target.value)}
                         placeholder="Rechercher (référence, client, amont)..."
-                        className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue transition-shadow"
+                        className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-deep-blue focus:border-deep-blue outline-none transition-shadow"
                     />
                 </form>
                 <select value={statut} onChange={(e) => setStatut(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-deep-blue">
+                    className="border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-deep-blue outline-none">
                     <option value="">Tous les statuts</option>
                     {Object.entries(statutLabels).map(([k, v]) => (
                         <option key={k} value={k}>{v}</option>
@@ -134,7 +139,7 @@ export default function DevisList() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {devis.map((d) => {
+                                {lignes.map((d) => {
                                     const sc = statutConfig[d.statut] || statutConfig.BROUILLON;
                                     return (
                                         <tr key={d.id} className="group border-b border-slate-100 hover:bg-slate-100 hover:shadow-sm transition-all duration-150">
@@ -156,8 +161,7 @@ export default function DevisList() {
                                                 {eur(d.prime_ttc_cts)}
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${sc.cls}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`}></span>
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset whitespace-nowrap transition-transform group-hover:scale-105 ${sc.cls}`}>
                                                     {statutLabels[d.statut] || d.statut}
                                                 </span>
                                             </td>
@@ -179,55 +183,12 @@ export default function DevisList() {
                             </tbody>
                         </table>
                     </div>
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/50">
-                            <span className="text-xs text-slate-500">
-                                Page <span className="font-semibold text-slate-700">{page}</span> sur{' '}
-                                <span className="font-semibold text-slate-700">{totalPages}</span>
-                                {' · '}{total} devis au total
-                            </span>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => charger(page - 1)}
-                                    disabled={page === 1}
-                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clipRule="evenodd" /></svg>
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                                    .reduce((acc, p, idx, arr) => {
-                                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-                                        acc.push(p);
-                                        return acc;
-                                    }, [])
-                                    .map((p, i) =>
-                                        p === '...' ? (
-                                            <span key={`dots-${i}`} className="px-2 text-slate-400 text-sm">…</span>
-                                        ) : (
-                                            <button
-                                                key={p}
-                                                onClick={() => charger(p)}
-                                                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-150 ${
-                                                    p === page
-                                                        ? 'bg-deep-blue text-white shadow-sm scale-105'
-                                                        : 'text-slate-600 hover:bg-deep-blue-soft hover:text-deep-blue'
-                                                }`}
-                                            >
-                                                {p}
-                                            </button>
-                                        )
-                                    )}
-                                <button
-                                    onClick={() => charger(page + 1)}
-                                    disabled={page === totalPages}
-                                    className="p-2 rounded-lg text-slate-500 hover:text-deep-blue hover:bg-deep-blue-soft disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-all duration-150"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 0 1 .02-1.06L11.168 10 7.23 6.29a.75.75 0 1 1 1.08-1.04l4.25 4.5a.75.75 0 0 1 0 1.08l-4.25 4.25a.75.75 0 0 1-1.06-.02Z" clipRule="evenodd" /></svg>
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        onChange={charger}
+                        label={`Page ${page} sur ${totalPages} · ${effectiveTotal} devis au total`}
+                    />
                 </div>
             )}
         </div>

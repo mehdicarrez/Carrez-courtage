@@ -291,7 +291,7 @@ export default function ClientsPage() {
                                 <button type="button" onClick={() => { setImportOpen(false); setImportReport(null); setImportFile(null); }}
                                     className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Fermer</button>
                                 <button type="submit" disabled={!importFile || importBusy}
-                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
+                                    className="px-4 py-2.5 btn-primary">
                                     {importBusy ? 'Import...' : 'Importer'}
                                 </button>
                             </div>
@@ -429,7 +429,7 @@ export default function ClientsPage() {
                             <button onClick={closeAffectation}
                                 className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Fermer</button>
                             <button onClick={saveAffectation} disabled={affectBusy || !currentUser}
-                                className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
+                                className="px-4 py-2.5 btn-primary">
                                 {affectBusy ? 'Enregistrement...' : 'Enregistrer l\'affectation'}
                             </button>
                         </div>
@@ -656,7 +656,7 @@ export default function ClientsPage() {
                                 <button type="button" onClick={() => { setEditor(null); setError(''); }}
                                     className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
                                 <button type="submit" disabled={saving}
-                                    className="px-4 py-2.5 rounded-lg text-sm font-medium bg-deep-blue text-white hover:bg-deep-blue-dark shadow-sm disabled:opacity-50 transition-colors">
+                                    className="px-4 py-2.5 btn-primary">
                                     {saving ? 'Enregistrement...' : editor === 'create' ? 'Créer le client' : 'Enregistrer'}
                                 </button>
                             </div>
