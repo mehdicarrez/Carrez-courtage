@@ -41,6 +41,15 @@ class DemandeController extends Controller
 
         $user = $request->user();
 
+        // Demandes ciblées : un partenaire ne voit que (a) les demandes « afficher à tous »
+        // (aucun fournisseurs_cibles) ou (b) celles qui le désignent explicitement.
+        if ($user->estPartenaire()) {
+            $query->where(function ($sub) use ($user) {
+                $sub->whereNull('donnees_risque->fournisseurs_cibles')
+                    ->orWhereJsonContains('donnees_risque->fournisseurs_cibles', $user->fournisseur_id);
+            });
+        }
+
         if ($request->filled('statut')) {
             $query->where('statut', $request->query('statut'));
         }
@@ -97,6 +106,8 @@ class DemandeController extends Controller
             'produit_ids.*' => 'exists:produits,id',
             'fournisseurs_plateforme' => 'nullable|array',
             'fournisseurs_plateforme.*' => 'exists:grossistes,id',
+            'fournisseurs_cibles' => 'nullable|array',
+            'fournisseurs_cibles.*' => 'exists:fournisseurs,id',
             'mes_fournisseurs' => 'nullable|array',
             'mes_fournisseurs.*' => 'string|max:255',
         ]);
@@ -122,6 +133,9 @@ class DemandeController extends Controller
         }
         if (isset($data['fournisseurs_plateforme'])) {
             $donneesRisque['fournisseurs_plateforme'] = array_values(array_unique($data['fournisseurs_plateforme']));
+        }
+        if (!empty($data['fournisseurs_cibles'])) {
+            $donneesRisque['fournisseurs_cibles'] = array_values(array_unique($data['fournisseurs_cibles']));
         }
         if (isset($data['mes_fournisseurs'])) {
             $donneesRisque['mes_fournisseurs'] = array_values(array_filter(array_map('trim', $data['mes_fournisseurs'])));
@@ -224,6 +238,8 @@ class DemandeController extends Controller
             'produit_ids.*' => 'exists:produits,id',
             'fournisseurs_plateforme' => 'nullable|array',
             'fournisseurs_plateforme.*' => 'exists:grossistes,id',
+            'fournisseurs_cibles' => 'nullable|array',
+            'fournisseurs_cibles.*' => 'exists:fournisseurs,id',
             'mes_fournisseurs' => 'nullable|array',
             'mes_fournisseurs.*' => 'string|max:255',
         ]);
@@ -257,6 +273,11 @@ class DemandeController extends Controller
         }
         if (isset($data['fournisseurs_plateforme'])) {
             $donneesRisque['fournisseurs_plateforme'] = array_values(array_unique($data['fournisseurs_plateforme']));
+        }
+        if (!empty($data['fournisseurs_cibles'])) {
+            $donneesRisque['fournisseurs_cibles'] = array_values(array_unique($data['fournisseurs_cibles']));
+        } elseif (array_key_exists('fournisseurs_cibles', $data)) {
+            unset($donneesRisque['fournisseurs_cibles']);
         }
         if (isset($data['mes_fournisseurs'])) {
             $donneesRisque['mes_fournisseurs'] = array_values(array_filter(array_map('trim', $data['mes_fournisseurs'])));

@@ -9,6 +9,7 @@ use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
@@ -214,6 +215,9 @@ class AuthController extends Controller
             'role' => $user->role,
             'organisation_id' => $user->organisation_id,
             'organisation_type' => $user->organisation?->type,
+            'organisation_logo_url' => $user->organisation?->logo
+                ? URL::temporarySignedRoute('organisations.logo', now()->addMinutes(1440), ['organisation' => $user->organisation_id])
+                : null,
             'visible_commissions' => $user->visible_commissions,
             'two_factor_enabled' => $user->two_factor_enabled,
         ];

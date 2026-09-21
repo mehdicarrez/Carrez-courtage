@@ -142,6 +142,30 @@ class FournisseurController extends Controller
     }
 
     /**
+     * Liste légère des fournisseurs devenus partenaires (avec logo),
+     * accessible au cabinet ET aux partenaires (création de demandes ciblées).
+     */
+    public function partenairesActifs()
+    {
+        $partenaires = Fournisseur::where('actif', true)
+            ->where('devenir_partenaire', true)
+            ->orderBy('nom')
+            ->get();
+
+        return response()->json([
+            'data' => $partenaires->map(fn (Fournisseur $f) => [
+                'id' => $f->id,
+                'nom' => $f->nom,
+                'partenaire' => $f->partenaire,
+                'devenir_partenaire' => $f->devenir_partenaire,
+                'logo_url' => $f->logo
+                    ? URL::temporarySignedRoute('fournisseurs.logo', now()->addMinutes(1440), ['fournisseur' => $f->id])
+                    : null,
+            ]),
+        ]);
+    }
+
+    /**
      * Toggle : active / désactive l'affichage du fournisseur
      * dans le tableau des partenaires.
      *

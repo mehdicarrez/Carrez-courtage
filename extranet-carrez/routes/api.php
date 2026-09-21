@@ -196,6 +196,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Module 6 — Back-office / partenaires / utilisateurs
     Route::get('/fournisseurs', [FournisseurController::class, 'index']);
+    Route::get('/fournisseurs/partenaires', [FournisseurController::class, 'partenairesActifs']);
     Route::post('/fournisseurs', [FournisseurController::class, 'store']);
     Route::post('/fournisseurs/{fournisseur}/informations', [FournisseurController::class, 'updateInformations']);
     Route::post('/fournisseurs/{fournisseur}/devenir-partenaire', [FournisseurController::class, 'togglePartenaire']);
