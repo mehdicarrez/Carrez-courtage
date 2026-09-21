@@ -328,7 +328,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                 ? 'border-deep-blue'
                                                 : 'border-transparent hover:border-slate-300'
                                         }`}>
-                                         {d.propose_par.logo_url ? (
+                                         {d.propose_par?.logo_url ? (
                                                     <img
                                                         src={d.propose_par.logo_url}
                                                         alt={d.propose_par.nom || ''}
@@ -336,7 +336,7 @@ const [modal, setModal] = useState(null); // {action, cible, motif_requis}
                                                     />
                                                 ) : (
                                                     <div className="h-[38px] min-w-[38px] rounded-lg bg-deep-blue-soft text-deep-blue flex items-center justify-center text-sm font-bold flex-shrink-0 px-2">
-                                                        {d.propose_par.nom
+                                                        {d.propose_par?.nom
                                                             ?.split(' ')
                                                             .map((w) => w[0])
                                                             .slice(0, 2)
